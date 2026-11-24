@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+# Obsidian (personal workspace state)
+docs/.obsidian/workspace*.json
+docs/.obsidian/cache
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+*.csproj
+*.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+*.unityproj
+# .NET
+bin/
+# Python
+__pycache__/
