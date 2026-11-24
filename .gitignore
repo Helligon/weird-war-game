@@ -22,3 +22,4 @@ docs/.obsidian/cache
 bin/
 # Python
 __pycache__/
+docs/.obsidian/
