@@ -30,7 +30,7 @@ flowchart LR
 ```
 
 ## Traceability
-`Rule (e.g. SUP-006) → Story issue → story branch/PR → test named after the rule → playtest notes → new decisions`
+`Rule (e.g. SUP-006) → Story issue (e.g. SP2-38) → story branch/PR → test named after the rule → playtest notes → new decisions`
 
 ## Rules
 ### Repository and tracker
@@ -44,6 +44,7 @@ flowchart LR
 ### Branching and merging
 - **DLV-007** (`decided`): Each Feature MUST have a **feature branch**. Alex MUST merge the feature branch into `main` himself, only when completely happy with it.
 - **DLV-008** (`decided`, confirmed by DEC-088): Each Story SHOULD have its own short-lived branch, merged into the feature branch by PR after automatic review and passing tests.
+- **DLV-019** (`decided`, DEC-098): Each Feature MUST have a three-character code that does not reuse a rule-ID prefix, e.g. `SP2` for Spike 2. A Story's ID is `<code>-<issue number>`, e.g. `SP2-38`, so it can't be mistaken for a PR number. Feature issue titles start with the code (`SP2: …`), Story issue titles and Story PR titles start with the Story ID (`SP2-38: …`), and Story branches are `story/<story-id>-<short-name>` (`story/SP2-38-default-behaviour`). PR bodies still say `Closes #38` so GitHub links the issue.
 - **DLV-009** (`decided`, revised by DEC-084): Agents MAY change the docs directly when Alex has already discussed the change. Anything completely new MUST be raised with Alex first.
 
 ### Ready and Done
