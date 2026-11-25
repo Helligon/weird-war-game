@@ -19,9 +19,15 @@ namespace WeirdWar.Spike1.Core
             var root = parsed as Dictionary<string, object?>
                 ?? throw new SetupException("The scenario file must be a JSON object.");
 
-            if (!root.TryGetValue("firstPlayer", out var fp) || !(fp is long f) || (f != 1 && f != 2))
+            // Defaults to Player 1 when missing (stand-in for TRN-033, DEC-087).
+            long f = 1;
+            if (root.TryGetValue("firstPlayer", out var fp))
             {
-                throw new SetupException("\"firstPlayer\" must be 1 or 2.");
+                if (!(fp is long given) || (given != 1 && given != 2))
+                {
+                    throw new SetupException("\"firstPlayer\" must be 1 or 2.");
+                }
+                f = given;
             }
             if (!root.TryGetValue("startingBudget", out var sb) || !(sb is long b) || b < 1 || b > 10000)
             {

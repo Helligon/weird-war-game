@@ -120,6 +120,14 @@ namespace WeirdWar.Spike1.Core
             return new GameState(Map, Config, CurrentPlayer, tokens);
         }
 
-        private static int Index(PlayerId player) => player == PlayerId.Player1 ? 0 : 1;
+        private static int Index(PlayerId player)
+        {
+            switch (player)
+            {
+                case PlayerId.Player1: return 0;
+                case PlayerId.Player2: return 1;
+                default: throw new ArgumentOutOfRangeException(nameof(player), player, "Unknown player.");
+            }
+        }
     }
 }

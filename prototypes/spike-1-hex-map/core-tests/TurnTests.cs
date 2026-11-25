@@ -44,6 +44,23 @@ public class TurnTests
     }
 
     [Fact]
+    public void DLV_013_every_type_reachable_from_the_state_is_immutable()
+    {
+        var types = new[]
+        {
+            typeof(GameState), typeof(Token), typeof(GameConfig), typeof(HexMap),
+            typeof(CommandResult), typeof(HexCoord), typeof(OffsetCoord),
+        };
+        foreach (var type in types)
+        {
+            Assert.All(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), p =>
+                Assert.True(p.SetMethod == null || !p.SetMethod.IsPublic, type.Name + "." + p.Name + " has a public setter"));
+            Assert.All(type.GetFields(BindingFlags.Public | BindingFlags.Instance), f =>
+                Assert.True(f.IsInitOnly, type.Name + "." + f.Name + " is a public mutable field"));
+        }
+    }
+
+    [Fact]
     public void DLV_013_tokens_list_cannot_be_used_to_change_the_state()
     {
         var s = New();
@@ -247,6 +264,24 @@ public class TurnTests
         Assert.Equal(7, config.StartingBudget);
         Assert.Equal(new OffsetCoord(1, 2), config.Player1Start);
         Assert.Equal(new OffsetCoord(3, 4), config.Player2Start);
+    }
+
+    [Fact]
+    public void TRN_033_stand_in_first_player_defaults_to_player_1_when_missing()
+    {
+        var config = GameConfigLoader.Load("{\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
+
+        Assert.Equal(PlayerId.Player1, config.FirstPlayer);
+    }
+
+    [Fact]
+    public void TRN_007_unknown_player_id_is_not_treated_as_player_2()
+    {
+        var s = New();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => s.TokenOf((PlayerId)0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s.TokenOf((PlayerId)7));
+        Assert.Throws<ArgumentOutOfRangeException>(() => s.WithToken(new Token((PlayerId)3, new HexCoord(0, 0), 1)));
     }
 
     [Theory]
