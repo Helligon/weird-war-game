@@ -75,7 +75,9 @@ namespace WeirdWar.Spike2.Presentation
                 return;
             }
 
-            // Time belongs to the core: while the battle is paused nothing the Officer does can happen, so no input is sent.
+            // Time belongs to the core: while the battle is paused nothing the Officer does can happen, so no key, mouse or fire
+            // input is sent. (With the mouse freed, the stop above is still sent once, even when paused: it is logged at the
+            // current step and nothing moves until the next step.)
             if (_bootstrap.StateView != null && !_bootstrap.StateView.Running) { return; }
 
             var forward = (Input.GetKey(KeyCode.W) ? 1.0 : 0.0) - (Input.GetKey(KeyCode.S) ? 1.0 : 0.0);

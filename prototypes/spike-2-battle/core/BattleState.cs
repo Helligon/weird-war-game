@@ -234,15 +234,26 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>
         /// Replays a command log on a fresh battle (TEC-008): for each step number in turn, applies that step's commands in log
         /// order, then calls <see cref="Step"/>, until <paramref name="steps"/> steps have run. Commands logged at step
-        /// <paramref name="steps"/> or later are applied last, without a further step.
+        /// <paramref name="steps"/> (after the last step) are applied last, without a further step.
+        /// It is a divergence detector: a command that was accepted when it was logged but is rejected now throws
+        /// <see cref="InvalidOperationException"/> with the step and the reason, and so does a logged step outside 0..<paramref name="steps"/>.
         /// </summary>
         public void Replay(IEnumerable<LoggedCommand> log, int steps)
         {
             var queue = new List<LoggedCommand>(log);
+            foreach (var l in queue)
+            {
+                if (l.Step < 0 || l.Step > steps) throw new InvalidOperationException("Replay: a command is logged at step " + l.Step + ", outside 0.." + steps + ".");
+            }
             var next = 0;
             for (var step = 0; step <= steps; step++)
             {
-                while (next < queue.Count && queue[next].Step <= step) { ApplyOfficerCommand(queue[next].Command); next++; }
+                while (next < queue.Count && queue[next].Step <= step)
+                {
+                    var result = ApplyOfficerCommand(queue[next].Command);
+                    if (!result.IsAccepted) throw new InvalidOperationException("Replay diverged at step " + step + ": " + result.Reason);
+                    next++;
+                }
                 if (step < steps) Step();
             }
         }

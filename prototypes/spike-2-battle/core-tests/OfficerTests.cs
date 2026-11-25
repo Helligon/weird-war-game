@@ -379,18 +379,48 @@ public class OfficerTests
         }
     }
 
-    // A fixed script of Officer commands at fixed steps, run while both Sections follow their default behaviour (DAI-001..006).
-    private static void RunScript(BattleState b, int totalSteps)
+    private sealed class ScriptResult
     {
+        public int Scripted;
+        public int Hits;
+        public bool SectionNamedOfficerAsAttacker;
+    }
+
+    // Aims at the enemy Section from where the Officer stands now. The angle is logged, so replay does not recompute it.
+    private static void AimAtEnemy(BattleState b, ScriptResult r)
+    {
+        var e = b.Find(BattleState.EnemySectionId)!.Position;
+        var o = b.Officers[0].Position;
+        Do(b, r, new OfficerAimCommand(0, Math.Atan2(e.Y - o.Y, e.X - o.X)));
+    }
+
+    private static void Do(BattleState b, ScriptResult r, IBattleCommand c)
+    {
+        r.Scripted++;
+        var result = b.ApplyOfficerCommand(c);
+        Assert.True(result.IsAccepted, "scripted command rejected at step " + b.StepCount + ": " + result.Reason);
+        if (result.Shot is OfficerShot shot && shot.Hit)
+        {
+            r.Hits++;
+            if (b.Find(BattleState.EnemySectionId)!.LastAttacker?.Officer == b.Officers[0]) r.SectionNamedOfficerAsAttacker = true;
+        }
+    }
+
+    // A fixed script of Officer commands at fixed steps, run while both Sections follow their default behaviour (DAI-001..006).
+    // The Officer walks east, stops about 55 m from the enemy (outside its 30 m range), shoots it three times, then backs away.
+    private static ScriptResult RunScript(BattleState b, int totalSteps)
+    {
+        var r = new ScriptResult();
         for (var step = 0; step < totalSteps; step++)
         {
-            if (step == 0) b.ApplyOfficerCommand(new OfficerMoveCommand(0, 1, 0.2));
-            if (step == 100) b.ApplyOfficerCommand(new OfficerAimCommand(0, 0.01));
-            if (step == 150) b.ApplyOfficerCommand(new OfficerMoveCommand(0, 0, 0));
-            if (step == 160 || step == 175 || step == 190) b.ApplyOfficerCommand(new OfficerFireCommand(0));
-            if (step == 300) b.ApplyOfficerCommand(new OfficerMoveCommand(0, 0, -1));
+            if (step == 0) Do(b, r, new OfficerMoveCommand(0, 1, 0));
+            if (step == 60) Do(b, r, new OfficerMoveCommand(0, 0, 0));
+            if (step == 61 || step == 100 || step == 150) { AimAtEnemy(b, r); Do(b, r, new OfficerFireCommand(0)); }
+            if (step == 200) Do(b, r, new OfficerMoveCommand(0, -1, 0));
+            if (step == 230) Do(b, r, new OfficerMoveCommand(0, 0, 0));
             b.Step();
         }
+        return r;
     }
 
     private static void AssertSameBattle(BattleState a, BattleState c)
@@ -414,11 +444,19 @@ public class OfficerTests
     {
         const int steps = 600;
         var a = NewBattle(5);
-        RunScript(a, steps);
-        // The battle must have had something happen: the Sections walked and the Officer's shots landed.
-        Assert.True(a.Find(BattleState.EnemySectionId)!.Health < a.Stats.RiflemenMaxUnits * a.Stats.RiflemenHealthPerUnit
-            || a.Find(BattleState.PlayerSectionId)!.Health < a.Stats.RiflemenMaxUnits * a.Stats.RiflemenHealthPerUnit);
-        Assert.NotEqual(5.0 - 1, a.Officers[0].Position.X);
+        var spawn = a.Officers[0].Position;
+        var script = RunScript(a, steps);
+
+        // The script really exercised the risky path: the Officer hit the enemy, the enemy named the Officer as its attacker,
+        // the Officer survived, and every scripted command was accepted and logged.
+        Assert.True(script.Hits >= 1, "no Officer shot hit");
+        Assert.True(script.SectionNamedOfficerAsAttacker, "the hit Section did not name the Officer as its attacker");
+        Assert.True(a.Officers[0].Health > 0, "the Officer died, so later commands would be rejected");
+        Assert.Equal(script.Scripted, a.CommandLog.Count);
+        Assert.Equal(10, script.Scripted); // move, stop, 3 x (aim, fire), move, stop
+        Assert.True(a.Find(BattleState.EnemySectionId)!.Health < a.Stats.RiflemenMaxUnits * a.Stats.RiflemenHealthPerUnit);
+        // 6 s east at 4 m/s (24 m), then 3 s back (12 m): the Officer ends 12 m east of where it spawned.
+        Assert.Equal(spawn.X + 12, a.Officers[0].Position.X, 6);
 
         // Round-trip every command through JSON, as a saved log would be.
         var saved = a.CommandLog.Select(l => new LoggedCommand(l.Step, CommandSerialiser.Deserialise(CommandSerialiser.Serialise(l.Command)))).ToList();
@@ -441,6 +479,32 @@ public class OfficerTests
             && a.Find(BattleState.PlayerSectionId)!.Health == c.Find(BattleState.PlayerSectionId)!.Health
             && a.Officers[0].Health == c.Officers[0].Health;
         Assert.False(same);
+    }
+
+    [Fact]
+    public void TEC_008_replay_throws_when_a_logged_command_is_rejected_instead_of_ignoring_it()
+    {
+        var b = NewBattle();
+        var bad = new[] { new LoggedCommand(3, new OfficerFireCommand(5)) }; // there is no Officer 5
+        var ex = Assert.Throws<InvalidOperationException>(() => b.Replay(bad, 10));
+        Assert.Contains("step 3", ex.Message);
+
+        // A command that was accepted when logged is a divergence if the Officer is dead on replay.
+        var dead = NewBattle();
+        dead.Officers[0].TakeDamage(1000);
+        Assert.Throws<InvalidOperationException>(() => dead.Replay(new[] { new LoggedCommand(0, new OfficerAimCommand(0, 1)) }, 5));
+    }
+
+    [Fact]
+    public void TEC_008_replay_rejects_a_command_logged_after_the_last_step()
+    {
+        var b = NewBattle();
+        Assert.Throws<InvalidOperationException>(() => b.Replay(new[] { new LoggedCommand(11, new OfficerAimCommand(0, 1)) }, 10));
+        // A command logged at the final step count is applied, without a further step.
+        var c = NewBattle();
+        c.Replay(new[] { new LoggedCommand(10, new OfficerAimCommand(0, 1)) }, 10);
+        Assert.Equal(1, c.Officers[0].AimRadians);
+        Assert.Equal(10, c.StepCount);
     }
 
     private static IEnumerable<Type> OfficerCommandTypes() =>
