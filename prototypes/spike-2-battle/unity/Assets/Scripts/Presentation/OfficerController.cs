@@ -110,9 +110,9 @@ namespace WeirdWar.Spike2.Presentation
         private void LateUpdate()
         {
             if (_camera == null || _bootstrap == null || _bootstrap.State == null || _bootstrap.State.Officers.Count == 0) { return; }
+            if (_tracer != null && (_bootstrap.Tactical.Active || Time.time > _tracerUntil)) { _tracer.enabled = false; }
             if (_bootstrap.Tactical.Active) { return; } // the tactical view owns the camera
             PlaceCamera();
-            if (_tracer != null && Time.time > _tracerUntil) { _tracer.enabled = false; }
         }
 
         // The map lies in Unity's XY plane and "up" is towards the camera, which is the -Z side. The camera sits behind the

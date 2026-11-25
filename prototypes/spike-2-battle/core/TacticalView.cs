@@ -11,16 +11,50 @@ namespace WeirdWar.Spike2.Battle.Core
     /// and the mode flags never create a command: pausing only means that whoever owns the clock stops calling
     /// <see cref="BattleState.Step"/> while <see cref="Running"/> is false (CMD-002).
     /// </summary>
+    public enum TacticalAction { ConfirmMove, CancelPending, Stop, ClearWaypoints, FallBack }
+
     public sealed class TacticalView
     {
-        /// <summary>
-        /// The controls the tactical view offers, in order (CMD-013: there is deliberately no Section ability trigger).
-        /// Selecting is by clicking a friendly Section, waypoints by clicking the map, and Target by clicking an enemy Section.
-        /// </summary>
-        public static readonly IReadOnlyList<string> Controls = new[]
+        /// <summary>The panel buttons, in order. The panel is built from <see cref="Buttons"/> only, so no button can exist that is not listed (CMD-013).</summary>
+        public static readonly IReadOnlyList<KeyValuePair<TacticalAction, string>> Buttons = new[]
         {
-            "Select Section", "Place waypoint", "Confirm Move", "Cancel waypoints", "Stop", "Clear waypoints", "Target", "Fall back",
+            new KeyValuePair<TacticalAction, string>(TacticalAction.ConfirmMove, "Confirm Move"),
+            new KeyValuePair<TacticalAction, string>(TacticalAction.CancelPending, "Cancel planned waypoints"),
+            new KeyValuePair<TacticalAction, string>(TacticalAction.Stop, "Stop (hold)"),
+            new KeyValuePair<TacticalAction, string>(TacticalAction.ClearWaypoints, "Clear waypoints"),
+            new KeyValuePair<TacticalAction, string>(TacticalAction.FallBack, "Fall back"),
         };
+
+        /// <summary>
+        /// Every control the tactical view offers: the clicks (select a friendly Section, place a waypoint, Target an enemy Section)
+        /// and the <see cref="Buttons"/>. CMD-013: there is deliberately no Section ability trigger.
+        /// </summary>
+        public static IReadOnlyList<string> Controls
+        {
+            get
+            {
+                var list = new List<string> { "Select Section", "Place waypoint", "Target" };
+                foreach (var b in Buttons) list.Add(b.Value);
+                return list;
+            }
+        }
+
+        /// <summary>Does what a panel button does.</summary>
+        public bool Perform(TacticalAction action)
+        {
+            switch (action)
+            {
+                case TacticalAction.ConfirmMove: return ConfirmMove();
+                case TacticalAction.CancelPending:
+                    if (!Active) return Fail("Section commands are only possible in the tactical view (CMD-001).");
+                    CancelPending();
+                    return true;
+                case TacticalAction.Stop: return Stop();
+                case TacticalAction.ClearWaypoints: return ClearWaypoints();
+                case TacticalAction.FallBack: return FallBack();
+                default: return false;
+            }
+        }
 
         /// <summary>Metres from a Section's centre within which a click picks that Section (a stand-in sized to the drawn Unit grid).</summary>
         public const double PickRadius = 5.0;

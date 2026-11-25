@@ -64,8 +64,9 @@ public class TacticalViewTests
         v.Exit();
         Assert.True(v.Running);
 
+        // This only checks the flag and that the view creates no command. The real proof that nothing moves while paused is the
+        // EditMode test CMD_002_entering_the_tactical_view_pauses_the_battle_and_leaving_resumes_it (steps, positions, command log).
         Assert.Empty(b.CommandLog);
-        Assert.Equal(0, b.StepCount);
     }
 
     [Fact]
@@ -284,11 +285,167 @@ public class TacticalViewTests
     }
 
     [Fact]
-    public void CMD_013_the_controls_list_has_no_ability_trigger()
+    public void CMD_013_the_panel_buttons_are_the_listed_actions_and_none_is_an_ability()
     {
-        Assert.DoesNotContain(TacticalView.Controls, c => c.Contains("bilit", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains("Stop", TacticalView.Controls);
+        // The panel draws exactly TacticalView.Buttons, so this list is the whole panel.
+        var actions = Enum.GetValues(typeof(TacticalAction)).Cast<TacticalAction>().ToList();
+        Assert.Equal(actions.OrderBy(x => x), TacticalView.Buttons.Select(b => b.Key).OrderBy(x => x));
+        Assert.All(actions, a => Assert.DoesNotContain("bilit", a.ToString(), StringComparison.OrdinalIgnoreCase));
+        Assert.All(TacticalView.Controls, c => Assert.DoesNotContain("bilit", c, StringComparison.OrdinalIgnoreCase));
+        Assert.Contains("Stop (hold)", TacticalView.Controls);
         Assert.Contains("Fall back", TacticalView.Controls);
+    }
+
+    [Fact]
+    public void CMD_013_every_panel_button_issues_one_of_the_section_commands()
+    {
+        var (b, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+        Assert.True(v.Perform(TacticalAction.ConfirmMove));
+        Assert.True(v.Perform(TacticalAction.Stop));
+        Assert.True(v.Perform(TacticalAction.ClearWaypoints));
+        Assert.True(v.Perform(TacticalAction.FallBack));
+        Assert.True(v.Perform(TacticalAction.CancelPending));
+        Assert.All(b.CommandLog, l => Assert.IsAssignableFrom<SectionCommand>(l.Command));
+        Assert.Equal(4, b.CommandLog.Count);
+    }
+
+    [Fact]
+    public void CMD_016_selecting_another_section_drops_the_planned_waypoints()
+    {
+        var (b, v) = InView();
+        var second = new Section(new SectionId(3), Side.Player, UnitType.Riflemen, 8, 30, new MapPoint(20, 10));
+        b.Add(second);
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+
+        v.Select(second.Id);
+
+        Assert.Empty(v.PendingWaypoints);
+        Assert.Equal(2, v.WaypointsLeft);
+    }
+
+    [Fact]
+    public void CMD_016_selecting_the_same_section_again_keeps_the_plan()
+    {
+        var (_, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+        v.Select(P);
+        Assert.Single(v.PendingWaypoints);
+    }
+
+    [Fact]
+    public void CMD_016_deselect_clears_the_selection_and_the_plan()
+    {
+        var (_, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+
+        v.Deselect();
+
+        Assert.Null(v.Selected);
+        Assert.Empty(v.PendingWaypoints);
+        Assert.Equal(0, v.WaypointsLeft);
+    }
+
+    [Fact]
+    public void CMD_005_cancel_pending_drops_the_plan_without_a_command()
+    {
+        var (b, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+
+        v.CancelPending();
+
+        Assert.Empty(v.PendingWaypoints);
+        Assert.Equal(P, v.Selected);
+        Assert.Empty(b.CommandLog);
+    }
+
+    [Fact]
+    public void CMD_011_fall_back_drops_the_planned_waypoints()
+    {
+        var (_, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+        v.FallBack();
+        Assert.Empty(v.PendingWaypoints);
+    }
+
+    [Fact]
+    public void CMD_002_leaving_the_view_drops_the_planned_waypoints()
+    {
+        var (_, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+        v.Exit();
+        Assert.Empty(v.PendingWaypoints);
+    }
+
+    [Fact]
+    public void CMD_001_after_leaving_the_view_waypoints_confirm_and_clicks_are_refused()
+    {
+        var (b, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+        v.Exit();
+
+        Assert.False(v.AddWaypoint(new MapPoint(40, 20)));
+        Assert.False(v.ConfirmMove());
+        Assert.False(v.Click(new MapPoint(40, 20)));
+        Assert.False(v.Perform(TacticalAction.CancelPending));
+        Assert.Empty(b.CommandLog);
+        Assert.Empty(v.PendingWaypoints);
+    }
+
+    [Fact]
+    public void CMD_016_a_destroyed_section_cannot_be_selected_or_picked()
+    {
+        var (b, v) = InView();
+        var at = b.Find(P)!.Position;
+        b.Find(P)!.TakeDamage(1000);
+
+        Assert.False(v.Select(P));
+        Assert.Null(v.PickSection(at, Side.Player));
+    }
+
+    [Fact]
+    public void CMD_016_a_selected_section_that_is_destroyed_is_deselected_with_its_plan()
+    {
+        var (b, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30, 20));
+
+        b.Find(P)!.TakeDamage(1000);
+
+        Assert.Null(v.Selected);
+        Assert.Empty(v.PendingWaypoints);
+        Assert.False(v.AddWaypoint(new MapPoint(40, 20)));
+    }
+
+    [Fact]
+    public void CMD_005_waypoints_are_rounded_to_the_nearest_metre()
+    {
+        var (_, v) = InView();
+        v.Select(P);
+        v.AddWaypoint(new MapPoint(30.6, 20.4));
+        Assert.Equal(new Waypoint(31, 20), v.PendingWaypoints[0]);
+    }
+
+    [Fact]
+    public void HIE_007_a_click_picks_the_nearest_of_two_sections()
+    {
+        var (b, v) = InView();
+        var far = new Section(new SectionId(3), Side.Player, UnitType.Riflemen, 8, 30, new MapPoint(b.Find(P)!.Position.X + 6, b.Find(P)!.Position.Y));
+        var near = new Section(new SectionId(4), Side.Player, UnitType.Riflemen, 8, 30, new MapPoint(b.Find(P)!.Position.X + 9, b.Find(P)!.Position.Y));
+        b.Add(far);
+        b.Add(near);
+
+        // The click is 2 m from `far`, 1 m from `near`, and out of reach of the first Section: the nearest wins, not the first in range.
+        var click = new MapPoint(b.Find(P)!.Position.X + 8, b.Find(P)!.Position.Y);
+        Assert.Equal(near.Id, v.PickSection(click, Side.Player));
     }
 
     private static void StringAssert(string expected, string actual) => Assert.Contains(expected, actual);

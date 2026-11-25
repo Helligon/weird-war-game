@@ -221,16 +221,11 @@ namespace WeirdWar.Spike2.Presentation
             y += 56;
             GUI.Label(new Rect(x, y, w, 36), "Click the map: place a waypoint.\nClick a red Section: Target it.");
             y += 40;
-            if (GUI.Button(new Rect(x, y, w, 28), "Confirm Move (" + t.PendingWaypoints.Count + " waypoint(s))")) { t.ConfirmMove(); }
-            y += 32;
-            if (GUI.Button(new Rect(x, y, w, 28), "Cancel planned waypoints")) { t.CancelPending(); }
-            y += 32;
-            if (GUI.Button(new Rect(x, y, w, 28), "Stop (hold)")) { t.Stop(); }
-            y += 32;
-            if (GUI.Button(new Rect(x, y, w, 28), "Clear waypoints")) { t.ClearWaypoints(); }
-            y += 32;
-            if (GUI.Button(new Rect(x, y, w, 28), "Fall back")) { t.FallBack(); }
-            y += 32;
+            foreach (var button in TacticalView.Buttons)
+            {
+                if (GUI.Button(new Rect(x, y, w, 28), button.Value)) { t.Perform(button.Key); }
+                y += 32;
+            }
             GUI.Label(new Rect(x, y, w, 40), t.Message);
         }
     }
