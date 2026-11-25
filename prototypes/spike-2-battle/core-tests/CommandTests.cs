@@ -214,5 +214,6 @@ public class CommandTests
     {
         Assert.Throws<CommandFormatException>(() => CommandSerialiser.Deserialise("{\"type\":\"dance\",\"section\":1}"));
         Assert.Throws<CommandFormatException>(() => CommandSerialiser.Deserialise("[1]"));
+        Assert.Throws<CommandFormatException>(() => CommandSerialiser.Deserialise("{\"type\":"));
     }
 }

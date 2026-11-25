@@ -30,7 +30,7 @@ namespace WeirdWar.Spike2.Battle.Core
             return value;
         }
 
-        private CommandFormatException Fail(string what) => new CommandFormatException("Invalid JSON at position " + _i + ": " + what);
+        private DataLoadException Fail(string what) => new DataLoadException("Invalid JSON at position " + _i + ": " + what);
 
         private void SkipSpace()
         {

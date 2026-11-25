@@ -38,7 +38,10 @@ namespace WeirdWar.Spike2.Battle.Core
 
         public static IBattleCommand Deserialise(string json)
         {
-            if (!(MiniJson.Parse(json) is Dictionary<string, object?> o))
+            object? parsed;
+            try { parsed = MiniJson.Parse(json); }
+            catch (DataLoadException e) { throw new CommandFormatException(e.Message); }
+            if (!(parsed is Dictionary<string, object?> o))
             {
                 throw new CommandFormatException("A command must be a JSON object.");
             }

@@ -1,7 +1,5 @@
 namespace WeirdWar.Spike2.Battle.Core
 {
-    public enum Side { Player = 1, Enemy = 2 }
-
     /// <summary>What validation needs to know about one Section.</summary>
     public readonly struct SectionInfo
     {
