@@ -129,6 +129,7 @@ namespace WeirdWar.Spike2.Presentation
                 _tracer = new GameObject("Rifle tracer").AddComponent<LineRenderer>();
                 _tracer.transform.SetParent(transform, false);
                 _tracer.sharedMaterial = _tracerMaterial;
+                _tracer.sortingOrder = BattleMapView.OrderTracer;
                 _tracer.positionCount = 2;
                 _tracer.startWidth = _tracer.endWidth = 0.15f;
             }

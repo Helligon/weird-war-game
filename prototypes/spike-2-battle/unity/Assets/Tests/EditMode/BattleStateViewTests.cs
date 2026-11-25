@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using WeirdWar.Spike2.Battle.Core;
@@ -22,6 +23,22 @@ namespace WeirdWar.Spike2.Tests
         public void TearDown()
         {
             Object.DestroyImmediate(_go);
+        }
+
+        [Test]
+        public void PCH_001_cover_and_squares_always_draw_above_the_ground_whatever_the_camera_angle()
+        {
+            // Transparent layers are sorted by camera distance unless a sorting order is set, which made
+            // cover and squares flicker or vanish under the third-person camera. Every layer needs a fixed order.
+            int Order(string name) => _go.GetComponentsInChildren<MeshRenderer>().First(r => r.name.StartsWith(name)).sortingOrder;
+            var ground = Order("Ground");
+            Assert.Greater(Order("West edge"), ground);
+            Assert.Greater(Order("Cover"), Order("West edge"));
+            foreach (var r in _go.GetComponentsInChildren<MeshRenderer>().Where(r => r.name == "Unit" || r.name == "Officer" || r.name == "Rifle"))
+            {
+                Assert.Greater(r.sortingOrder, Order("Cover"), r.name);
+            }
+            Assert.Greater(Order("Rifle"), Order("Officer"));
         }
 
         [Test]
