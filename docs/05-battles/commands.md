@@ -27,12 +27,13 @@ The player gives orders to Sections from a tactical view. The command set is del
 - **CMD-008** (`decided`) **Target:** the player selects an enemy Section for a Section to attack. Moving to waypoints and stopping MUST take priority over targeting.
 - **CMD-009** (`decided`) **Target ground:** Target MUST also accept an area of ground, for artillery and mortars.
 - **CMD-010** (`decided`) **Protect:** the player selects an allied Section to guard. The protecting Section MUST stay with it (surround it or move in front) and engage the nearest enemy it can reach without leaving its side.
-- **CMD-011** (`decided`) **Fall back:** the Section MUST move towards its own side's map edge in good order. This is not a rout.
+- **CMD-011** (`decided`, revised by DEC-096) **Fall back:** the Section MUST clear its queued waypoints, move towards its own side's map edge in good order, and hold there. This is not a rout.
 - **CMD-012** (`decided`, DEC-094): Without a Stop at the end of its orders, a Section reaching its last waypoint MUST return to its default behaviour (see [[default-ai-behaviour]]).
 
 ### Selection
 - **CMD-018** (`decided`): Officers and heroes the player is not controlling MAY be given orders in the tactical view, with the same commands as Sections.
 - **CMD-019** (`decided`): Sections MAY fire while moving, at reduced accuracy (P-CMD-03). Heavy and Artillery Sections MUST NOT fire while moving.
+- **CMD-020** (`decided`, DEC-096): A Move given to a Section that already has queued waypoints MUST add its waypoints to the queue, up to P-CMD-01 in total. A Move that would go over P-CMD-01 MUST be rejected.
 - **CMD-016** (`decided`): Commands MUST be given to one Section at a time. There is no group selection.
 - **CMD-017** (`decided`): Design assumption: a side has at most about 10 Sections in a battle (2 Brigades × 5 Sections; P-CMD-02), plus up to 2 officers, 2 heroes and a Garrison Section (MAP-051), so group selection isn't needed. (The +1 Section bonus, BRG-022, can take this to 12.)
 
