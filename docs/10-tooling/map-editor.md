@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [tooling]
 related: ["[[map-and-locations]]"]
-updated: 2026-11-22
+updated: 2026-11-25
 ---
 
 # Map editor
@@ -17,7 +17,7 @@ A very simple, internal map editor that Alex uses to build the campaign maps. It
 - **MED-001** (`decided`): There MUST be a simple map editor for creating hex campaign maps.
 - **MED-002** (`decided`): It MUST be good enough for Alex to build the campaign maps. It does not need production polish for now.
 - **MED-003** (`proposed`): Minimum features:
-  - Create a map of a given size (default ~30×50, P-MAP-04).
+  - Create a map of a given size (default ~50×30, 50 wide by 30 tall, P-MAP-04).
   - Paint terrain per hex (including impassable terrain: mountains, sea, rivers; marsh maybe).
   - Place locations: HQ starts, STs by type (Supply / Command / Major), bridges.
   - Save and load to a data file the game reads.

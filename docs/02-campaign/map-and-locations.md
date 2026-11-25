@@ -11,13 +11,13 @@ updated: 2026-11-25
 # Map and locations
 
 ## Summary
-The campaign is played on fixed, hand-made hex maps (about 30×50 to start), built with a simple in-house [[map-editor]]. The map holds Strategic Targets (STs) of three types, FOBs and each Faction's HQ. Supply STs double as resupply points. Territory spreads around the locations a Faction owns. Each side starts with only its HQ and starting Brigade; everything else has to be captured.
+The campaign is played on fixed, hand-made hex maps (about 50 wide by 30 tall to start, landscape), built with a simple in-house [[map-editor]]. The map holds Strategic Targets (STs) of three types, FOBs and each Faction's HQ. Supply STs double as resupply points. Territory spreads around the locations a Faction owns. Each side starts with only its HQ and starting Brigade; everything else has to be captured.
 
 ## Rules
 ### Map
 - **MAP-017** (`decided`): The campaign map MUST use a hex grid.
 - **MAP-018** (`decided`): Maps MUST be fixed and hand-made at first. Procedural generation is deferred ([[future-ideas]]).
-- **MAP-019** (`decided`): The starting map size MUST be about 30×50 hexes (P-MAP-04), to be reviewed in playtesting.
+- **MAP-019** (`decided`, revised by DEC-093): The starting map size MUST be about 50×30 hexes, 50 wide by 30 tall, in landscape for desktop screens (P-MAP-04), to be reviewed in playtesting. Prototypes MAY use smaller maps.
 - **MAP-020** (`decided`): Maps MUST be made with the in-house map editor ([[map-editor]]).
 
 ### Starting positions
@@ -108,7 +108,7 @@ The campaign is played on fixed, hand-made hex maps (about 30×50 to start), bui
 | P-MAP-01 | FOB-capture bonus | ~50% of build cost, in SP + CP | decided |
 | P-MAP-02 | Territory radius | sight − 1, min 1 | decided |
 | P-MAP-03 | Supply ST→FOB upgrade cost | standard SP + rising CP | decided (values open) |
-| P-MAP-04 | Starting map size | ~30×50 hexes | decided |
+| P-MAP-04 | Starting map size | ~50×30 hexes (50 wide, 30 tall) | decided |
 | P-MAP-05 | HQ income per turn (SP, CP) | – | open |
 | P-MAP-06 | Income per ST type | – | open |
 | P-MAP-07 | Major ST bombardment defence | – | open |
