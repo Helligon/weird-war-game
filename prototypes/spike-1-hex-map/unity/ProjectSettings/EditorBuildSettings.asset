@@ -9,3 +9,4 @@ EditorBuildSettings:
     path: Assets/Scenes/HexMap.unity
     guid: 831deb9d1f51d4a6eb4ef727918d98dc
   m_configObjects: {}
+  m_UseUCBPForAssetBundles: 0
