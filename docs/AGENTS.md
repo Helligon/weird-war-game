@@ -2,7 +2,7 @@
 id: AGENTS
 title: Agent instructions
 status: decided
-updated: 2026-11-21
+updated: 2026-11-25
 tags: [meta]
 ---
 
@@ -40,6 +40,7 @@ Every rule carries a status. **Rule-level status is authoritative**; the note-le
 
 ## Ticketing conventions
 
+- Every Feature has a three-character code and every Story an ID like `SP2-38` (DLV-019). Titles start with that code or ID.
 - One ticket per coherent cluster of `decided` rules (typically one note section).
 - Every ticket MUST cite the rule IDs it implements and the parameter IDs it uses.
 - Acceptance criteria MUST be derived from the cited rules (one or more criteria per rule).

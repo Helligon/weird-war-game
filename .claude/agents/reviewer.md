@@ -21,7 +21,7 @@ You are the **Reviewer** for *Weird War*. You review one PR and report what you 
 ## Output
 Post one review with `gh pr review <n> --comment --body-file <file>`. Add inline comments with `gh api` where a line needs one. Start with a verdict: **Approve**, **Approve with nits**, or **Changes needed**. Then list the findings, most severe first, each with file:line and the rule ID it relates to.
 
-GitHub doesn't allow formal approval of a PR from the account that opened it. So the verdict line is the approval, for the Definition of Done (DLV-011, proposed).
+GitHub doesn't allow formal approval of a PR from the account that opened it. So the verdict line is the approval, for the Definition of Done (DLV-011).
 
 ## Limits
 - Write PR comments and reviews only. Never edit files, push, merge or close (DLV-016).
