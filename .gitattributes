@@ -1,35 +1,43 @@
-# Unity binary assets go to Git LFS (TEC-014). Text files (.md, .json, .cs, .py, .yml,
-# and Unity's YAML .meta/.prefab/.mat/.asset) are deliberately left as normal git text.
+# Binary assets go to Git LFS (TEC-014). Patterns match any letter case (e.g. .PNG).
+# Text files stay in normal git: .md, .json, .cs, .py, .yml, and Unity's YAML assets
+# (.unity scenes, .prefab, .mat, .asset, .meta), because the project saves assets as text
+# (Force Text), which keeps scenes diffable and mergeable.
 
 # Images
-*.png filter=lfs diff=lfs merge=lfs -text
-*.jpg filter=lfs diff=lfs merge=lfs -text
-*.jpeg filter=lfs diff=lfs merge=lfs -text
-*.tga filter=lfs diff=lfs merge=lfs -text
-*.psd filter=lfs diff=lfs merge=lfs -text
-*.tif filter=lfs diff=lfs merge=lfs -text
-*.tiff filter=lfs diff=lfs merge=lfs -text
-*.exr filter=lfs diff=lfs merge=lfs -text
-*.hdr filter=lfs diff=lfs merge=lfs -text
+*.[pP][nN][gG] filter=lfs diff=lfs merge=lfs -text
+*.[jJ][pP][gG] filter=lfs diff=lfs merge=lfs -text
+*.[jJ][pP][eE][gG] filter=lfs diff=lfs merge=lfs -text
+*.[gG][iI][fF] filter=lfs diff=lfs merge=lfs -text
+*.[bB][mM][pP] filter=lfs diff=lfs merge=lfs -text
+*.[tT][gG][aA] filter=lfs diff=lfs merge=lfs -text
+*.[pP][sS][dD] filter=lfs diff=lfs merge=lfs -text
+*.[pP][sS][bB] filter=lfs diff=lfs merge=lfs -text
+*.[tT][iI][fF] filter=lfs diff=lfs merge=lfs -text
+*.[tT][iI][fF][fF] filter=lfs diff=lfs merge=lfs -text
+*.[eE][xX][rR] filter=lfs diff=lfs merge=lfs -text
+*.[hH][dD][rR] filter=lfs diff=lfs merge=lfs -text
 # Audio
-*.wav filter=lfs diff=lfs merge=lfs -text
-*.mp3 filter=lfs diff=lfs merge=lfs -text
-*.ogg filter=lfs diff=lfs merge=lfs -text
+*.[wW][aA][vV] filter=lfs diff=lfs merge=lfs -text
+*.[mM][pP]3 filter=lfs diff=lfs merge=lfs -text
+*.[oO][gG][gG] filter=lfs diff=lfs merge=lfs -text
+*.[aA][iI][fF] filter=lfs diff=lfs merge=lfs -text
+*.[aA][iI][fF][fF] filter=lfs diff=lfs merge=lfs -text
 # Video
-*.mp4 filter=lfs diff=lfs merge=lfs -text
-*.mov filter=lfs diff=lfs merge=lfs -text
+*.[mM][pP]4 filter=lfs diff=lfs merge=lfs -text
+*.[mM][oO][vV] filter=lfs diff=lfs merge=lfs -text
 # 3D models
-*.fbx filter=lfs diff=lfs merge=lfs -text
-*.obj filter=lfs diff=lfs merge=lfs -text
-*.blend filter=lfs diff=lfs merge=lfs -text
+*.[fF][bB][xX] filter=lfs diff=lfs merge=lfs -text
+*.[oO][bB][jJ] filter=lfs diff=lfs merge=lfs -text
+*.[bB][lL][eE][nN][dD] filter=lfs diff=lfs merge=lfs -text
 # Fonts
-*.ttf filter=lfs diff=lfs merge=lfs -text
-*.otf filter=lfs diff=lfs merge=lfs -text
-# Unity scenes and binary-serialised assets
-*.unity filter=lfs diff=lfs merge=lfs -text
-*.cubemap filter=lfs diff=lfs merge=lfs -text
-*.unitypackage filter=lfs diff=lfs merge=lfs -text
-# Native libraries
-*.dll filter=lfs diff=lfs merge=lfs -text
-*.so filter=lfs diff=lfs merge=lfs -text
-*.dylib filter=lfs diff=lfs merge=lfs -text
+*.[tT][tT][fF] filter=lfs diff=lfs merge=lfs -text
+*.[oO][tT][fF] filter=lfs diff=lfs merge=lfs -text
+# Unity binary assets
+*.[cC][uU][bB][eE][mM][aA][pP] filter=lfs diff=lfs merge=lfs -text
+*.[uU][nN][iI][tT][yY][pP][aA][cC][kK][aA][gG][eE] filter=lfs diff=lfs merge=lfs -text
+# Native libraries and executables
+*.[dD][lL][lL] filter=lfs diff=lfs merge=lfs -text
+*.[sS][oO] filter=lfs diff=lfs merge=lfs -text
+*.[dD][yY][lL][iI][bB] filter=lfs diff=lfs merge=lfs -text
+*.[aA] filter=lfs diff=lfs merge=lfs -text
+*.[eE][xX][eE] filter=lfs diff=lfs merge=lfs -text
