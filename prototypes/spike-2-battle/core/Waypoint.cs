@@ -3,8 +3,8 @@ using System;
 namespace WeirdWar.Spike2.Battle.Core
 {
     /// <summary>
-    /// A Move waypoint: a placeholder battle position. Stand-in: the battle map (Story #36) is not in the core
-    /// yet, so this only carries two numbers (Q, R). Replace it with the real position type when the map lands.
+    /// A Move waypoint: a battle position in whole metres. Spike stand-in: Q is metres east (map X) and R is metres north
+    /// (map Y), the same axes as <see cref="MapPoint"/>. Replace it with a real position type when the tactical view lands.
     /// </summary>
     public readonly struct Waypoint : IEquatable<Waypoint>
     {

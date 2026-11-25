@@ -80,18 +80,18 @@ namespace WeirdWar.Spike2.Battle.Core
         public bool Hit => Target.HasValue;
     }
 
-    /// <summary>The result of applying an Officer command.</summary>
-    public sealed class OfficerCommandResult
+    /// <summary>The result of applying a command (Officer or Section).</summary>
+    public sealed class CommandResult
     {
         public bool IsAccepted { get; }
         public string? Reason { get; }
-        /// <summary>Set only when a fire command was accepted.</summary>
+        /// <summary>Set only when an Officer fire command was accepted.</summary>
         public OfficerShot? Shot { get; }
 
-        private OfficerCommandResult(bool accepted, string? reason, OfficerShot? shot) { IsAccepted = accepted; Reason = reason; Shot = shot; }
+        private CommandResult(bool accepted, string? reason, OfficerShot? shot) { IsAccepted = accepted; Reason = reason; Shot = shot; }
 
-        public static OfficerCommandResult Accepted(OfficerShot? shot = null) => new OfficerCommandResult(true, null, shot);
-        public static OfficerCommandResult Rejected(string reason) => new OfficerCommandResult(false, reason, null);
+        public static CommandResult Accepted(OfficerShot? shot = null) => new CommandResult(true, null, shot);
+        public static CommandResult Rejected(string reason) => new CommandResult(false, reason, null);
     }
 
     /// <summary>

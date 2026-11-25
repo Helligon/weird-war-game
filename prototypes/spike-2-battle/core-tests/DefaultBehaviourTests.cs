@@ -137,7 +137,7 @@ public class DefaultBehaviourTests
         // The Section starts in range and out of cover, so its first volley is fired while it steps toward cover.
         BattleState Run(string penalty)
         {
-            var p = BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": " + penalty + "}");
+            var p = BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": " + penalty + ", \"P-DAI-01\": 25}");
             var b = Battle(MapWithCover(), StatsWithRange(20), p);
             Enemy(b).IsHolding = true;
             Enemy(b).MoveTo(new MapPoint(36, 30));
@@ -257,12 +257,10 @@ public class DefaultBehaviourTests
     }
 
     [Fact]
-    public void DLV_014_a_stats_file_without_the_cover_search_range_is_an_error()
+    public void DLV_014_a_parameter_file_without_P_DAI_01_is_an_error()
     {
-        var text = System.Text.RegularExpressions.Regex.Replace(StatsText(), ",?\\s*\"coverSearchRange\"\\s*:\\s*[0-9.]+", "");
-
-        Assert.DoesNotContain("coverSearchRange", text);
-        Assert.Throws<DataLoadException>(() => UnitStats.Load(text));
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5}"));
+        Assert.Equal(25, BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25}").CoverSearchRange);
     }
 
     [Fact]

@@ -93,13 +93,13 @@ public class CommandTests
         var path = Path.Combine(Path.GetTempPath(), "ww-params-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {
-            File.WriteAllText(path, "{\"P-CMD-01\": 3, \"P-CMD-03\": 0.5}");
+            File.WriteAllText(path, "{\"P-CMD-01\": 3, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25}");
             var raised = BattleParameters.Load(File.ReadAllText(path));
             Assert.Equal(3, raised.MaxWaypoints);
             Assert.True(Check(MoveOf(3), 0, raised).IsAccepted);
             Assert.False(Check(MoveOf(4), 0, raised).IsAccepted);
 
-            File.WriteAllText(path, "{\"P-CMD-01\": 1, \"P-CMD-03\": 0.5}");
+            File.WriteAllText(path, "{\"P-CMD-01\": 1, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25}");
             var lowered = BattleParameters.Load(File.ReadAllText(path));
             Assert.True(Check(MoveOf(1), 0, lowered).IsAccepted);
             Assert.False(Check(MoveOf(2), 0, lowered).IsAccepted);

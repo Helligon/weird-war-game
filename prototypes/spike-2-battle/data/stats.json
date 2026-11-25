@@ -7,7 +7,7 @@
     "damage": 1,
     "accuracy": 0.6,
     "volleyInterval": 2,
-    "coverSearchRange": 25
+    "coverAdjacencyDistance": 3
   },
   "officer": {
     "health": 10,

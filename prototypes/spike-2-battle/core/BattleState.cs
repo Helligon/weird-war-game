@@ -51,13 +51,14 @@ namespace WeirdWar.Spike2.Battle.Core
         public IReadOnlyList<Officer> Officers => _officers;
         public BattleMap Map => _map;
         public UnitStats Stats => _stats;
+        public BattleParameters Parameters => _parameters;
 
         private readonly List<LoggedCommand> _commandLog = new List<LoggedCommand>();
 
         /// <summary>The number of <see cref="Step"/> calls so far. A command applied now is logged with this number.</summary>
         public int StepCount { get; private set; }
 
-        /// <summary>PCH-009, TEC-008: every accepted Officer command with the step it was applied at, in order.</summary>
+        /// <summary>PCH-009, TEC-008: every accepted command (Officer and Section) with the step it was applied at, in order.</summary>
         public IReadOnlyList<LoggedCommand> CommandLog => _commandLog;
 
         private BattleState(BattleMap map, UnitStats stats, BattleParameters parameters, ulong seed)
@@ -94,10 +95,9 @@ namespace WeirdWar.Spike2.Battle.Core
 
         public Section? Find(SectionId id) => _sections.TryGetValue(id.Value, out var s) ? s : null;
 
-        /// <summary>Queued waypoints are not tracked yet (movement is a later Story), so validation sees none.</summary>
         public bool TryGetSection(SectionId id, out SectionInfo info)
         {
-            if (_sections.TryGetValue(id.Value, out var s)) { info = new SectionInfo(s.Side, 0); return true; }
+            if (_sections.TryGetValue(id.Value, out var s)) { info = new SectionInfo(s.Side, s.QueuedWaypoints.Count); return true; }
             info = default;
             return false;
         }
@@ -112,7 +112,7 @@ namespace WeirdWar.Spike2.Battle.Core
         /// destroyed shooter or target, does nothing and says why. Rolls come only from the battle's own seeded source.
         /// <paramref name="moving"/> says whether the shooter fires on the move (CMD-019); movement itself is a later Story.
         /// </summary>
-        public FireResult Fire(SectionId shooterId, SectionId targetId, bool moving = false)
+        internal FireResult Fire(SectionId shooterId, SectionId targetId, bool moving = false)
         {
             var shooter = Find(shooterId) ?? throw new ArgumentException(shooterId + " does not exist.");
             var target = Find(targetId) ?? throw new ArgumentException(targetId + " does not exist.");
@@ -121,7 +121,7 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>DAI-006 (DEC-096): the same placeholder volley, at an enemy Officer. Officers do not fire back in this spike.</summary>
-        public FireResult FireAtOfficer(SectionId shooterId, Officer target, bool moving = false)
+        internal FireResult FireAtOfficer(SectionId shooterId, Officer target, bool moving = false)
         {
             var shooter = Find(shooterId) ?? throw new ArgumentException(shooterId + " does not exist.");
             if (!_officers.Contains(target)) throw new ArgumentException("That Officer is not in this battle.");
@@ -193,39 +193,91 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>
-        /// Applies one Officer command (PCH-009, DLV-013). This is the only way Officer move, aim and fire change the battle.
-        /// An accepted command is recorded in <see cref="CommandLog"/>; a rejected one changes nothing and says why.
-        /// Move and aim touch only the Officer (PCH-004). Fire is a stand-in hitscan: the shot goes along the Officer's aim and
-        /// hits the nearest living enemy Section whose centre it passes within the hit radius, up to the rifle range.
+        /// Applies one command (DLV-013). This is the only way a player action changes the battle, for Officer commands
+        /// (PCH-009) and Section commands (CMD-005..CMD-011, CMD-016, CMD-020) alike. An accepted command is recorded in
+        /// <see cref="CommandLog"/> with its step; a rejected one changes nothing, is not logged, and says why.
+        /// Officer move and aim touch only the Officer (PCH-004). Officer fire is a stand-in hitscan: the shot goes along the
+        /// Officer's aim and hits the nearest living enemy Section whose centre it passes within the hit radius, up to the rifle range.
         /// </summary>
-        public OfficerCommandResult ApplyOfficerCommand(IBattleCommand command)
+        public CommandResult ApplyCommand(IBattleCommand command)
         {
-            if (!(command is OfficerCommand oc)) return OfficerCommandResult.Rejected("Not an Officer command.");
-            if (oc.Officer < 0 || oc.Officer >= _officers.Count) return OfficerCommandResult.Rejected("Officer " + oc.Officer + " does not exist.");
+            if (command is OfficerCommand oc) return ApplyOfficer(oc);
+            if (command is SectionCommand sc) return ApplySection(sc);
+            return CommandResult.Rejected("Unknown command type.");
+        }
+
+        private CommandResult ApplySection(SectionCommand command)
+        {
+            var check = CommandValidator.Validate(command, this, _parameters);
+            if (!check.IsAccepted) return CommandResult.Rejected(check.Reason!);
+            var section = _sections[command.Section.Value];
+            if (section.IsDestroyed) return CommandResult.Rejected(command.Section + " is destroyed and cannot be commanded.");
+            switch (command)
+            {
+                case MoveCommand m:
+                    foreach (var w in m.Waypoints)
+                    {
+                        if (w.Q < 0 || w.Q > _map.Width || w.R < 0 || w.R > _map.Height)
+                            return CommandResult.Rejected("Waypoint (" + w.Q + ", " + w.R + ") is outside the map.");
+                    }
+                    // CMD-020: appended. A new Move after a Stop makes the Stop no longer final, so it is dropped (stand-in).
+                    foreach (var w in m.Waypoints) section.Enqueue(new MapPoint(w.Q, w.R), true);
+                    section.StopAtEnd = false;
+                    section.IsHolding = false;
+                    break;
+                case StopCommand _:
+                    if (section.QueuedWaypoints.Count == 0) section.IsHolding = true; // CMD-006: stop on the spot
+                    else section.StopAtEnd = true;                                    // CMD-006: after the last waypoint
+                    break;
+                case ClearWaypointsCommand _:
+                    section.ClearWaypoints(); // CMD-007
+                    break;
+                case TargetCommand t:
+                    if (_sections[t.TargetSection.Value].IsDestroyed) return CommandResult.Rejected(t.TargetSection + " is destroyed.");
+                    section.OrderedTarget = t.TargetSection;
+                    break;
+                case FallBackCommand _:
+                    // CMD-011: clear waypoints, go to own edge (same Y), hold there. Not a rout.
+                    section.ClearWaypoints();
+                    section.Enqueue(new MapPoint(_map.EdgeOf(section.Side).X, section.Position.Y), false);
+                    section.StopAtEnd = true;
+                    section.IsHolding = false;
+                    break;
+                default:
+                    return CommandResult.Rejected("Unknown Section command.");
+            }
+            Log(command);
+            return CommandResult.Accepted();
+        }
+
+        private CommandResult ApplyOfficer(OfficerCommand oc)
+        {
+            var command = oc;
+            if (oc.Officer < 0 || oc.Officer >= _officers.Count) return CommandResult.Rejected("Officer " + oc.Officer + " does not exist.");
             var officer = _officers[oc.Officer];
-            if (officer.IsDestroyed) return OfficerCommandResult.Rejected("Officer " + oc.Officer + " is destroyed and cannot be commanded.");
+            if (officer.IsDestroyed) return CommandResult.Rejected("Officer " + oc.Officer + " is destroyed and cannot be commanded.");
             switch (oc)
             {
                 case OfficerAimCommand a:
-                    if (!IsFinite(a.Radians)) return OfficerCommandResult.Rejected("Aim must be a finite number.");
+                    if (!IsFinite(a.Radians)) return CommandResult.Rejected("Aim must be a finite number.");
                     officer.AimRadians = a.Radians;
                     Log(command);
-                    return OfficerCommandResult.Accepted();
+                    return CommandResult.Accepted();
                 case OfficerMoveCommand m:
                     if (!IsFinite(m.DirectionX) || !IsFinite(m.DirectionY))
-                        return OfficerCommandResult.Rejected("A move needs a finite direction.");
+                        return CommandResult.Rejected("A move needs a finite direction.");
                     // The speed cap holds whatever the client sends: the direction is cut to length 1 here, and the speed is the stats value.
                     var length = Math.Sqrt(m.DirectionX * m.DirectionX + m.DirectionY * m.DirectionY);
                     var scale = length > 1 ? 1 / length : 1;
                     officer.MoveDirection = new MapPoint(m.DirectionX * scale, m.DirectionY * scale);
                     Log(command);
-                    return OfficerCommandResult.Accepted();
+                    return CommandResult.Accepted();
                 case OfficerFireCommand _:
                     var shot = ResolveRifleShot(officer);
                     Log(command);
-                    return OfficerCommandResult.Accepted(shot);
+                    return CommandResult.Accepted(shot);
                 default:
-                    return OfficerCommandResult.Rejected("Unknown Officer command.");
+                    return CommandResult.Rejected("Unknown Officer command.");
             }
         }
 
@@ -236,21 +288,27 @@ namespace WeirdWar.Spike2.Battle.Core
         /// order, then calls <see cref="Step"/>, until <paramref name="steps"/> steps have run. Commands logged at step
         /// <paramref name="steps"/> (after the last step) are applied last, without a further step.
         /// It is a divergence detector: a command that was accepted when it was logged but is rejected now throws
-        /// <see cref="InvalidOperationException"/> with the step and the reason, and so does a logged step outside 0..<paramref name="steps"/>.
+        /// <see cref="InvalidOperationException"/> with the step and the reason. So does a logged step outside 0..<paramref name="steps"/>
+        /// or a log whose steps are not in non-decreasing order; both are checked before anything is applied.
+        /// When a command is rejected during the replay the exception is thrown part-way: the battle is left half-replayed and
+        /// must be thrown away, not used.
         /// </summary>
         public void Replay(IEnumerable<LoggedCommand> log, int steps)
         {
             var queue = new List<LoggedCommand>(log);
-            foreach (var l in queue)
+            for (var i = 0; i < queue.Count; i++)
             {
+                var l = queue[i];
                 if (l.Step < 0 || l.Step > steps) throw new InvalidOperationException("Replay: a command is logged at step " + l.Step + ", outside 0.." + steps + ".");
+                if (i > 0 && l.Step < queue[i - 1].Step)
+                    throw new InvalidOperationException("Replay: the log is out of order: step " + l.Step + " comes after step " + queue[i - 1].Step + ".");
             }
             var next = 0;
             for (var step = 0; step <= steps; step++)
             {
                 while (next < queue.Count && queue[next].Step <= step)
                 {
-                    var result = ApplyOfficerCommand(queue[next].Command);
+                    var result = ApplyCommand(queue[next].Command);
                     if (!result.IsAccepted) throw new InvalidOperationException("Replay diverged at step " + step + ": " + result.Reason);
                     next++;
                 }

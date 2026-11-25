@@ -7,8 +7,8 @@ namespace WeirdWar.Spike2.Presentation
 {
     /// <summary>
     /// Draws the core's Sections (one square per Unit, HIE-004) and the Officer (a yellow square, HIE-006), and shows
-    /// health and Unit counts. Read-only apart from the demo "Fire" button, which asks the core to resolve a volley
-    /// (placeholder fire; the seed is the volley number, so the result is repeatable, TEC-008). One metre is one Unity unit.
+    /// health and Unit counts. It changes nothing itself: the temporary order buttons (until the tactical view, SP2-41) only
+    /// build Section commands and apply them with <see cref="BattleState.ApplyCommand"/> (DLV-013). One metre is one Unity unit.
     /// </summary>
     public sealed class BattleStateView : MonoBehaviour
     {
@@ -21,17 +21,16 @@ namespace WeirdWar.Spike2.Presentation
         private const float Size = 1f;
 
         /// <summary>The top-left panel with the stats and the Debug buttons, in screen pixels from the top-left corner.</summary>
-        public static readonly Rect DebugPanel = new Rect(10, 10, 520, 180);
+        public static readonly Rect DebugPanel = new Rect(10, 10, 520, 290);
 
         private BattleState _state;
         private BattleBootstrap _bootstrap;
         private readonly Dictionary<int, List<GameObject>> _unitSquares = new Dictionary<int, List<GameObject>>();
         private readonly List<GameObject> _officerSquares = new List<GameObject>();
         private Transform _root;
-        private int _volley;
         private Mesh _squareMesh;
         private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
-        private string _lastFire = "No shots fired yet.";
+        private string _lastOrder = "No orders given yet.";
         // Default behaviour (DAI-001..006) runs in fixed core steps (BattleState.StepSeconds) so the battle does not depend on the frame rate.
         private static readonly int[] SpeedChoices = { 1, 5, 20 };
         private bool _running;
@@ -51,10 +50,9 @@ namespace WeirdWar.Spike2.Presentation
         {
             _state = state;
             _bootstrap = bootstrap;
-            _volley = 0;
             _running = false;
             _carry = 0;
-            _lastFire = "No shots fired yet.";
+            _lastOrder = "No orders given yet.";
             if (_root != null) { DestroyImmediate(_root.gameObject); }
             ReleaseShared();
             _unitSquares.Clear();
@@ -167,42 +165,53 @@ namespace WeirdWar.Spike2.Presentation
             foreach (var s in _state.Sections)
             {
                 sb.AppendLine(s.Side + " Riflemen: " + s.UnitCount + " of " + s.MaxUnits + " Units, health " + s.Health
-                    + " of " + s.MaxUnits * s.HealthPerUnit + (s.IsDestroyed ? " (destroyed)" : ""));
+                    + " of " + s.MaxUnits * s.HealthPerUnit + (s.IsDestroyed ? " (destroyed)" : "") + " | " + OrdersText(s));
             }
             foreach (var o in _state.Officers) { sb.AppendLine(o.Side + " Officer: health " + o.Health + " (not in a Section), at " + o.Position.X.ToString("0") + ", " + o.Position.Y.ToString("0")); }
             sb.AppendLine("Hit chance standing still: " + _state.HitChance(false).ToString("0.00")
                 + ", moving: " + _state.HitChance(true).ToString("0.00"));
-            sb.AppendLine(_lastFire);
+            sb.AppendLine("Last order: " + _lastOrder);
 
-            GUI.Box(new Rect(10, 10, 520, 110), GUIContent.none);
-            GUI.Label(new Rect(18, 14, 505, 100), sb.ToString());
-            // TODO(#40, DLV-013): these Debug buttons change battle state outside a command. Remove them, or route them
-            // through a command, once Story #40 applies TargetCommand (CMD-008).
-            if (GUI.Button(new Rect(10, 125, 270, 28), "Debug: fire player Section at enemy")) { Fire(false); }
-            if (GUI.Button(new Rect(285, 125, 130, 28), "Debug: fire moving")) { Fire(true); }
-            if (GUI.Button(new Rect(420, 125, 110, 28), "Debug: reset")) { _bootstrap.Load(); return; }
+            GUI.Box(DebugPanel, GUIContent.none);
+            GUI.Label(new Rect(18, 14, 505, 110), sb.ToString());
             // Default behaviour: Sections with no orders move, take cover and fire on their own. Time is not a player action.
-            if (GUI.Button(new Rect(10, 158, 270, 28), _running ? "Pause battle" : "Run battle (default behaviour)")) { SetRunning(!_running); }
-            if (GUI.Button(new Rect(285, 158, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { CycleSpeed(); }
+            if (GUI.Button(new Rect(10, 125, 270, 28), _running ? "Pause battle" : "Run battle (default behaviour)")) { SetRunning(!_running); }
+            if (GUI.Button(new Rect(285, 125, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { CycleSpeed(); }
+            if (GUI.Button(new Rect(420, 125, 110, 28), "Reset battle")) { _bootstrap.Load(); return; }
+
+            // Temporary orders for the player's Section (SP2-41 builds the real tactical view). Each button is one command.
+            GUI.Label(new Rect(18, 158, 505, 22), "Orders for the player Section (each button is one command):");
+            if (GUI.Button(new Rect(10, 180, 170, 28), "Move +10 m east")) { Give(OrderFor.MoveBy(_state, BattleState.PlayerSectionId, 10, 0)); }
+            if (GUI.Button(new Rect(185, 180, 170, 28), "Move +10 m north")) { Give(OrderFor.MoveBy(_state, BattleState.PlayerSectionId, 0, 10)); }
+            if (GUI.Button(new Rect(360, 180, 170, 28), "Move beside cover")) { Give(OrderFor.MoveBesideCover(_state, BattleState.PlayerSectionId)); }
+            if (GUI.Button(new Rect(10, 212, 170, 28), "Stop (hold)")) { Give(new StopCommand(BattleState.PlayerSectionId)); }
+            if (GUI.Button(new Rect(185, 212, 170, 28), "Clear waypoints")) { Give(new ClearWaypointsCommand(BattleState.PlayerSectionId)); }
+            if (GUI.Button(new Rect(360, 212, 170, 28), "Fall back")) { Give(new FallBackCommand(BattleState.PlayerSectionId)); }
+            if (GUI.Button(new Rect(10, 244, 270, 28), "Target the enemy Section")) { Give(new TargetCommand(BattleState.PlayerSectionId, BattleState.EnemySectionId)); }
         }
 
-        private void Fire(bool moving)
+        private static string OrdersText(Section s)
         {
-            var target = _state.Find(BattleState.EnemySectionId);
-            var before = target.Health;
-            _volley++;
-            var r = _state.Fire(BattleState.PlayerSectionId, target.Id, moving);
-            var what = moving ? " (moving)" : "";
-            switch (r.Outcome)
-            {
-                case FireOutcome.Fired:
-                    _lastFire = "Volley " + _volley + what + ": " + r.Hits + " hits of " + r.Shots + " shots, " + (before - target.Health) + " damage";
-                    break;
-                case FireOutcome.OutOfRange: _lastFire = "Volley " + _volley + what + ": target out of range"; break;
-                case FireOutcome.TargetDestroyed: _lastFire = "Volley " + _volley + what + ": target already destroyed"; break;
-                default: _lastFire = "Volley " + _volley + what + ": shooter destroyed"; break;
-            }
-            Refresh();
+            var parts = new List<string>();
+            if (s.Waypoints.Count > 0) parts.Add(s.Waypoints.Count + " waypoint(s)" + (s.StopAtEnd ? " then Stop" : ""));
+            if (s.IsHolding) parts.Add("holding");
+            if (s.OrderedTarget.HasValue) parts.Add("target " + s.OrderedTarget.Value);
+            parts.Add("at " + s.Position.X.ToString("0") + ", " + s.Position.Y.ToString("0"));
+            return string.Join(", ", parts);
         }
+
+        /// <summary>
+        /// Applies one Section command to the battle through the core (DLV-013) and shows the answer. The core logs it with its
+        /// step number. The state changes only inside <see cref="BattleState.ApplyCommand"/>.
+        /// </summary>
+        public CommandResult Give(IBattleCommand command)
+        {
+            var result = _state.ApplyCommand(command);
+            _lastOrder = result.IsAccepted ? "accepted (" + command.GetType().Name + " at step " + _state.StepCount + ")" : "REJECTED: " + result.Reason;
+            Refresh();
+            return result;
+        }
+
+        public string LastOrder => _lastOrder;
     }
 }
