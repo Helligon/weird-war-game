@@ -41,6 +41,7 @@ namespace WeirdWar.Spike2.Battle.Core
 
         private readonly SortedDictionary<int, Section> _sections = new SortedDictionary<int, Section>();
         private readonly List<Officer> _officers = new List<Officer>();
+        private readonly BattleMap _map;
         private readonly UnitStats _stats;
         private readonly BattleParameters _parameters;
         private readonly SeededRandom _random;
@@ -48,12 +49,16 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>All Sections, in SectionId order (stable, TEC-008).</summary>
         public IEnumerable<Section> Sections => _sections.Values;
         public IReadOnlyList<Officer> Officers => _officers;
+        public BattleMap Map => _map;
+        public UnitStats Stats => _stats;
 
-        private readonly BattleMap _map;
-        private readonly List<IBattleCommand> _commandLog = new List<IBattleCommand>();
+        private readonly List<LoggedCommand> _commandLog = new List<LoggedCommand>();
 
-        /// <summary>PCH-009: every accepted Officer command, in the order it was applied.</summary>
-        public IReadOnlyList<IBattleCommand> CommandLog => _commandLog;
+        /// <summary>The number of <see cref="Step"/> calls so far. A command applied now is logged with this number.</summary>
+        public int StepCount { get; private set; }
+
+        /// <summary>PCH-009, TEC-008: every accepted Officer command with the step it was applied at, in order.</summary>
+        public IReadOnlyList<LoggedCommand> CommandLog => _commandLog;
 
         private BattleState(BattleMap map, UnitStats stats, BattleParameters parameters, ulong seed)
         {
@@ -84,6 +89,9 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>Adds a Section. Used by set-up and by tests that need a particular layout.</summary>
         public void Add(Section section) { _sections.Add(section.Id.Value, section); }
 
+        /// <summary>Adds an Officer. Used by tests that need a particular layout (the enemy has none at set-up).</summary>
+        internal void AddOfficer(Officer officer) { _officers.Add(officer); }
+
         public Section? Find(SectionId id) => _sections.TryGetValue(id.Value, out var s) ? s : null;
 
         /// <summary>Queued waypoints are not tracked yet (movement is a later Story), so validation sees none.</summary>
@@ -109,12 +117,25 @@ namespace WeirdWar.Spike2.Battle.Core
             var shooter = Find(shooterId) ?? throw new ArgumentException(shooterId + " does not exist.");
             var target = Find(targetId) ?? throw new ArgumentException(targetId + " does not exist.");
             if (shooter.Side == target.Side) throw new ArgumentException(shooterId + " cannot fire at its own side (CMD-008).");
+            return Volley(shooter, target.Position, target.IsDestroyed, moving, target.TakeDamage, () => target.Health, target);
+        }
+
+        /// <summary>DAI-006 (DEC-096): the same placeholder volley, at an enemy Officer. Officers do not fire back in this spike.</summary>
+        public FireResult FireAtOfficer(SectionId shooterId, Officer target, bool moving = false)
+        {
+            var shooter = Find(shooterId) ?? throw new ArgumentException(shooterId + " does not exist.");
+            if (!_officers.Contains(target)) throw new ArgumentException("That Officer is not in this battle.");
+            if (shooter.Side == target.Side) throw new ArgumentException(shooterId + " cannot fire at its own side (CMD-008).");
+            return Volley(shooter, target.Position, target.IsDestroyed, moving, target.TakeDamage, () => target.Health, null);
+        }
+
+        private FireResult Volley(Section shooter, MapPoint targetPosition, bool targetDestroyed, bool moving,
+            Action<int> damage, Func<int> health, Section? targetSection)
+        {
             var chance = HitChance(moving);
             if (shooter.IsDestroyed) return new FireResult(FireOutcome.ShooterDestroyed, 0, 0, 0, chance);
-            if (target.IsDestroyed) return new FireResult(FireOutcome.TargetDestroyed, 0, 0, 0, chance);
-            var dx = shooter.Position.X - target.Position.X;
-            var dy = shooter.Position.Y - target.Position.Y;
-            if (dx * dx + dy * dy > _stats.RiflemenRange * _stats.RiflemenRange)
+            if (targetDestroyed) return new FireResult(FireOutcome.TargetDestroyed, 0, 0, 0, chance);
+            if (!InRange(shooter.Position, targetPosition))
             {
                 return new FireResult(FireOutcome.OutOfRange, 0, 0, 0, chance);
             }
@@ -124,9 +145,51 @@ namespace WeirdWar.Spike2.Battle.Core
             {
                 if (_random.NextDouble() < chance) hits++;
             }
-            var before = target.Health;
-            target.TakeDamage(hits * _stats.RiflemenDamage);
-            return new FireResult(FireOutcome.Fired, shots, hits, before - target.Health, chance);
+            var before = health();
+            damage(hits * _stats.RiflemenDamage);
+            if (targetSection != null) targetSection.LastAttacker = new Attacker(shooter.Id);
+            return new FireResult(FireOutcome.Fired, shots, hits, before - health(), chance);
+        }
+
+        /// <summary>True when the two points are within Riflemen range. The one range check, used by fire and by targeting.</summary>
+        internal bool InRange(MapPoint a, MapPoint b)
+        {
+            var dx = a.X - b.X;
+            var dy = a.Y - b.Y;
+            return dx * dx + dy * dy <= _stats.RiflemenRange * _stats.RiflemenRange;
+        }
+
+        /// <summary>The fixed battle-time step in seconds. The core owns it, so the same commands replay the same battle (TEC-008).</summary>
+        public const double StepSeconds = 0.1;
+
+        /// <summary>
+        /// Advances the battle by one <see cref="StepSeconds"/>. This is the only public way time passes (TEC-008): the Officers
+        /// walk along their move direction, then every Section runs its default behaviour.
+        /// </summary>
+        public void Step() { Tick(StepSeconds); StepCount++; }
+
+        /// <summary>
+        /// Advances the battle by <paramref name="seconds"/> of battle time: every living Officer walks along its move direction
+        /// (PCH-001), then every living Section, in SectionId order, runs its default behaviour (DAI-001..006).
+        /// Deterministic: no clock, only the battle's seeded random source (TEC-008). Internal so only <see cref="Step"/> (and tests) advance time.
+        /// </summary>
+        internal void Tick(double seconds)
+        {
+            if (seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
+            foreach (var officer in _officers)
+            {
+                if (officer.IsDestroyed) continue;
+                var dir = officer.MoveDirection;
+                if (dir.X == 0 && dir.Y == 0) continue;
+                var step = _stats.OfficerSpeed * seconds;
+                officer.Position = new MapPoint(
+                    Math.Min(_map.Width, Math.Max(0, officer.Position.X + dir.X * step)),
+                    Math.Min(_map.Height, Math.Max(0, officer.Position.Y + dir.Y * step)));
+            }
+            foreach (var section in _sections.Values)
+            {
+                if (!section.IsDestroyed) DefaultBehaviour.Run(this, section, seconds);
+            }
         }
 
         /// <summary>
@@ -140,30 +203,47 @@ namespace WeirdWar.Spike2.Battle.Core
             if (!(command is OfficerCommand oc)) return OfficerCommandResult.Rejected("Not an Officer command.");
             if (oc.Officer < 0 || oc.Officer >= _officers.Count) return OfficerCommandResult.Rejected("Officer " + oc.Officer + " does not exist.");
             var officer = _officers[oc.Officer];
+            if (officer.IsDestroyed) return OfficerCommandResult.Rejected("Officer " + oc.Officer + " is destroyed and cannot be commanded.");
             switch (oc)
             {
                 case OfficerAimCommand a:
                     if (!IsFinite(a.Radians)) return OfficerCommandResult.Rejected("Aim must be a finite number.");
                     officer.AimRadians = a.Radians;
-                    _commandLog.Add(command);
+                    Log(command);
                     return OfficerCommandResult.Accepted();
                 case OfficerMoveCommand m:
-                    if (!IsFinite(m.DirectionX) || !IsFinite(m.DirectionY) || !IsFinite(m.Seconds) || m.Seconds <= 0)
-                        return OfficerCommandResult.Rejected("A move needs a finite direction and a duration above zero.");
+                    if (!IsFinite(m.DirectionX) || !IsFinite(m.DirectionY))
+                        return OfficerCommandResult.Rejected("A move needs a finite direction.");
+                    // The speed cap holds whatever the client sends: the direction is cut to length 1 here, and the speed is the stats value.
                     var length = Math.Sqrt(m.DirectionX * m.DirectionX + m.DirectionY * m.DirectionY);
                     var scale = length > 1 ? 1 / length : 1;
-                    var step = _stats.OfficerSpeed * m.Seconds * scale;
-                    var x = Math.Min(_map.Width, Math.Max(0, officer.Position.X + m.DirectionX * step));
-                    var y = Math.Min(_map.Height, Math.Max(0, officer.Position.Y + m.DirectionY * step));
-                    officer.Position = new MapPoint(x, y);
-                    _commandLog.Add(command);
+                    officer.MoveDirection = new MapPoint(m.DirectionX * scale, m.DirectionY * scale);
+                    Log(command);
                     return OfficerCommandResult.Accepted();
                 case OfficerFireCommand _:
                     var shot = ResolveRifleShot(officer);
-                    _commandLog.Add(command);
+                    Log(command);
                     return OfficerCommandResult.Accepted(shot);
                 default:
                     return OfficerCommandResult.Rejected("Unknown Officer command.");
+            }
+        }
+
+        private void Log(IBattleCommand command) { _commandLog.Add(new LoggedCommand(StepCount, command)); }
+
+        /// <summary>
+        /// Replays a command log on a fresh battle (TEC-008): for each step number in turn, applies that step's commands in log
+        /// order, then calls <see cref="Step"/>, until <paramref name="steps"/> steps have run. Commands logged at step
+        /// <paramref name="steps"/> or later are applied last, without a further step.
+        /// </summary>
+        public void Replay(IEnumerable<LoggedCommand> log, int steps)
+        {
+            var queue = new List<LoggedCommand>(log);
+            var next = 0;
+            for (var step = 0; step <= steps; step++)
+            {
+                while (next < queue.Count && queue[next].Step <= step) { ApplyOfficerCommand(queue[next].Command); next++; }
+                if (step < steps) Step();
             }
         }
 
@@ -189,6 +269,7 @@ namespace WeirdWar.Spike2.Battle.Core
             if (best == null) return new OfficerShot(null, 0, _stats.OfficerRifleRange);
             var before = best.Health;
             best.TakeDamage(_stats.OfficerRifleDamage);
+            best.LastAttacker = new Attacker(officer); // DAI-006: the Section will prefer to shoot back at the Officer.
             return new OfficerShot(best.Id, before - best.Health, bestAlong);
         }
     }

@@ -70,15 +70,26 @@ namespace WeirdWar.Spike2.Presentation
             {
                 // The first click gives the game the mouse. It is not a shot. A click on the Debug panel is for its buttons.
                 if (Input.GetMouseButtonDown(0) && !IsOverDebugPanel(Input.mousePosition)) { Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; }
+                // Without the mouse the Officer stands still: release the keys.
+                Send(0.0, 0.0, 0.0, false);
                 return;
             }
+
+            // Time belongs to the core: while the battle is paused nothing the Officer does can happen, so no input is sent.
+            if (_bootstrap.StateView != null && !_bootstrap.StateView.Running) { return; }
 
             var forward = (Input.GetKey(KeyCode.W) ? 1.0 : 0.0) - (Input.GetKey(KeyCode.S) ? 1.0 : 0.0);
             var strafe = (Input.GetKey(KeyCode.D) ? 1.0 : 0.0) - (Input.GetKey(KeyCode.A) ? 1.0 : 0.0);
             // Moving the mouse right turns the Officer clockwise, which is a negative angle (0 is east, positive is towards north).
             var look = -Input.GetAxisRaw("Mouse X") * LookSensitivity;
-            var fire = Input.GetMouseButtonDown(0);
-            var commands = OfficerInputMapper.Map(0, _bootstrap.State.Officers[0].AimRadians, forward, strafe, look, fire, Time.deltaTime);
+            Send(forward, strafe, look, Input.GetMouseButtonDown(0));
+        }
+
+        // The mapper only returns commands for what changed, so a held key sends one move command, not one per frame (PCH-009).
+        private void Send(double forward, double strafe, double look, bool fire)
+        {
+            var officer = _bootstrap.State.Officers[0];
+            var commands = OfficerInputMapper.Map(0, officer.AimRadians, officer.MoveDirection, forward, strafe, look, fire);
             foreach (var c in commands) { Submit(c); }
         }
 

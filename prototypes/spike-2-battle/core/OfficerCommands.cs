@@ -19,23 +19,34 @@ namespace WeirdWar.Spike2.Battle.Core
     }
 
     /// <summary>
-    /// Move: walk in a map direction for a number of seconds. The direction is a vector in map metres (X east, Y north);
-    /// its length is capped at 1 and scales the speed. The duration is data in the command, so the core never reads a clock (TEC-008).
+    /// A command with the battle step it was applied at (TEC-008). The log replays in this order.
+    /// </summary>
+    public readonly struct LoggedCommand
+    {
+        public int Step { get; }
+        public IBattleCommand Command { get; }
+
+        public LoggedCommand(int step, IBattleCommand command) { Step = step; Command = command; }
+    }
+
+    /// <summary>
+    /// Move: set the walking direction, a vector in map metres (X east, Y north). The Officer keeps walking that way, one
+    /// battle step at a time at the stats speed, until a new move command changes it. (0, 0) stops. Lengths above 1 are cut to 1.
+    /// The command carries no duration and no speed: time and speed belong to the core (TEC-008).
     /// </summary>
     public sealed class OfficerMoveCommand : OfficerCommand
     {
         public double DirectionX { get; }
         public double DirectionY { get; }
-        public double Seconds { get; }
 
-        public OfficerMoveCommand(int officer, double directionX, double directionY, double seconds) : base(officer)
+        public OfficerMoveCommand(int officer, double directionX, double directionY) : base(officer)
         {
-            DirectionX = directionX; DirectionY = directionY; Seconds = seconds;
+            DirectionX = directionX; DirectionY = directionY;
         }
 
         public override bool Equals(object? obj) => base.Equals(obj) && obj is OfficerMoveCommand o
-            && o.DirectionX == DirectionX && o.DirectionY == DirectionY && o.Seconds == Seconds;
-        public override int GetHashCode() => unchecked(base.GetHashCode() * 31 + DirectionX.GetHashCode() * 7 + DirectionY.GetHashCode() * 3 + Seconds.GetHashCode());
+            && o.DirectionX == DirectionX && o.DirectionY == DirectionY;
+        public override int GetHashCode() => unchecked(base.GetHashCode() * 31 + DirectionX.GetHashCode() * 7 + DirectionY.GetHashCode() * 3);
     }
 
     /// <summary>Aim: face a direction, in radians (0 is east, positive turns towards north).</summary>
@@ -86,18 +97,20 @@ namespace WeirdWar.Spike2.Battle.Core
     /// <summary>
     /// Turns one frame of raw input numbers into Officer commands (PCH-009). It takes plain numbers, so it holds no Unity
     /// types and the same mapping is tested in the core. The only commands it can make are aim, move and fire (PCH-008).
+    /// It makes a command only when something changed: an aim when the aim changes, a move when the wanted direction differs
+    /// from the one the Officer already has, and a fire when the button went down.
     /// </summary>
     public static class OfficerInputMapper
     {
         /// <param name="officer">Index of the Officer.</param>
         /// <param name="currentAim">The Officer's current aim in radians.</param>
+        /// <param name="currentMove">The Officer's current move direction.</param>
         /// <param name="forward">-1 to 1: forward (along the aim) or back.</param>
         /// <param name="strafe">-1 to 1: right of the aim, or left.</param>
         /// <param name="lookDelta">Change of aim this frame, in radians, positive turning left (towards north when aiming east).</param>
         /// <param name="fire">True when the fire button went down this frame.</param>
-        /// <param name="seconds">How long this frame lasted.</param>
-        public static List<IBattleCommand> Map(int officer, double currentAim, double forward,
-            double strafe, double lookDelta, bool fire, double seconds)
+        public static List<IBattleCommand> Map(int officer, double currentAim, MapPoint currentMove, double forward,
+            double strafe, double lookDelta, bool fire)
         {
             var commands = new List<IBattleCommand>();
             var aim = currentAim;
@@ -106,11 +119,16 @@ namespace WeirdWar.Spike2.Battle.Core
                 aim = Math.IEEERemainder(currentAim + lookDelta, 2 * Math.PI);
                 commands.Add(new OfficerAimCommand(officer, aim));
             }
-            if (forward != 0 || strafe != 0)
+            var fx = Math.Cos(aim); var fy = Math.Sin(aim);
+            // The right of the aim is a quarter turn clockwise: (fy, -fx). Compare with what the core will store (length cut to 1),
+            // so a held diagonal does not send the same direction again.
+            var wantX = forward * fx + strafe * fy;
+            var wantY = forward * fy - strafe * fx;
+            var len = Math.Sqrt(wantX * wantX + wantY * wantY);
+            var scale = len > 1 ? 1 / len : 1;
+            if (Math.Abs(wantX * scale - currentMove.X) > 1e-9 || Math.Abs(wantY * scale - currentMove.Y) > 1e-9)
             {
-                var fx = Math.Cos(aim); var fy = Math.Sin(aim);
-                // The right of the aim is a quarter turn clockwise: (fy, -fx).
-                commands.Add(new OfficerMoveCommand(officer, forward * fx + strafe * fy, forward * fy - strafe * fx, seconds));
+                commands.Add(new OfficerMoveCommand(officer, wantX, wantY));
             }
             if (fire) commands.Add(new OfficerFireCommand(officer));
             return commands;

@@ -45,7 +45,8 @@ namespace WeirdWar.Spike2.Tests
         public void PCH_009_input_is_applied_as_commands_and_logged_in_the_battle()
         {
             var before = _boot.State.Officers[0].Position.X;
-            Assert.IsTrue(_boot.Officer.Submit(new OfficerMoveCommand(0, 1, 0, 0.5)).IsAccepted);
+            Assert.IsTrue(_boot.Officer.Submit(new OfficerMoveCommand(0, 1, 0)).IsAccepted);
+            _boot.StateView.Advance(1.0); // 10 core steps: the command only sets the direction, the core's steps do the walking
             Assert.IsTrue(_boot.Officer.Submit(new OfficerAimCommand(0, 0.5)).IsAccepted);
             Assert.IsTrue(_boot.Officer.Submit(new OfficerFireCommand(0)).IsAccepted);
             Assert.Greater(_boot.State.Officers[0].Position.X, before);
@@ -64,9 +65,11 @@ namespace WeirdWar.Spike2.Tests
             var camStart = cam.transform.position;
 
             _boot.Officer.Submit(new OfficerAimCommand(0, Mathf.PI / 2f));
-            _boot.Officer.Submit(new OfficerMoveCommand(0, 0, 1, 2));
+            _boot.Officer.Submit(new OfficerMoveCommand(0, 0, 1));
+            _boot.StateView.Advance(2.05); // about 20 core steps at 4 m/s
             var officer = _boot.State.Officers[0];
-            Assert.AreEqual(start.Y + 8.0, officer.Position.Y, 1e-4); // 2 s at the stats speed of 4 m/s
+            Assert.GreaterOrEqual(_boot.State.StepCount, 20);
+            Assert.AreEqual(start.Y + _boot.Stats.OfficerSpeed * BattleState.StepSeconds * _boot.State.StepCount, officer.Position.Y, 1e-6);
 
             // Unity calls LateUpdate every frame; the edit-mode test calls it by name, so it fails if either is removed.
             Frame(_boot.StateView);
@@ -97,12 +100,46 @@ namespace WeirdWar.Spike2.Tests
         [Test]
         public void PCH_009_a_rejected_command_is_not_recorded_and_a_reset_clears_the_record()
         {
-            Assert.IsFalse(_boot.Officer.Submit(new OfficerMoveCommand(0, 1, 0, 0)).IsAccepted);
+            Assert.IsFalse(_boot.Officer.Submit(new OfficerMoveCommand(0, double.NaN, 0)).IsAccepted);
             Assert.AreEqual(0, _boot.Officer.Submitted.Count);
             _boot.Officer.Submit(new OfficerAimCommand(0, 0.2));
             Assert.AreEqual(1, _boot.Officer.Submitted.Count);
             _boot.Load();
             Assert.AreEqual(0, _boot.Officer.Submitted.Count);
+        }
+
+        [Test]
+        public void TEC_008_a_paused_battle_does_not_move_the_officer_and_running_does()
+        {
+            _boot.Officer.Submit(new OfficerMoveCommand(0, 1, 0));
+            var x0 = _boot.State.Officers[0].Position.X;
+            Assert.IsFalse(_boot.StateView.Running);
+            _boot.StateView.Frame(5.0);
+            Assert.AreEqual(x0, _boot.State.Officers[0].Position.X);
+            _boot.StateView.SetRunning(true);
+            _boot.StateView.Frame(1.05);
+            Assert.AreEqual(10, _boot.State.StepCount);
+            Assert.AreEqual(x0 + _boot.Stats.OfficerSpeed * 1.0, _boot.State.Officers[0].Position.X, 1e-6);
+        }
+
+        [Test]
+        public void TEC_008_the_speed_choice_applies_to_the_officer()
+        {
+            _boot.Officer.Submit(new OfficerMoveCommand(0, 1, 0));
+            _boot.StateView.SetRunning(true);
+            var x0 = _boot.State.Officers[0].Position.X;
+            _boot.StateView.Frame(1.05);
+            var slowSteps = _boot.State.StepCount;
+            var slow = _boot.State.Officers[0].Position.X - x0;
+            _boot.StateView.CycleSpeed();
+            Assert.AreEqual(5, _boot.StateView.SpeedMultiplier);
+            var x1 = _boot.State.Officers[0].Position.X;
+            _boot.StateView.Frame(1.05);
+            var fastSteps = _boot.State.StepCount - slowSteps;
+            var fast = _boot.State.Officers[0].Position.X - x1;
+            Assert.AreEqual(10, slowSteps);
+            Assert.GreaterOrEqual(fastSteps, 50);
+            Assert.AreEqual(slow * fastSteps / slowSteps, fast, 1e-6);
         }
 
         [Test]

@@ -33,7 +33,7 @@ namespace WeirdWar.Spike2.Battle.Core
                     return Simple("fallBack", f.Section) + "}";
                 case OfficerMoveCommand om:
                     return "{\"type\":\"officerMove\",\"officer\":" + Num(om.Officer) + ",\"x\":" + Dbl(om.DirectionX)
-                        + ",\"y\":" + Dbl(om.DirectionY) + ",\"seconds\":" + Dbl(om.Seconds) + "}";
+                        + ",\"y\":" + Dbl(om.DirectionY) + "}";
                 case OfficerAimCommand oa:
                     return "{\"type\":\"officerAim\",\"officer\":" + Num(oa.Officer) + ",\"radians\":" + Dbl(oa.Radians) + "}";
                 case OfficerFireCommand of:
@@ -58,7 +58,7 @@ namespace WeirdWar.Spike2.Battle.Core
             }
             switch (name)
             {
-                case "officerMove": return new OfficerMoveCommand(ReadInt(o, "officer"), ReadDouble(o, "x"), ReadDouble(o, "y"), ReadDouble(o, "seconds"));
+                case "officerMove": return new OfficerMoveCommand(ReadInt(o, "officer"), ReadDouble(o, "x"), ReadDouble(o, "y"));
                 case "officerAim": return new OfficerAimCommand(ReadInt(o, "officer"), ReadDouble(o, "radians"));
                 case "officerFire": return new OfficerFireCommand(ReadInt(o, "officer"));
             }

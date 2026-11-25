@@ -21,7 +21,7 @@ namespace WeirdWar.Spike2.Presentation
         private const float Size = 1f;
 
         /// <summary>The top-left panel with the stats and the Debug buttons, in screen pixels from the top-left corner.</summary>
-        public static readonly Rect DebugPanel = new Rect(10, 10, 520, 145);
+        public static readonly Rect DebugPanel = new Rect(10, 10, 520, 180);
 
         private BattleState _state;
         private BattleBootstrap _bootstrap;
@@ -32,6 +32,16 @@ namespace WeirdWar.Spike2.Presentation
         private Mesh _squareMesh;
         private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
         private string _lastFire = "No shots fired yet.";
+        // Default behaviour (DAI-001..006) runs in fixed core steps (BattleState.StepSeconds) so the battle does not depend on the frame rate.
+        private static readonly int[] SpeedChoices = { 1, 5, 20 };
+        private bool _running;
+        private int _speedIndex;
+        private double _carry;
+        public bool Running => _running;
+        /// <summary>The battle speed choice: 1, 5 or 20 battle seconds per real second. It applies to everything the core steps, the Officer too.</summary>
+        public int SpeedMultiplier => SpeedChoices[_speedIndex];
+        public void SetRunning(bool running) { _running = running; }
+        public void CycleSpeed() { _speedIndex = (_speedIndex + 1) % SpeedChoices.Length; }
 
         /// <summary>The number of Unit squares currently drawn for a Section.</summary>
         public int SquaresFor(SectionId id) => _unitSquares.TryGetValue(id.Value, out var l) ? l.Count : 0;
@@ -42,6 +52,8 @@ namespace WeirdWar.Spike2.Presentation
             _state = state;
             _bootstrap = bootstrap;
             _volley = 0;
+            _running = false;
+            _carry = 0;
             _lastFire = "No shots fired yet.";
             if (_root != null) { DestroyImmediate(_root.gameObject); }
             ReleaseShared();
@@ -74,6 +86,23 @@ namespace WeirdWar.Spike2.Presentation
                 _officerSquares[i].transform.localRotation = Quaternion.Euler(0f, 0f, (float)(o.AimRadians * Mathf.Rad2Deg));
             }
         }
+
+        /// <summary>Runs the battle for the given real seconds (times the speed choice), in fixed core steps (BattleState.StepSeconds), then redraws.</summary>
+        public void Advance(double realSeconds)
+        {
+            _carry += realSeconds * SpeedChoices[_speedIndex];
+            var stepped = false;
+            while (_carry >= BattleState.StepSeconds) { _state.Step(); _carry -= BattleState.StepSeconds; stepped = true; }
+            if (stepped) { Refresh(); }
+        }
+
+        /// <summary>One frame: the battle advances only while running (not paused).</summary>
+        public void Frame(double realSeconds)
+        {
+            if (_state != null && _running) { Advance(realSeconds); }
+        }
+
+        private void Update() { Frame(Time.deltaTime); }
 
         /// <summary>Redraws one square per remaining Unit, so losing health visibly removes Units.</summary>
         public void Refresh()
@@ -149,7 +178,10 @@ namespace WeirdWar.Spike2.Presentation
             // through a command, once Story #40 applies TargetCommand (CMD-008).
             if (GUI.Button(new Rect(10, 125, 270, 28), "Debug: fire player Section at enemy")) { Fire(false); }
             if (GUI.Button(new Rect(285, 125, 130, 28), "Debug: fire moving")) { Fire(true); }
-            if (GUI.Button(new Rect(420, 125, 110, 28), "Debug: reset")) { _bootstrap.Load(); }
+            if (GUI.Button(new Rect(420, 125, 110, 28), "Debug: reset")) { _bootstrap.Load(); return; }
+            // Default behaviour: Sections with no orders move, take cover and fire on their own. Time is not a player action.
+            if (GUI.Button(new Rect(10, 158, 270, 28), _running ? "Pause battle" : "Run battle (default behaviour)")) { SetRunning(!_running); }
+            if (GUI.Button(new Rect(285, 158, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { CycleSpeed(); }
         }
 
         private void Fire(bool moving)
