@@ -1,0 +1,9 @@
+{
+  "firstPlayer": 1,
+  "startingBudget": 10,
+  "movementCostPerHex": 1,
+  "tokens": {
+    "1": [5, 20],
+    "2": [24, 30]
+  }
+}

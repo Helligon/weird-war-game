@@ -19,6 +19,8 @@
 
   <ItemGroup>
     <Content Include="../maps/sample.json" Link="maps/sample.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../maps/sample-scenario.json" Link="maps/sample-scenario.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="fixtures/determinism-commands.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
