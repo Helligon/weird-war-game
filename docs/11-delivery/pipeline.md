@@ -53,7 +53,7 @@ flowchart LR
 ### Architecture
 - **DLV-012** (`decided`): The game MUST be split into a **simulation core in plain C#** (no Unity dependency: hex map, supply, turns, Cards, morale, auto-resolve) and a **Unity presentation layer** (rendering, input, third-person battles).
 - **DLV-013** (`decided`): Every player action MUST be a **command** applied to the game state, so actions can later be sent over the network or saved (multiplayer-ready, TEC-008).
-- **DLV-014** (`proposed`): Tunable values from [[parameters]] SHOULD live in data files, not code.
+- **DLV-014** (`decided`, DEC-097): Tunable values from [[parameters]] MUST live in data files and be named by parameter ID, not hard-coded. A missing value MUST be an error, not a default in code.
 
 ## Agents
 | Agent | Does | May touch | Trigger |
