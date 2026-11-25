@@ -22,4 +22,14 @@ jobs:
       - name: Check the design vault
         run: python3 scripts/check_docs.py
 
-  # Core tests: add a job here (e.g. actions/setup-dotnet + `dotnet test`) once the C# simulation core exists.
+  core:
+    name: Core tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: prototypes/spike-1-hex-map/global.json
+      - name: Test the spike 1 simulation core
+        working-directory: prototypes/spike-1-hex-map
+        run: dotnet test core-tests

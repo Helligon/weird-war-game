@@ -20,6 +20,9 @@ docs/.obsidian/cache
 *.unityproj
 # .NET
 bin/
+# Plain C# core projects are hand-written, unlike Unity's generated *.csproj (DLV-012)
+!prototypes/*/core/*.csproj
+!prototypes/*/core-tests/*.csproj
 # Python
 __pycache__/
 docs/.obsidian/
