@@ -22,7 +22,13 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>P-HIE-02: health of one Unit of this type.</summary>
         public int HealthPerUnit { get; }
         public int Health { get; private set; }
-        public MapPoint Position { get; }
+        public MapPoint Position { get; private set; }
+        /// <summary>DAI-004: true while the Section holds its position (set by Stop; Stop execution is a later Story).</summary>
+        public bool IsHolding { get; internal set; }
+        /// <summary>DAI-006: the Section that last fired at this one, if any.</summary>
+        public SectionId? LastAttacker { get; internal set; }
+        /// <summary>Seconds until this Section may fire its next volley (default behaviour; 0 means ready).</summary>
+        public double VolleyCooldown { get; internal set; }
 
         public Section(SectionId id, Side side, UnitType type, int maxUnits, int healthPerUnit, MapPoint position)
         {
@@ -43,6 +49,8 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>HIE-004: a Section at health 0 is destroyed and has no Units.</summary>
         public bool IsDestroyed => Health <= 0;
 
+        internal void MoveTo(MapPoint p) { Position = p; }
+
         /// <summary>Reduces health, not below 0.</summary>
         internal void TakeDamage(int amount)
         {
@@ -57,9 +65,18 @@ namespace WeirdWar.Spike2.Battle.Core
     public sealed class Officer
     {
         public Side Side { get; }
-        public int Health { get; }
+        public int Health { get; private set; }
         public MapPoint Position { get; }
 
         public Officer(Side side, int health, MapPoint position) { Side = side; Health = health; Position = position; }
+
+        /// <summary>True when the Officer's health is 0.</summary>
+        public bool IsDestroyed => Health <= 0;
+
+        internal void TakeDamage(int amount)
+        {
+            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+            Health = Math.Max(0, Health - amount);
+        }
     }
 }

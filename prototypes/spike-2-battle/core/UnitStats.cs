@@ -22,9 +22,13 @@ namespace WeirdWar.Spike2.Battle.Core
         public double RiflemenAccuracy { get; }
         /// <summary>Officer health (placeholder; open, Q-ROS-01).</summary>
         public int OfficerHealth { get; }
+        /// <summary>Seconds between one Riflemen volley and the next (stand-in for a rate of fire; DEC-098).</summary>
+        public double RiflemenVolleyInterval { get; }
+        /// <summary>How far, in metres, a Section looks for cover when it has no orders (placeholder; DAI-001 says only "nearby").</summary>
+        public double CoverSearchRange { get; }
 
         public UnitStats(double riflemenSpeed, int riflemenMaxUnits, int riflemenHealthPerUnit, double riflemenRange,
-            int riflemenDamage, double riflemenAccuracy, int officerHealth)
+            int riflemenDamage, double riflemenAccuracy, int officerHealth, double riflemenVolleyInterval, double coverSearchRange)
         {
             RiflemenSpeed = riflemenSpeed;
             RiflemenMaxUnits = riflemenMaxUnits;
@@ -33,10 +37,12 @@ namespace WeirdWar.Spike2.Battle.Core
             RiflemenDamage = riflemenDamage;
             RiflemenAccuracy = riflemenAccuracy;
             OfficerHealth = officerHealth;
+            RiflemenVolleyInterval = riflemenVolleyInterval;
+            CoverSearchRange = coverSearchRange;
         }
 
         /// <summary>
-        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy" }, "officer": { "health" } }.
+        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy", "volleyInterval", "coverSearchRange" }, "officer": { "health" } }.
         /// </summary>
         public static UnitStats Load(string json)
         {
@@ -54,8 +60,12 @@ namespace WeirdWar.Spike2.Battle.Core
             var damage = Whole(riflemen, "damage", "riflemen");
             var accuracy = BattleMapLoader.Number(riflemen, "accuracy", "riflemen");
             if (accuracy < 0 || accuracy > 1) throw new DataLoadException("Stats error: riflemen \"accuracy\" must be from 0 to 1.");
+            var interval = BattleMapLoader.Number(riflemen, "volleyInterval", "riflemen");
+            if (interval <= 0) throw new DataLoadException("Stats error: riflemen \"volleyInterval\" must be above zero.");
+            var coverRange = BattleMapLoader.Number(riflemen, "coverSearchRange", "riflemen");
+            if (coverRange <= 0) throw new DataLoadException("Stats error: riflemen \"coverSearchRange\" must be above zero.");
             var officerHealth = Whole(officer, "health", "officer");
-            return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth);
+            return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth, interval, coverRange);
         }
 
         private static Dictionary<string, object?> Obj(Dictionary<string, object?> root, string key)
