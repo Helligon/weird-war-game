@@ -28,12 +28,13 @@ namespace WeirdWar.Spike1.Tests
         }
 
         [Test]
-        public void MAP_019_grid_has_30_columns_by_50_rows_of_tiles()
+        public void MAP_019_grid_has_20_columns_by_12_rows_of_tiles_in_landscape()
         {
-            Assert.AreEqual(30, _map.Width);
-            Assert.AreEqual(50, _map.Height);
-            Assert.AreEqual(30 * 50, _view.TileCount);
-            Assert.AreEqual(30 * 50, _view.TileCentres.Length);
+            Assert.AreEqual(20, _map.Width);
+            Assert.AreEqual(12, _map.Height);
+            Assert.AreEqual(20 * 12, _view.TileCount);
+            Assert.AreEqual(20 * 12, _view.TileCentres.Length);
+            Assert.Greater(_view.WorldBounds.size.x, _view.WorldBounds.size.y, "landscape");
         }
 
         [Test]
@@ -56,7 +57,7 @@ namespace WeirdWar.Spike1.Tests
             AssertPosition(new Vector3(0f, 0f, 0f), 0, 0);
             AssertPosition(new Vector3(1.5f, -h / 2f, 0f), 1, 0);
             AssertPosition(new Vector3(0f, -h, 0f), 0, 1);
-            AssertPosition(new Vector3(1.5f * 29f, -h * (49f + 0.5f), 0f), 29, 49);
+            AssertPosition(new Vector3(1.5f * 19f, -h * (11f + 0.5f), 0f), 19, 11);
         }
 
         private void AssertPosition(Vector3 expected, int col, int row)
@@ -87,6 +88,41 @@ namespace WeirdWar.Spike1.Tests
                 Assert.GreaterOrEqual(view.max.x, map.max.x, "right edge");
                 Assert.LessOrEqual(view.min.y, map.min.y, "bottom edge");
                 Assert.GreaterOrEqual(view.max.y, map.max.y, "top edge");
+            }
+            finally
+            {
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
+        [TestCase(16f / 9f)]
+        [TestCase(0.4f)]
+        public void MAP_019_max_zoom_out_is_derived_from_the_map_bounds_and_the_aspect_ratio(float aspect)
+        {
+            var camGo = new GameObject("test-cam");
+            try
+            {
+                var cam = camGo.AddComponent<Camera>();
+                cam.orthographic = true;
+                cam.aspect = aspect;
+                var controller = camGo.AddComponent<MapCameraController>();
+                controller.SetMapBounds(_view.WorldBounds);
+                controller.ZoomOutFully();
+
+                var e = _view.WorldBounds.extents;
+                var expected = Mathf.Max(controller.MinSize, e.y + controller.FitMargin, (e.x + controller.FitMargin) / aspect);
+                Assert.AreEqual(expected, controller.MaxSize, 1e-4f);
+                Assert.AreEqual(expected, cam.orthographicSize, 1e-4f);
+                // Landscape map in a landscape window: the height decides, so the map fills the height of the screen and leaves spare width.
+                if (aspect > 1f) Assert.AreEqual(e.y + controller.FitMargin, cam.orthographicSize, 1e-4f);
+                // Independent of the formula above: in a narrow window the width decides, so the view is exactly as
+                // wide as the map plus the margin on each side, and the map's bounds sit inside the view.
+                if (aspect < 1f)
+                {
+                    Assert.AreEqual(e.x + controller.FitMargin, cam.orthographicSize * aspect, 1e-3f);
+                    Assert.LessOrEqual(_view.WorldBounds.max.y - _view.WorldBounds.min.y, cam.orthographicSize * 2f);
+                    Assert.LessOrEqual(_view.WorldBounds.max.x, camGo.transform.position.x + cam.orthographicSize * aspect);
+                }
             }
             finally
             {

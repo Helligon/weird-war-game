@@ -13,8 +13,8 @@ public class MoveTests
     private static GameState New(int budget = 10, int cost = 1, (int, int)? p1 = null, (int, int)? p2 = null,
         PlayerId first = PlayerId.Player1)
     {
-        var a = p1 ?? (5, 20);
-        var b = p2 ?? (24, 30);
+        var a = p1 ?? (3, 4);
+        var b = p2 ?? (16, 5);
         return GameState.NewGame(Map(),
             new GameConfig(first, budget, new OffsetCoord(a.Item1, a.Item2), new OffsetCoord(b.Item1, b.Item2), cost));
     }
@@ -28,12 +28,13 @@ public class MoveTests
         return r.State;
     }
 
-    // Walks one token n hexes in a fixed direction (an index into HexCoord.Neighbours), one Move per hex.
+    // Walks one token n hexes, one Move per hex: out in a direction (an index into HexCoord.Neighbours), then back,
+    // then out again. The 20 x 12 map is too small for a straight run of 10 hexes.
     private static GameState Walk(GameState s, PlayerId player, int n, int direction = 0)
     {
         for (var i = 0; i < n; i++)
         {
-            s = Accept(s, Move(player, s.TokenOf(player).Position.Neighbours()[direction]));
+            s = Accept(s, Move(player, s.TokenOf(player).Position.Neighbours()[i % 2 == 0 ? direction : (direction + 3) % 6]));
         }
         return s;
     }
@@ -156,8 +157,8 @@ public class MoveTests
     [Fact]
     public void TRN_023_a_move_outside_the_map_is_rejected()
     {
-        var s = New(p1: (0, 12));
-        var target = Hex(-1, 12);
+        var s = New(p1: (0, 6));
+        var target = Hex(-1, 6);
         Assert.Equal(1, s.TokenOf(PlayerId.Player1).Position.DistanceTo(target));
 
         AssertRejected(s, Move(PlayerId.Player1, target), "outside");
@@ -166,8 +167,8 @@ public class MoveTests
     [Fact]
     public void TRN_024_a_move_onto_a_mountain_is_rejected()
     {
-        var s = New(p1: (19, 10));
-        var target = Hex(20, 10);
+        var s = New(p1: (13, 8));
+        var target = Hex(14, 8);
         Assert.Equal(TerrainType.Mountain, s.Map.TerrainAt(target));
         Assert.Equal(1, s.TokenOf(PlayerId.Player1).Position.DistanceTo(target));
 
@@ -177,8 +178,8 @@ public class MoveTests
     [Fact]
     public void TRN_024_a_move_onto_a_sea_hex_is_rejected()
     {
-        var s = New(p1: (4, 5));
-        var target = Hex(3, 5);
+        var s = New(p1: (2, 1));
+        var target = Hex(1, 0);
         Assert.Equal(TerrainType.Sea, s.Map.TerrainAt(target));
         Assert.Equal(1, s.TokenOf(PlayerId.Player1).Position.DistanceTo(target));
 
@@ -188,8 +189,8 @@ public class MoveTests
     [Fact]
     public void TRN_024_a_move_onto_a_river_hex_is_rejected()
     {
-        var s = New(p1: (13, 20));
-        var target = Hex(14, 20);
+        var s = New(p1: (8, 5));
+        var target = Hex(9, 5);
         Assert.Equal(TerrainType.River, s.Map.TerrainAt(target));
         Assert.Equal(1, s.TokenOf(PlayerId.Player1).Position.DistanceTo(target));
 
@@ -208,12 +209,12 @@ public class MoveTests
     [Fact]
     public void DEC_087_a_move_next_to_the_enemy_token_is_rejected_as_contact()
     {
-        var s = New(p1: (5, 20), p2: (5, 23)); // two hexes between them
+        var s = New(p1: (3, 4), p2: (3, 7)); // two hexes between them
         var enemy = s.TokenOf(PlayerId.Player2).Position;
-        var target = Hex(5, 21);
-        Assert.Equal(2, target.DistanceTo(enemy)); // (5,21) is fine
+        var target = Hex(3, 5);
+        Assert.Equal(2, target.DistanceTo(enemy)); // (3,5) is fine
         s = Accept(s, Move(PlayerId.Player1, target));
-        var next = Hex(5, 22);
+        var next = Hex(3, 6);
         Assert.Equal(1, next.DistanceTo(enemy));
 
         AssertRejected(s, Move(PlayerId.Player1, next), "contact: battles not in spike");
@@ -222,10 +223,10 @@ public class MoveTests
     [Fact]
     public void DEC_087_the_contact_rule_also_applies_to_the_second_player()
     {
-        var s = New(p1: (5, 20), p2: (5, 23), first: PlayerId.Player2);
+        var s = New(p1: (3, 4), p2: (3, 7), first: PlayerId.Player2);
 
-        s = Accept(s, Move(PlayerId.Player2, Hex(5, 22)));
-        AssertRejected(s, Move(PlayerId.Player2, Hex(5, 21)), "contact: battles not in spike");
+        s = Accept(s, Move(PlayerId.Player2, Hex(3, 6)));
+        AssertRejected(s, Move(PlayerId.Player2, Hex(3, 5)), "contact: battles not in spike");
     }
 
     [Fact]
@@ -264,7 +265,7 @@ public class MoveTests
     {
         var s = New();
 
-        AssertRejected(s, new MoveCommand(PlayerId.Player1, (PlayerId)9, Hex(5, 21)), "Unknown token");
+        AssertRejected(s, new MoveCommand(PlayerId.Player1, (PlayerId)9, Hex(3, 5)), "Unknown token");
     }
 
     [Fact]

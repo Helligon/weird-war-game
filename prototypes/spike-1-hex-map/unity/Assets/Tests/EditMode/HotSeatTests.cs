@@ -7,7 +7,7 @@ namespace WeirdWar.Spike1.Tests
 {
     public class HotSeatTests
     {
-        // Sample scenario: Player 1 starts at offset (5,20), Player 2 at (24,30), budget 10, cost 1, Player 1 first.
+        // Sample scenario: Player 1 starts at offset (3,4), Player 2 at (16,5), budget 10, cost 1, Player 1 first.
         private GameController _c;
         private HexCoord _p1;
         private HexCoord _p2;
@@ -36,7 +36,7 @@ namespace WeirdWar.Spike1.Tests
         [Test]
         public void MAP_017_world_to_hex_round_trips_for_several_hexes()
         {
-            foreach (var (col, row) in new[] { (0, 0), (1, 0), (0, 1), (5, 20), (24, 30), (29, 49), (7, 3) })
+            foreach (var (col, row) in new[] { (0, 0), (1, 0), (0, 1), (3, 4), (16, 5), (19, 11), (7, 3) })
             {
                 var hex = HexCoord.FromOffset(new OffsetCoord(col, row));
                 Assert.AreEqual(hex, HexLayout.WorldToHex(HexLayout.HexToWorld(hex)), "col " + col + " row " + row);
@@ -110,7 +110,7 @@ namespace WeirdWar.Spike1.Tests
         {
             var before = _c.State;
             _c.ClickHex(_p1);
-            var far = HexCoord.FromOffset(new OffsetCoord(5, 25)); // not adjacent
+            var far = HexCoord.FromOffset(new OffsetCoord(3, 8)); // not adjacent
             _c.ClickHex(far);
             Assert.AreSame(before, _c.State);
             Assert.AreEqual(_p1, _c.State.TokenOf(PlayerId.Player1).Position);
@@ -165,10 +165,10 @@ namespace WeirdWar.Spike1.Tests
         {
             // Two tokens two hexes apart: the hex between them is next to both.
             var map = HexMapBootstrap.LoadState("../maps", "sample.json", "sample-scenario.json").Map;
-            var config = new GameConfig(PlayerId.Player1, 10, new OffsetCoord(5, 20), new OffsetCoord(5, 22), 1);
+            var config = new GameConfig(PlayerId.Player1, 10, new OffsetCoord(3, 4), new OffsetCoord(3, 6), 1);
             var c = new GameController(GameState.NewGame(map, config));
             c.ClickHex(c.State.TokenOf(PlayerId.Player1).Position);
-            c.ClickHex(HexCoord.FromOffset(new OffsetCoord(5, 21)));
+            c.ClickHex(HexCoord.FromOffset(new OffsetCoord(3, 5)));
             Assert.AreEqual("contact: battles not in spike", c.LastRejection);
         }
 
@@ -176,10 +176,10 @@ namespace WeirdWar.Spike1.Tests
         public void SUP_005_not_enough_budget_rejects_and_shows_the_reason()
         {
             var map = HexMapBootstrap.LoadState("../maps", "sample.json", "sample-scenario.json").Map;
-            var config = new GameConfig(PlayerId.Player1, 1, new OffsetCoord(5, 20), new OffsetCoord(24, 30), 1);
+            var config = new GameConfig(PlayerId.Player1, 1, new OffsetCoord(3, 4), new OffsetCoord(16, 5), 1);
             var c = new GameController(GameState.NewGame(map, config));
             c.ClickHex(c.State.TokenOf(PlayerId.Player1).Position);
-            var first = HexCoord.FromOffset(new OffsetCoord(5, 20));
+            var first = HexCoord.FromOffset(new OffsetCoord(3, 4));
             foreach (var n in first.Neighbours()) { if (map.Contains(n) && map.IsPassable(n)) { c.ClickHex(n); break; } }
             Assert.AreEqual(0, c.SelectedBudget);
             var before = c.State;
@@ -208,7 +208,7 @@ namespace WeirdWar.Spike1.Tests
         public void TRN_007_end_turn_clears_the_selection_and_the_old_rejection()
         {
             _c.ClickHex(_p1);
-            _c.ClickHex(HexCoord.FromOffset(new OffsetCoord(5, 25)));
+            _c.ClickHex(HexCoord.FromOffset(new OffsetCoord(3, 8)));
             Assert.IsNotNull(_c.LastRejection);
             _c.EndTurn();
             Assert.IsNull(_c.Selected);
@@ -231,7 +231,7 @@ namespace WeirdWar.Spike1.Tests
             var original = _c.State;
             _c.ClickHex(_p1);
             Assert.AreSame(original, _c.State, "selecting sends no command");
-            _c.ClickHex(HexCoord.FromOffset(new OffsetCoord(5, 25)));
+            _c.ClickHex(HexCoord.FromOffset(new OffsetCoord(3, 8)));
             Assert.AreSame(original, _c.State, "a rejected command leaves the same state object");
             _c.ClickHex(FreeNeighbour(PlayerId.Player1));
             Assert.AreNotSame(original, _c.State, "an accepted command gives a new state");
