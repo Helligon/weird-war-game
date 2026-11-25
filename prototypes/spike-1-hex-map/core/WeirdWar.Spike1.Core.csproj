@@ -7,4 +7,9 @@
     <RootNamespace>WeirdWar.Spike1.Core</RootNamespace>
   </PropertyGroup>
 
+  <!-- Lets the tests build partly-spent states until the Move command exists. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="WeirdWar.Spike1.Core.Tests" />
+  </ItemGroup>
+
 </Project>
