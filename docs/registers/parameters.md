@@ -75,7 +75,7 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-BOM-04 | HQ bombardment cooldown | 1 turn | decided | [[bombardment]] |
 | P-BOM-05 | Damage reduction on ST / Major ST | – | open | [[bombardment]] |
 | P-BOM-06 | HQ bombardment range | – | open | [[bombardment]] |
-| P-CMD-01 | Max waypoints per Move | 2 | decided | [[commands]] |
+| P-CMD-01 | Max queued waypoints per Section | 2 | decided | [[commands]] |
 | P-CMD-02 | Max Sections per side in battle | 10 | decided | [[commands]] |
 | P-CMD-03 | Accuracy penalty while moving | – | open | [[commands]] |
 | P-DEP-01 | Terrain → pattern weights | – | open | [[deployment]] |
