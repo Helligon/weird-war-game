@@ -52,7 +52,7 @@ namespace WeirdWar.Spike1.Presentation
             GUILayout.BeginArea(new Rect(Panel.x + 8, Panel.y + 6, Panel.width - 16, Panel.height - 12));
             var current = _controller.CurrentPlayer;
             var colour = _label.normal.textColor;
-            _label.normal.textColor = TokenView.ColourOf(current) == TokenView.Player2Colour ? new Color(0.5f, 0.65f, 1f) : new Color(1f, 0.45f, 0.45f);
+            _label.normal.textColor = current == PlayerId.Player2 ? new Color(0.5f, 0.65f, 1f) : new Color(1f, 0.45f, 0.45f);
             GUILayout.Label("Current player: " + (current == PlayerId.Player1 ? "Player 1" : "Player 2"), _label);
             _label.normal.textColor = colour;
             var st = _controller.State;

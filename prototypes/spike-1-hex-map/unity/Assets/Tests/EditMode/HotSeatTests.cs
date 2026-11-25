@@ -20,13 +20,14 @@ namespace WeirdWar.Spike1.Tests
             _p2 = _c.State.TokenOf(PlayerId.Player2).Position;
         }
 
-        // A passable neighbour of the token that is not next to the enemy.
+        // A passable neighbour of the token that is not next to (or on) the enemy token.
         private HexCoord FreeNeighbour(PlayerId who)
         {
             var s = _c.State;
             foreach (var n in s.TokenOf(who).Position.Neighbours())
             {
-                if (s.Map.Contains(n) && s.Map.IsPassable(n)) return n;
+                var enemy = s.TokenOf(who == PlayerId.Player1 ? PlayerId.Player2 : PlayerId.Player1).Position;
+                if (s.Map.Contains(n) && s.Map.IsPassable(n) && n.DistanceTo(enemy) > 1) return n;
             }
             Assert.Fail("no free neighbour");
             return default;
@@ -53,8 +54,10 @@ namespace WeirdWar.Spike1.Tests
             }
             foreach (var n in hex.Neighbours())
             {
-                var toward = Vector3.Lerp(centre, HexLayout.HexToWorld(n), 0.7f);
-                Assert.AreEqual(n, HexLayout.WorldToHex(toward));
+                // The border between two hexes is half way between their centres.
+                var there = HexLayout.HexToWorld(n);
+                Assert.AreEqual(hex, HexLayout.WorldToHex(Vector3.Lerp(centre, there, 0.45f)), "0.45 of the way to " + n);
+                Assert.AreEqual(n, HexLayout.WorldToHex(Vector3.Lerp(centre, there, 0.55f)), "0.55 of the way to " + n);
             }
         }
 
@@ -113,6 +116,39 @@ namespace WeirdWar.Spike1.Tests
             Assert.AreEqual(_p1, _c.State.TokenOf(PlayerId.Player1).Position);
             Assert.AreEqual(10, _c.State.TokenOf(PlayerId.Player1).Budget);
             StringAssert.Contains("not next to", _c.LastRejection);
+        }
+
+        [TestCase(TerrainType.Mountain)]
+        [TestCase(TerrainType.Sea)]
+        [TestCase(TerrainType.River)]
+        public void SUP_005_moving_onto_impassable_terrain_is_rejected_and_shows_the_core_reason(TerrainType terrain)
+        {
+            var map = _c.State.Map;
+            var enemy = _p2;
+            HexCoord blocked = default, start = default;
+            var found = false;
+            for (var row = 0; row < map.Height && !found; row++)
+            {
+                for (var col = 0; col < map.Width && !found; col++)
+                {
+                    var hex = HexCoord.FromOffset(new OffsetCoord(col, row));
+                    if (map.TerrainAt(hex) != terrain) continue;
+                    foreach (var n in hex.Neighbours())
+                    {
+                        if (map.Contains(n) && map.IsPassable(n) && n.DistanceTo(enemy) > 2) { blocked = hex; start = n; found = true; break; }
+                    }
+                }
+            }
+            Assert.IsTrue(found, "sample map has no " + terrain + " next to a passable hex");
+            var config = new GameConfig(PlayerId.Player1, 10, start.ToOffset(), enemy.ToOffset(), 1);
+            var c = new GameController(GameState.NewGame(map, config));
+            var before = c.State;
+            c.ClickHex(start);
+            c.ClickHex(blocked);
+            Assert.AreSame(before, c.State);
+            Assert.AreEqual(start, c.State.TokenOf(PlayerId.Player1).Position);
+            Assert.AreEqual(10, c.State.TokenOf(PlayerId.Player1).Budget);
+            StringAssert.Contains("impassable " + terrain, c.LastRejection);
         }
 
         [Test]
@@ -214,7 +250,19 @@ namespace WeirdWar.Spike1.Tests
         }
 
         [Test]
-        public void VIS_006_token_view_draws_tokens_on_their_hexes_with_distinct_colours_and_a_ring_on_the_selected_one()
+        public void DLV_012_controller_public_methods_are_only_click_hex_and_end_turn()
+        {
+            var names = new System.Collections.Generic.List<string>();
+            foreach (var m in typeof(GameController).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly))
+            {
+                if (!m.IsSpecialName) names.Add(m.Name); // special names are property getters and setters
+            }
+            names.Sort();
+            CollectionAssert.AreEqual(new[] { "ClickHex", "EndTurn" }, names);
+        }
+
+        [Test]
+        public void DLV_013_token_view_re_renders_from_state_with_tokens_on_their_hexes_with_distinct_colours_and_a_ring_on_the_selected_one()
         {
             var go = new GameObject("test-tokens");
             try
