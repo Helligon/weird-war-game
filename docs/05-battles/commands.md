@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [battle, controls]
 related: ["[[default-ai-behaviour]]", "[[player-character]]", "[[hierarchy]]"]
-updated: 2026-11-21
+updated: 2026-11-25
 ---
 
 # Commands and tactical view
@@ -28,7 +28,7 @@ The player gives orders to Sections from a tactical view. The command set is del
 - **CMD-009** (`decided`) **Target ground:** Target MUST also accept an area of ground, for artillery and mortars.
 - **CMD-010** (`decided`) **Protect:** the player selects an allied Section to guard. The protecting Section MUST stay with it (surround it or move in front) and engage the nearest enemy it can reach without leaving its side.
 - **CMD-011** (`decided`) **Fall back:** the Section MUST move towards its own side's map edge in good order. This is not a rout.
-- **CMD-012** (`proposed`): Without a Stop at the end of its orders, a Section reaching its last waypoint MUST return to its default behaviour (see [[default-ai-behaviour]]).
+- **CMD-012** (`decided`, DEC-094): Without a Stop at the end of its orders, a Section reaching its last waypoint MUST return to its default behaviour (see [[default-ai-behaviour]]).
 
 ### Selection
 - **CMD-018** (`decided`): Officers and heroes the player is not controlling MAY be given orders in the tactical view, with the same commands as Sections.

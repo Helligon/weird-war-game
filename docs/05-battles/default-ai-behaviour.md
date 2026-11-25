@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [battle, ai]
 related: ["[[commands]]", "[[ai-opponents]]"]
-updated: 2026-11-21
+updated: 2026-11-25
 ---
 
 # Default Section behaviour
@@ -19,7 +19,7 @@ With no orders, Sections behave very simply, so that players are encouraged to g
 - **DAI-003** (`decided`): A Section that starts in, or is in, defences (e.g. trenches at an ST) MUST hold its position by default.
 - **DAI-004** (`decided`): A Section given Stop MUST hold its position, and SHOULD fire at enemies in range.
 - **DAI-006** (`decided`): By default, a Section MUST target the nearest enemy in range, preferring one that is attacking it.
-- **DAI-005** (`proposed`): By default, an officer or hero that the player is not controlling SHOULD Protect the nearest friendly Section.
+- **DAI-005** (`decided`, DEC-094): By default, an officer or hero that the player is not controlling SHOULD Protect the nearest friendly Section.
 
 ## Open questions
 - Q-DAI-01 (answered → DAI-006): Nearest in range, preferring attackers.
