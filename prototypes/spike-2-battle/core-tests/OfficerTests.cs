@@ -5,30 +5,29 @@ namespace WeirdWar.Spike2.Battle.Core.Tests;
 
 public class OfficerTests
 {
-    private static string DataDir
-    {
-        get
-        {
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "data", "map.json"))) dir = dir.Parent;
-            return Path.Combine(dir!.FullName, "data");
-        }
-    }
+    // TEC-008: fixed stats, parameters and map written here, so tuning the files in data/ cannot break these tests.
+    private const string StatsJson = "{ \"riflemen\": { \"speed\": 1.5, \"P-HIE-01\": 8, \"P-HIE-02\": 3, \"range\": 30, \"damage\": 1, \"accuracy\": 0.6, \"volleyInterval\": 2, \"P-DAI-01\": 25, \"coverAdjacencyDistance\": 3 },"
+        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
+    private const string MapJson = "{ \"width\": 100, \"height\": 60, \"cover\": ["
+        + "{ \"id\": \"ruin-west\", \"x\": 30, \"y\": 15, \"radius\": 4 }, { \"id\": \"wall-centre\", \"x\": 50, \"y\": 32, \"radius\": 5 },"
+        + "{ \"id\": \"copse-north\", \"x\": 45, \"y\": 50, \"radius\": 4 }, { \"id\": \"crater-east\", \"x\": 72, \"y\": 20, \"radius\": 4 },"
+        + "{ \"id\": \"ruin-east\", \"x\": 68, \"y\": 45, \"radius\": 4 } ] }";
+    private const string ParametersJson = "{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5}";
 
-    private static string Text(string file) => File.ReadAllText(Path.Combine(DataDir, file));
-    private static UnitStats Stats() => UnitStats.Load(Text("stats.json"));
+    private static string Text(string file) => file == "stats.json" ? StatsJson : file == "map.json" ? MapJson : ParametersJson;
+    private static UnitStats Stats() => UnitStats.Load(StatsJson);
 
     private static BattleState NewBattle(ulong seed = 1) =>
-        BattleState.SetUp(BattleMapLoader.Load(Text("map.json")), Stats(), BattleParameters.Load(Text("parameters.json")), seed);
+        BattleState.SetUp(BattleMapLoader.Load(MapJson), Stats(), BattleParameters.Load(ParametersJson), seed);
 
     private static void Steps(BattleState b, int n) { for (var i = 0; i < n; i++) b.Step(); }
 
     // Walks the Officer east for 3 s of battle time (about 12 m), then stops. The enemy is then inside rifle range and out of its own.
     private static void CloseIn(BattleState b)
     {
-        Assert.True(b.ApplyOfficerCommand(new OfficerMoveCommand(0, 1, 0)).IsAccepted);
+        Assert.True(b.ApplyCommand(new OfficerMoveCommand(0, 1, 0)).IsAccepted);
         Steps(b, 30);
-        Assert.True(b.ApplyOfficerCommand(new OfficerMoveCommand(0, 0, 0)).IsAccepted);
+        Assert.True(b.ApplyCommand(new OfficerMoveCommand(0, 0, 0)).IsAccepted);
     }
 
     // Aims the Officer at the enemy Section.
@@ -38,7 +37,7 @@ public class OfficerTests
         var o = b.Officers[0];
         var dx = enemy.Position.X - o.Position.X;
         var dy = enemy.Position.Y - o.Position.Y;
-        Assert.True(b.ApplyOfficerCommand(new OfficerAimCommand(0, Math.Atan2(dy, dx))).IsAccepted);
+        Assert.True(b.ApplyCommand(new OfficerAimCommand(0, Math.Atan2(dy, dx))).IsAccepted);
     }
 
     [Fact]
@@ -46,7 +45,7 @@ public class OfficerTests
     {
         var b = NewBattle();
         var x0 = b.Officers[0].Position.X;
-        Assert.True(b.ApplyOfficerCommand(new OfficerMoveCommand(0, 1, 0)).IsAccepted);
+        Assert.True(b.ApplyCommand(new OfficerMoveCommand(0, 1, 0)).IsAccepted);
         Steps(b, 20); // 2 s
         Assert.Equal(x0 + Stats().OfficerSpeed * 2, b.Officers[0].Position.X, 6);
     }
@@ -56,7 +55,7 @@ public class OfficerTests
     {
         var b = NewBattle();
         var p = b.Officers[0].Position;
-        b.ApplyOfficerCommand(new OfficerMoveCommand(0, 1, 0));
+        b.ApplyCommand(new OfficerMoveCommand(0, 1, 0));
         Assert.Equal(p.X, b.Officers[0].Position.X);
         b.Step();
         Assert.True(b.Officers[0].Position.X > p.X);
@@ -66,12 +65,12 @@ public class OfficerTests
     public void PCH_001_the_officer_keeps_walking_until_a_new_move_command_changes_the_direction()
     {
         var b = NewBattle();
-        b.ApplyOfficerCommand(new OfficerMoveCommand(0, 1, 0));
+        b.ApplyCommand(new OfficerMoveCommand(0, 1, 0));
         Steps(b, 10);
         var x1 = b.Officers[0].Position.X;
         Steps(b, 10);
         Assert.True(b.Officers[0].Position.X > x1);
-        b.ApplyOfficerCommand(new OfficerMoveCommand(0, 0, 0));
+        b.ApplyCommand(new OfficerMoveCommand(0, 0, 0));
         var x2 = b.Officers[0].Position.X;
         Steps(b, 10);
         Assert.Equal(x2, b.Officers[0].Position.X);
@@ -82,7 +81,7 @@ public class OfficerTests
     {
         var b = NewBattle();
         var p0 = b.Officers[0].Position;
-        b.ApplyOfficerCommand(new OfficerMoveCommand(0, 500, 500));
+        b.ApplyCommand(new OfficerMoveCommand(0, 500, 500));
         Steps(b, 10); // 1 s
         var p1 = b.Officers[0].Position;
         var dist = Math.Sqrt(Math.Pow(p1.X - p0.X, 2) + Math.Pow(p1.Y - p0.Y, 2));
@@ -101,7 +100,7 @@ public class OfficerTests
     public void PCH_001_officer_cannot_leave_the_map()
     {
         var b = NewBattle();
-        b.ApplyOfficerCommand(new OfficerMoveCommand(0, -1, 0));
+        b.ApplyCommand(new OfficerMoveCommand(0, -1, 0));
         Steps(b, 200); // 20 s at 4 m/s is more than the 5 m to the west edge
         Assert.Equal(0, b.Officers[0].Position.X);
     }
@@ -110,7 +109,7 @@ public class OfficerTests
     public void PCH_001_aim_command_turns_the_officer()
     {
         var b = NewBattle();
-        Assert.True(b.ApplyOfficerCommand(new OfficerAimCommand(0, 1.25)).IsAccepted);
+        Assert.True(b.ApplyCommand(new OfficerAimCommand(0, 1.25)).IsAccepted);
         Assert.Equal(1.25, b.Officers[0].AimRadians);
     }
 
@@ -122,7 +121,7 @@ public class OfficerTests
         FaceEnemy(b);
         var enemy = b.Find(BattleState.EnemySectionId)!;
         var unitsBefore = enemy.UnitCount;
-        var r = b.ApplyOfficerCommand(new OfficerFireCommand(0));
+        var r = b.ApplyCommand(new OfficerFireCommand(0));
         Assert.True(r.IsAccepted);
         Assert.True(r.Shot!.Value.Hit);
         Assert.Equal(BattleState.EnemySectionId, r.Shot.Value.Target);
@@ -143,7 +142,7 @@ public class OfficerTests
         var friendHealth = friend.Health;
         var enemyHealth = enemy.Health;
 
-        var shot = b.ApplyOfficerCommand(new OfficerFireCommand(0)).Shot!.Value;
+        var shot = b.ApplyCommand(new OfficerFireCommand(0)).Shot!.Value;
 
         Assert.Equal(friendHealth, friend.Health);
         Assert.Equal(BattleState.EnemySectionId, shot.Target);
@@ -155,10 +154,10 @@ public class OfficerTests
     {
         var b = NewBattle();
         CloseIn(b);
-        b.ApplyOfficerCommand(new OfficerAimCommand(0, Math.PI));
+        b.ApplyCommand(new OfficerAimCommand(0, Math.PI));
         var enemy = b.Find(BattleState.EnemySectionId)!;
         var health = enemy.Health;
-        var r = b.ApplyOfficerCommand(new OfficerFireCommand(0));
+        var r = b.ApplyCommand(new OfficerFireCommand(0));
         Assert.False(r.Shot!.Value.Hit);
         Assert.Equal(health, enemy.Health);
     }
@@ -172,7 +171,7 @@ public class OfficerTests
         // At the spawn point the enemy is further away than the rifle range.
         var distance = enemy.Position.X - b.Officers[0].Position.X;
         Assert.True(distance > Stats().OfficerRifleRange);
-        Assert.False(b.ApplyOfficerCommand(new OfficerFireCommand(0)).Shot!.Value.Hit);
+        Assert.False(b.ApplyCommand(new OfficerFireCommand(0)).Shot!.Value.Hit);
     }
 
     [Fact]
@@ -190,8 +189,8 @@ public class OfficerTests
         var before = DefaultBehaviour.ChooseTarget(b, enemy)!.Value;
         Assert.Same(near, before.Section);
 
-        b.ApplyOfficerCommand(new OfficerAimCommand(1, 0));
-        var shot = b.ApplyOfficerCommand(new OfficerFireCommand(1)).Shot!.Value;
+        b.ApplyCommand(new OfficerAimCommand(1, 0));
+        var shot = b.ApplyCommand(new OfficerFireCommand(1)).Shot!.Value;
         Assert.Equal(enemy.Id, shot.Target);
 
         Assert.Same(officer, enemy.LastAttacker!.Value.Officer);
@@ -207,8 +206,8 @@ public class OfficerTests
         b.Add(enemy);
         b.AddOfficer(new Officer(Side.Player, 1000, new MapPoint(25, 30)));
         var officer = b.Officers[1];
-        b.ApplyOfficerCommand(new OfficerAimCommand(1, 0));
-        b.ApplyOfficerCommand(new OfficerFireCommand(1));
+        b.ApplyCommand(new OfficerAimCommand(1, 0));
+        b.ApplyCommand(new OfficerFireCommand(1));
 
         Steps(b, 30);
 
@@ -223,8 +222,8 @@ public class OfficerTests
             var b = NewBattle(7);
             CloseIn(b);
             FaceEnemy(b);
-            b.ApplyOfficerCommand(new OfficerFireCommand(0));
-            b.ApplyOfficerCommand(new OfficerFireCommand(0));
+            b.ApplyCommand(new OfficerFireCommand(0));
+            b.ApplyCommand(new OfficerFireCommand(0));
             return b.Find(BattleState.EnemySectionId)!.Health;
         }
         Assert.Equal(Run(), Run());
@@ -254,7 +253,7 @@ public class OfficerTests
         var b = NewBattle();
         var first = OfficerInputMapper.Map(0, 0, b.Officers[0].MoveDirection, 1, 0, 0, false);
         Assert.Single(first);
-        foreach (var c in first) b.ApplyOfficerCommand(c);
+        foreach (var c in first) b.ApplyCommand(c);
         // Same keys, next frames: nothing to send.
         Assert.Empty(OfficerInputMapper.Map(0, 0, b.Officers[0].MoveDirection, 1, 0, 0, false));
         Steps(b, 3);
@@ -268,7 +267,7 @@ public class OfficerTests
     public void PCH_009_a_held_diagonal_is_not_resent_each_frame()
     {
         var b = NewBattle();
-        foreach (var c in OfficerInputMapper.Map(0, 0, Still, 1, 1, 0, false)) b.ApplyOfficerCommand(c);
+        foreach (var c in OfficerInputMapper.Map(0, 0, Still, 1, 1, 0, false)) b.ApplyCommand(c);
         Assert.Empty(OfficerInputMapper.Map(0, 0, b.Officers[0].MoveDirection, 1, 1, 0, false));
     }
 
@@ -316,11 +315,11 @@ public class OfficerTests
         var aim = new OfficerAimCommand(0, 0.5);
         var move = new OfficerMoveCommand(0, 1, 0);
         var fire = new OfficerFireCommand(0);
-        b.ApplyOfficerCommand(aim);
+        b.ApplyCommand(aim);
         Steps(b, 3);
-        b.ApplyOfficerCommand(move);
+        b.ApplyCommand(move);
         Steps(b, 2);
-        b.ApplyOfficerCommand(fire);
+        b.ApplyCommand(fire);
         Assert.Equal(new[] { (0, (IBattleCommand)aim), (3, move), (5, fire) }, b.CommandLog.Select(l => (l.Step, l.Command)).ToArray());
         Assert.Equal(5, b.StepCount);
     }
@@ -330,10 +329,10 @@ public class OfficerTests
     {
         var b = NewBattle();
         var p = b.Officers[0].Position;
-        Assert.False(b.ApplyOfficerCommand(new OfficerMoveCommand(0, double.NaN, 0)).IsAccepted);
-        Assert.False(b.ApplyOfficerCommand(new OfficerMoveCommand(0, double.PositiveInfinity, 0)).IsAccepted);
-        Assert.False(b.ApplyOfficerCommand(new OfficerAimCommand(0, double.PositiveInfinity)).IsAccepted);
-        Assert.False(b.ApplyOfficerCommand(new OfficerFireCommand(5)).IsAccepted);
+        Assert.False(b.ApplyCommand(new OfficerMoveCommand(0, double.NaN, 0)).IsAccepted);
+        Assert.False(b.ApplyCommand(new OfficerMoveCommand(0, double.PositiveInfinity, 0)).IsAccepted);
+        Assert.False(b.ApplyCommand(new OfficerAimCommand(0, double.PositiveInfinity)).IsAccepted);
+        Assert.False(b.ApplyCommand(new OfficerFireCommand(5)).IsAccepted);
         Steps(b, 5);
         Assert.Equal(p.X, b.Officers[0].Position.X);
         Assert.Empty(b.CommandLog);
@@ -348,7 +347,7 @@ public class OfficerTests
         var aimBefore = b.Officers[0].AimRadians;
         foreach (var c in new IBattleCommand[] { new OfficerMoveCommand(0, 1, 0), new OfficerAimCommand(0, 1), new OfficerFireCommand(0) })
         {
-            var r = b.ApplyOfficerCommand(c);
+            var r = b.ApplyCommand(c);
             Assert.False(r.IsAccepted);
             Assert.Contains("destroyed", r.Reason);
         }
@@ -361,7 +360,7 @@ public class OfficerTests
     public void PCH_003_an_officer_that_dies_while_walking_stops()
     {
         var b = NewBattle();
-        b.ApplyOfficerCommand(new OfficerMoveCommand(0, 1, 0));
+        b.ApplyCommand(new OfficerMoveCommand(0, 1, 0));
         Steps(b, 5);
         b.Officers[0].TakeDamage(1000);
         var x = b.Officers[0].Position.X;
@@ -397,7 +396,7 @@ public class OfficerTests
     private static void Do(BattleState b, ScriptResult r, IBattleCommand c)
     {
         r.Scripted++;
-        var result = b.ApplyOfficerCommand(c);
+        var result = b.ApplyCommand(c);
         Assert.True(result.IsAccepted, "scripted command rejected at step " + b.StepCount + ": " + result.Reason);
         if (result.Shot is OfficerShot shot && shot.Hit)
         {
@@ -455,8 +454,8 @@ public class OfficerTests
         Assert.Equal(script.Scripted, a.CommandLog.Count);
         Assert.Equal(10, script.Scripted); // move, stop, 3 x (aim, fire), move, stop
         Assert.True(a.Find(BattleState.EnemySectionId)!.Health < a.Stats.RiflemenMaxUnits * a.Stats.RiflemenHealthPerUnit);
-        // 6 s east at 4 m/s (24 m), then 3 s back (12 m): the Officer ends 12 m east of where it spawned.
-        Assert.Equal(spawn.X + 12, a.Officers[0].Position.X, 6);
+        // 6 s east, then 3 s back, both at the Officer's speed: it ends 3 s of walking east of where it spawned.
+        Assert.Equal(spawn.X + Stats().OfficerSpeed * (6.0 - 3.0), a.Officers[0].Position.X, 6);
 
         // Round-trip every command through JSON, as a saved log would be.
         var saved = a.CommandLog.Select(l => new LoggedCommand(l.Step, CommandSerialiser.Deserialise(CommandSerialiser.Serialise(l.Command)))).ToList();
@@ -532,16 +531,18 @@ public class OfficerTests
         CloseIn(b);
         var (x, y, h) = (mine.Position.X, mine.Position.Y, mine.Health);
         FaceEnemy(b);
-        b.ApplyOfficerCommand(new OfficerFireCommand(0));
+        b.ApplyCommand(new OfficerFireCommand(0));
         Assert.Equal((x, y, h), (mine.Position.X, mine.Position.Y, mine.Health));
     }
 
     [Fact]
-    public void PCH_004_a_section_command_is_not_an_officer_command()
+    public void PCH_004_a_section_command_leaves_the_officer_untouched()
     {
         var b = NewBattle();
-        var r = b.ApplyOfficerCommand(new StopCommand(BattleState.PlayerSectionId));
-        Assert.False(r.IsAccepted);
+        var o = b.Officers[0];
+        var (x, y, aim, hp) = (o.Position.X, o.Position.Y, o.AimRadians, o.Health);
+        Assert.True(b.ApplyCommand(new StopCommand(BattleState.PlayerSectionId)).IsAccepted);
+        Assert.Equal((x, y, aim, hp), (o.Position.X, o.Position.Y, o.AimRadians, o.Health));
     }
 
     [Fact]

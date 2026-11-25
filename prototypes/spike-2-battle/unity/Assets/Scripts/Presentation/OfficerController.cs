@@ -7,7 +7,7 @@ namespace WeirdWar.Spike2.Presentation
     /// <summary>
     /// Third-person control of the player's Officer (PCH-001) and its camera. Uses Unity's existing legacy Input Manager
     /// (WASD, mouse, left button). Input is turned into plain command objects by the core's <see cref="OfficerInputMapper"/>
-    /// and applied with <see cref="BattleState.ApplyOfficerCommand"/> (PCH-009, DLV-013): this class never sets the Officer's
+    /// and applied with <see cref="BattleState.ApplyCommand"/> (PCH-009, DLV-013): this class never sets the Officer's
     /// position or aim itself. There are only move, aim and fire inputs (PCH-008), and nothing here addresses a Section or Unit (PCH-004).
     /// </summary>
     public sealed class OfficerController : MonoBehaviour
@@ -53,9 +53,9 @@ namespace WeirdWar.Spike2.Presentation
         }
 
         /// <summary>Applies one command to the battle (never touches the Officer directly) and shows what a shot did.</summary>
-        public OfficerCommandResult Submit(IBattleCommand command)
+        public CommandResult Submit(IBattleCommand command)
         {
-            var result = _bootstrap.State.ApplyOfficerCommand(command);
+            var result = _bootstrap.State.ApplyCommand(command);
             if (result.IsAccepted) { _submitted.Add(command); }
             if (command is OfficerFireCommand && result.IsAccepted && result.Shot.HasValue) { ShowShot(result.Shot.Value); }
             return result;

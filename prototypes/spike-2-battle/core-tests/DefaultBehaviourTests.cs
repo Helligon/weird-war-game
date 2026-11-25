@@ -259,9 +259,9 @@ public class DefaultBehaviourTests
     [Fact]
     public void DLV_014_a_stats_file_without_the_cover_search_range_is_an_error()
     {
-        var text = System.Text.RegularExpressions.Regex.Replace(StatsText(), ",?\\s*\"coverSearchRange\"\\s*:\\s*[0-9.]+", "");
+        var text = System.Text.RegularExpressions.Regex.Replace(StatsText(), ",?\\s*\"P-DAI-01\"\\s*:\\s*[0-9.]+", "");
 
-        Assert.DoesNotContain("coverSearchRange", text);
+        Assert.DoesNotContain("P-DAI-01", text);
         Assert.Throws<DataLoadException>(() => UnitStats.Load(text));
     }
 

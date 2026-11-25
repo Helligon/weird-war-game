@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace WeirdWar.Spike2.Battle.Core
 {
@@ -23,8 +24,19 @@ namespace WeirdWar.Spike2.Battle.Core
         public int HealthPerUnit { get; }
         public int Health { get; private set; }
         public MapPoint Position { get; private set; }
-        /// <summary>DAI-004: true while the Section holds its position (set by Stop; Stop execution is a later Story).</summary>
+        /// <summary>DAI-004: true while the Section holds its position (set by Stop, CMD-006, or by arriving after Fall back, CMD-011).</summary>
         public bool IsHolding { get; internal set; }
+        private readonly List<QueuedWaypoint> _waypoints = new List<QueuedWaypoint>();
+        /// <summary>CMD-005, CMD-020: the queued waypoints, in the order they are visited.</summary>
+        internal IReadOnlyList<QueuedWaypoint> QueuedWaypoints => _waypoints;
+        /// <summary>The positions of the queued waypoints, in order (CMD-005).</summary>
+        public IReadOnlyList<MapPoint> Waypoints => _waypoints.ConvertAll(w => w.Point);
+        /// <summary>CMD-006: when the last queued waypoint is reached, hold there (a Stop at the end of the orders).</summary>
+        public bool StopAtEnd { get; internal set; }
+        /// <summary>CMD-005: true once the Section has reached a waypoint next to cover and is stepping into that cover.</summary>
+        internal bool TakingCover { get; set; }
+        /// <summary>CMD-008: the enemy Section this one was told to attack, or null.</summary>
+        public SectionId? OrderedTarget { get; internal set; }
         /// <summary>DAI-006: who last fired at this one, if anyone: an enemy Section or an enemy Officer.</summary>
         public Attacker? LastAttacker { get; internal set; }
         /// <summary>Seconds until this Section may fire its next volley (default behaviour; 0 means ready).</summary>
@@ -51,12 +63,29 @@ namespace WeirdWar.Spike2.Battle.Core
 
         internal void MoveTo(MapPoint p) { Position = p; }
 
+        internal void Enqueue(MapPoint point, bool seekCover) { _waypoints.Add(new QueuedWaypoint(point, seekCover)); }
+        internal void DequeueWaypoint() { _waypoints.RemoveAt(0); TakingCover = false; }
+        internal void ClearWaypoints() { _waypoints.Clear(); StopAtEnd = false; TakingCover = false; }
+
+        /// <summary>A destroyed Section keeps no orders (stand-in: the rules do not say).</summary>
+        private void DropOrders() { _waypoints.Clear(); StopAtEnd = false; TakingCover = false; IsHolding = false; OrderedTarget = null; }
+
         /// <summary>Reduces health, not below 0.</summary>
         internal void TakeDamage(int amount)
         {
             if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
             Health = Math.Max(0, Health - amount);
+            if (Health == 0) DropOrders();
         }
+    }
+
+    /// <summary>A waypoint in a Section's queue. <see cref="SeekCover"/> is false for the Fall back point (CMD-011: hold at the edge).</summary>
+    internal readonly struct QueuedWaypoint
+    {
+        public MapPoint Point { get; }
+        public bool SeekCover { get; }
+
+        public QueuedWaypoint(MapPoint point, bool seekCover) { Point = point; SeekCover = seekCover; }
     }
 
     /// <summary>DAI-006: who fired at a Section. Exactly one of the two is set: an enemy Section, or an enemy Officer.</summary>
