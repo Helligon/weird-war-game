@@ -24,6 +24,20 @@ namespace WeirdWar.Spike2.Battle.Core
             CoverObjects = cover;
         }
 
+        /// <summary>Width in metres of the strip along each edge that is kept clear of cover (and drawn in the edge colour).</summary>
+        public const double EdgeStripWidth = 3;
+
+        /// <summary>BMP-004: the map edge that belongs to a side. Spike stand-in: Player is West, Enemy is East.</summary>
+        public MapEdge EdgeOf(Side side)
+        {
+            switch (side)
+            {
+                case Side.Player: return WestEdge;
+                case Side.Enemy: return EastEdge;
+                default: throw new ArgumentOutOfRangeException(nameof(side));
+            }
+        }
+
         /// <summary>The distance between the two edges, in metres.</summary>
         public double EdgeDistance => EastEdge.X - WestEdge.X;
 

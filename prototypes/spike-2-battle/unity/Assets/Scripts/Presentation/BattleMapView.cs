@@ -16,7 +16,7 @@ namespace WeirdWar.Spike2.Presentation
         public static readonly Color CoverColour = new Color(0.1f, 0.4f, 0.15f);
 
         /// <summary>How wide the coloured edge strips are drawn, in metres (inside the map).</summary>
-        public const float EdgeStripWidth = 3f;
+        public const float EdgeStripWidth = (float)BattleMap.EdgeStripWidth;
         private const int DiscSegments = 24;
 
         public Bounds WorldBounds { get; private set; }

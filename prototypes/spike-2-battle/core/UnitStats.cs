@@ -4,11 +4,11 @@ namespace WeirdWar.Spike2.Battle.Core
 {
     /// <summary>
     /// Unit stats read from the stats data file (never hard-coded). Only the Riflemen speed so far.
-    /// The value is a placeholder: the real stat is open (Q-ROS-01).
+    /// The value is a placeholder: the real stat is open (docs/03-forces/standard-roster.md, Parameters).
     /// </summary>
     public sealed class UnitStats
     {
-        /// <summary>Riflemen walking speed in metres per second (placeholder, Q-ROS-01).</summary>
+        /// <summary>Riflemen walking speed in metres per second (placeholder; open, see standard-roster Parameters).</summary>
         public double RiflemenSpeed { get; }
 
         public UnitStats(double riflemenSpeed) { RiflemenSpeed = riflemenSpeed; }

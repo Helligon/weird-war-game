@@ -33,8 +33,10 @@ namespace WeirdWar.Spike2.Battle.Core
                     var y = Number(o, "y", what);
                     var radius = Number(o, "radius", what);
                     if (radius <= 0) throw new DataLoadException("Map error: " + what + " needs a radius above zero.");
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        throw new DataLoadException("Map error: " + what + " is outside the " + width + " x " + height + " map.");
+                    var strip = BattleMap.EdgeStripWidth;
+                    if (x - radius < strip || x + radius > width - strip || y - radius < 0 || y + radius > height)
+                        throw new DataLoadException("Map error: " + what + " must lie wholly inside the " + width + " x " + height
+                            + " map and clear of the " + strip + " m edge strips.");
                     cover.Add(new CoverObject(id, new MapPoint(x, y), radius));
                 }
             }

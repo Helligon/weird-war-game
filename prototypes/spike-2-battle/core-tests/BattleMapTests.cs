@@ -18,14 +18,20 @@ public class BattleMapTests
     private static UnitStats LoadStats() => UnitStats.Load(File.ReadAllText(Path.Combine(DataDir, "stats.json")));
 
     [Fact]
-    public void BMP_004_each_side_has_its_own_different_map_edge()
+    public void BMP_004_each_side_has_its_own_map_edge_and_the_two_edges_differ()
     {
         var map = LoadMap();
 
-        Assert.NotSame(map.WestEdge, map.EastEdge);
-        Assert.NotEqual(map.WestEdge.Side, map.EastEdge.Side);
-        Assert.NotEqual(map.WestEdge.X, map.EastEdge.X);
-        Assert.True(map.EdgeDistance > 0);
+        var player = map.EdgeOf(Side.Player);
+        var enemy = map.EdgeOf(Side.Enemy);
+
+        Assert.NotNull(player);
+        Assert.NotNull(enemy);
+        Assert.NotSame(player, enemy);
+        Assert.NotEqual(player.X, enemy.X);
+        Assert.Equal(MapEdgeSide.West, player.Side);
+        Assert.Equal(MapEdgeSide.East, enemy.Side);
+        Assert.Throws<ArgumentOutOfRangeException>(() => map.EdgeOf((Side)0));
     }
 
     [Fact]
@@ -78,6 +84,8 @@ public class BattleMapTests
 
     [Theory]
     [InlineData("[]")]
+    [InlineData("{ \"width\": 100, \"height\": 60, \"cover\": [ { \"id\": \"a\", \"x\": 6, \"y\": 30, \"radius\": 4 } ] }")] // disc reaches into the west edge strip
+    [InlineData("{ \"width\": 100, \"height\": 60, \"cover\": [ { \"id\": \"a\", \"x\": 50, \"y\": 58, \"radius\": 4 } ] }")] // disc reaches past the north side
     [InlineData("{ \"height\": 10 }")]
     [InlineData("{ \"width\": 10, \"height\": 10, \"cover\": [ { \"id\": \"a\", \"x\": 11, \"y\": 1, \"radius\": 1 } ] }")]
     [InlineData("{ \"width\": 10, \"height\": 10, \"cover\": [ { \"id\": \"a\", \"x\": 1, \"y\": 1, \"radius\": 0 } ] }")]
