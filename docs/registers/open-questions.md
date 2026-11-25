@@ -3,7 +3,7 @@ id: REG-Q
 title: Open questions register
 status: decided
 tags: [register]
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Open questions register
@@ -46,7 +46,7 @@ Generated from the **Open questions** sections of every feature note. The note i
 | Q-MAP-19 | [[map-and-locations]] | Destroyed; uses the turn; costs SP. | answered → MAP-050 |
 | Q-MAP-20 | [[map-and-locations]] | Yes; it fights as an extra Section. | answered → MAP-051 |
 | Q-MAP-21 | [[map-and-locations]] | Any owned ST; lost on capture. | answered → MAP-052 |
-| Q-MAP-11 | [[map-and-locations]] | The Field depot Card is dropped. | answered → SUP-014 withdrawn |
+| Q-MAP-11 | [[map-and-locations]] | The Field depot Card was dropped, then brought back as a single-use Card. | answered → SUP-014 withdrawn, then reinstated by DEC-065 |
 | Q-RES-01 | [[resources]] | No. | answered → RES-008 |
 | Q-SUP-01 | [[supply]] | Capacity = 10 hexes of movement + 1 battle, to be tuned later. | answered → SUP-016 |
 | Q-SUP-05 | [[supply]] | Yes. Bigger Brigades have more capacity and higher cost per hex, and Section types have modifiers. | answered → SUP-019, SUP-020 |
@@ -191,6 +191,7 @@ Generated from the **Open questions** sections of every feature note. The note i
 | Q-MUL-02 | [[multiplayer]] | Any pairing, including mirrors. | answered → MUL-010 |
 | Q-MUL-03 | [[multiplayer]] | Private invites only, no matchmaking. | answered → MUL-012 |
 | Q-MUL-04 | [[multiplayer]] | Single session for now; asynchronous play later. | answered → MUL-013 |
+| Q-MUL-05 | [[multiplayer]] | How will real-time battles be networked (e.g. a deterministic simulation driven by commands, or Unity netcode syncing state)? MUST be answered before production battle work starts, so battles aren't rebuilt later (DEC-087). | open |
 | Q-VEH-01 | [[vehicles]] | Vehicle types, classes, and whether they are Heavy or their own class. | open |
 | Q-VEH-02 | [[vehicles]] | Can the player character drive or crew vehicles in third person? | open |
 | Q-VEH-03 | [[vehicles]] | Repair mechanics (Sappers, Supply STs, Cards). | open |
