@@ -20,6 +20,9 @@ namespace WeirdWar.Spike2.Presentation
         private const float Spacing = 1.3f;
         private const float Size = 1f;
 
+        /// <summary>The top-left panel with the stats and the Debug buttons, in screen pixels from the top-left corner.</summary>
+        public static readonly Rect DebugPanel = new Rect(10, 10, 520, 145);
+
         private BattleState _state;
         private BattleBootstrap _bootstrap;
         private readonly Dictionary<int, List<GameObject>> _unitSquares = new Dictionary<int, List<GameObject>>();

@@ -32,13 +32,15 @@ namespace WeirdWar.Spike2.Presentation
         private Material _tracerMaterial;
         private readonly List<IBattleCommand> _submitted = new List<IBattleCommand>();
 
-        /// <summary>Every command this controller created and submitted (for tests and debugging).</summary>
+        /// <summary>Every command this controller submitted that the battle accepted, since the last reset (for tests and debugging).</summary>
         public IReadOnlyList<IBattleCommand> Submitted => _submitted;
         public string LastShot => _lastShot;
 
         public void Attach(BattleBootstrap bootstrap)
         {
             _bootstrap = bootstrap;
+            _submitted.Clear(); // a reset starts a new battle with a new command log
+            _lastShot = "No shots fired yet.";
             _camera = TargetCamera != null ? TargetCamera : Camera.main;
             if (_camera != null)
             {
@@ -53,8 +55,8 @@ namespace WeirdWar.Spike2.Presentation
         /// <summary>Applies one command to the battle (never touches the Officer directly) and shows what a shot did.</summary>
         public OfficerCommandResult Submit(IBattleCommand command)
         {
-            _submitted.Add(command);
             var result = _bootstrap.State.ApplyOfficerCommand(command);
+            if (result.IsAccepted) { _submitted.Add(command); }
             if (command is OfficerFireCommand && result.IsAccepted && result.Shot.HasValue) { ShowShot(result.Shot.Value); }
             return result;
         }
@@ -66,8 +68,8 @@ namespace WeirdWar.Spike2.Presentation
             var locked = Cursor.lockState == CursorLockMode.Locked;
             if (!locked)
             {
-                // The first click gives the game the mouse. It is not a shot.
-                if (Input.GetMouseButtonDown(0)) { Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; }
+                // The first click gives the game the mouse. It is not a shot. A click on the Debug panel is for its buttons.
+                if (Input.GetMouseButtonDown(0) && !IsOverDebugPanel(Input.mousePosition)) { Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; }
                 return;
             }
 
@@ -79,6 +81,10 @@ namespace WeirdWar.Spike2.Presentation
             var commands = OfficerInputMapper.Map(0, _bootstrap.State.Officers[0].AimRadians, forward, strafe, look, fire, Time.deltaTime);
             foreach (var c in commands) { Submit(c); }
         }
+
+        /// <summary>True when a screen position (pixels from the bottom-left, as Input.mousePosition) is on the Debug panel.</summary>
+        public static bool IsOverDebugPanel(Vector2 mousePosition) =>
+            BattleStateView.DebugPanel.Contains(new Vector2(mousePosition.x, Screen.height - mousePosition.y));
 
         private void LateUpdate()
         {

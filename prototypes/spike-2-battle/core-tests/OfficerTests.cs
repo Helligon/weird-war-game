@@ -91,6 +91,26 @@ public class OfficerTests
     }
 
     [Fact]
+    public void PCH_001_rifle_passes_through_a_friendly_section_in_the_line_of_fire()
+    {
+        var b = NewBattle();
+        CloseIn(b);
+        FaceEnemy(b);
+        var o = b.Officers[0].Position;
+        var friend = new Section(new SectionId(3), Side.Player, UnitType.Riflemen, 8, 3, new MapPoint(o.X + 5, o.Y));
+        b.Add(friend);
+        var enemy = b.Find(BattleState.EnemySectionId)!;
+        var friendHealth = friend.Health;
+        var enemyHealth = enemy.Health;
+
+        var shot = b.ApplyOfficerCommand(new OfficerFireCommand(0)).Shot!.Value;
+
+        Assert.Equal(friendHealth, friend.Health);
+        Assert.Equal(BattleState.EnemySectionId, shot.Target);
+        Assert.True(enemy.Health < enemyHealth);
+    }
+
+    [Fact]
     public void PCH_001_rifle_misses_when_aimed_away_and_damages_nothing()
     {
         var b = NewBattle();
