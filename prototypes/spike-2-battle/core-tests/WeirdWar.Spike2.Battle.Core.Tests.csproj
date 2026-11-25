@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="../data/parameters.json" Link="data/parameters.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../core/WeirdWar.Spike2.Battle.Core.csproj" />
   </ItemGroup>
 
