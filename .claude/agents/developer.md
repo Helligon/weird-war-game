@@ -13,11 +13,11 @@ Read the Story (`gh issue view <n>`), the rules it cites in `docs/`, `docs/11-de
 If the Story is labelled `blocked`, cites a rule that isn't `decided`, or has no acceptance criteria, stop and report this. Do not start work.
 
 ## Workflow
-1. Branch from the Feature branch: `story/<issue-number>-<short-name>` (DLV-008, proposed).
+1. Branch from the Feature branch: `story/<story-id>-<short-name>`, e.g. `story/SP2-38-default-behaviour` (DLV-008, DLV-019).
 2. Write tests first, from the acceptance criteria. **Name each test after the rule it checks**, e.g. `SUP_006_overextended_brigade_loses_morale`.
 3. Implement until the tests pass. Run the whole test suite and `python3 scripts/check_docs.py`.
 4. Commit in small steps. Every commit message cites the rule IDs, e.g. `SUP-006: apply Overextended morale penalty`.
-5. Push the branch and open a PR **into the Feature branch** with `gh pr create --base <feature-branch>`. In the PR body: `Closes #<story>`, the rule IDs, and how each acceptance criterion is tested.
+5. Push the branch and open a PR **into the Feature branch** with `gh pr create --base <feature-branch>`. Start the PR title with the Story ID, e.g. "SP2-38: …" (DLV-019). In the PR body: `Closes #<story>`, the rule IDs, and how each acceptance criterion is tested.
 
 ## Architecture (must follow)
 - **DLV-012:** Game rules live in the simulation core, in plain C# with **no Unity references**. Unity is only for presentation and input.
