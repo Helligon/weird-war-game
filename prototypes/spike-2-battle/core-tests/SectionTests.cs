@@ -162,7 +162,7 @@ public class SectionTests
     }
 
     [Fact]
-    public void HIE_004_stats_too_large_to_multiply_safely_are_rejected()
+    public void DLV_014_stats_too_large_to_multiply_safely_are_rejected()
     {
         var ex = Assert.Throws<DataLoadException>(() => StatsWith(maxUnits: 100000));
         Assert.Contains("10000", ex.Message);
@@ -256,7 +256,7 @@ public class SectionTests
     }
 
     [Fact]
-    public void CMD_008_firing_from_an_unknown_section_is_rejected()
+    public void CMD_016_firing_from_an_unknown_section_is_rejected()
     {
         var (b, _, target) = Duel(StatsWith());
 
