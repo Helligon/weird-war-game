@@ -29,6 +29,13 @@ namespace WeirdWar.Spike2.Presentation
         private Mesh _squareMesh;
         private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
         private string _lastFire = "No shots fired yet.";
+        // Default behaviour (DAI-001..006) runs in fixed core steps so the battle does not depend on the frame rate.
+        private const double StepSeconds = 0.1;
+        private static readonly int[] SpeedChoices = { 1, 5, 20 };
+        private bool _running;
+        private int _speedIndex;
+        private double _carry;
+        public bool Running => _running;
 
         /// <summary>The number of Unit squares currently drawn for a Section.</summary>
         public int SquaresFor(SectionId id) => _unitSquares.TryGetValue(id.Value, out var l) ? l.Count : 0;
@@ -39,6 +46,8 @@ namespace WeirdWar.Spike2.Presentation
             _state = state;
             _bootstrap = bootstrap;
             _volley = 0;
+            _running = false;
+            _carry = 0;
             _lastFire = "No shots fired yet.";
             if (_root != null) { DestroyImmediate(_root.gameObject); }
             ReleaseShared();
@@ -52,6 +61,20 @@ namespace WeirdWar.Spike2.Presentation
                 _officerSquares.Add(Square("Officer", new Vector3((float)o.Position.X, (float)o.Position.Y, 0f), OfficerColour));
             }
             Refresh();
+        }
+
+        /// <summary>Runs the battle for the given real seconds (times the speed choice), in fixed core steps, then redraws.</summary>
+        public void Advance(double realSeconds)
+        {
+            _carry += realSeconds * SpeedChoices[_speedIndex];
+            var stepped = false;
+            while (_carry >= StepSeconds) { _state.Tick(StepSeconds); _carry -= StepSeconds; stepped = true; }
+            if (stepped) { Refresh(); }
+        }
+
+        private void Update()
+        {
+            if (_state != null && _running) { Advance(Time.deltaTime); }
         }
 
         /// <summary>Redraws one square per remaining Unit, so losing health visibly removes Units.</summary>
@@ -128,7 +151,10 @@ namespace WeirdWar.Spike2.Presentation
             // through a command, once Story #40 applies TargetCommand (CMD-008).
             if (GUI.Button(new Rect(10, 125, 270, 28), "Debug: fire player Section at enemy")) { Fire(false); }
             if (GUI.Button(new Rect(285, 125, 130, 28), "Debug: fire moving")) { Fire(true); }
-            if (GUI.Button(new Rect(420, 125, 110, 28), "Debug: reset")) { _bootstrap.Load(); }
+            if (GUI.Button(new Rect(420, 125, 110, 28), "Debug: reset")) { _bootstrap.Load(); return; }
+            // Default behaviour: Sections with no orders move, take cover and fire on their own. Time is not a player action.
+            if (GUI.Button(new Rect(10, 158, 270, 28), _running ? "Pause battle" : "Run battle (default behaviour)")) { _running = !_running; }
+            if (GUI.Button(new Rect(285, 158, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { _speedIndex = (_speedIndex + 1) % SpeedChoices.Length; }
         }
 
         private void Fire(bool moving)
