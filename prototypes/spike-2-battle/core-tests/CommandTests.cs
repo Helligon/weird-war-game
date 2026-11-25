@@ -33,6 +33,12 @@ public class CommandTests
     private static ValidationResult Check(IBattleCommand c, int queued = 0, BattleParameters? p = null) =>
         CommandValidator.Validate(c, new FakeView(queued), p ?? Params());
 
+    // True for arrays, lists, sets and any other collection of SectionId.
+    private static bool TakesSectionIds(Type t) =>
+        (t.IsArray && t.GetElementType() == typeof(SectionId))
+        || (t.IsGenericType && t.GetGenericArguments().Contains(typeof(SectionId)))
+        || t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericArguments().Contains(typeof(SectionId)));
+
     private static IBattleCommand[] OneOfEach() => new IBattleCommand[]
     {
         MoveOf(2), new StopCommand(Mine), new ClearWaypointsCommand(Mine), new TargetCommand(Mine, Foe), new FallBackCommand(Mine),
@@ -87,13 +93,13 @@ public class CommandTests
         var path = Path.Combine(Path.GetTempPath(), "ww-params-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {
-            File.WriteAllText(path, File.ReadAllText(DataFile()).Replace("2", "3"));
+            File.WriteAllText(path, "{\"P-CMD-01\": 3}");
             var raised = BattleParameters.Load(File.ReadAllText(path));
             Assert.Equal(3, raised.MaxWaypoints);
             Assert.True(Check(MoveOf(3), 0, raised).IsAccepted);
             Assert.False(Check(MoveOf(4), 0, raised).IsAccepted);
 
-            File.WriteAllText(path, File.ReadAllText(DataFile()).Replace("2", "1"));
+            File.WriteAllText(path, "{\"P-CMD-01\": 1}");
             var lowered = BattleParameters.Load(File.ReadAllText(path));
             Assert.True(Check(MoveOf(1), 0, lowered).IsAccepted);
             Assert.False(Check(MoveOf(2), 0, lowered).IsAccepted);
@@ -133,6 +139,27 @@ public class CommandTests
     }
 
     [Fact]
+    public void CMD_016_command_for_unknown_section_is_rejected()
+    {
+        var unknown = new SectionId(99);
+        var commands = new IBattleCommand[]
+        {
+            new MoveCommand(unknown, new[] { new Waypoint(0, 0) }), new StopCommand(unknown), new ClearWaypointsCommand(unknown),
+            new TargetCommand(unknown, Foe), new FallBackCommand(unknown),
+        };
+        foreach (var command in commands)
+        {
+            Assert.False(Check(command).IsAccepted);
+        }
+    }
+
+    [Fact]
+    public void CMD_008_target_naming_unknown_section_is_rejected()
+    {
+        Assert.False(Check(new TargetCommand(Mine, new SectionId(99))).IsAccepted);
+    }
+
+    [Fact]
     public void CMD_011_fall_back_is_accepted()
     {
         Assert.True(Check(new FallBackCommand(Mine)).IsAccepted);
@@ -146,12 +173,11 @@ public class CommandTests
         {
             var props = command.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
             Assert.Single(props, p => p.Name == "Section" && p.PropertyType == typeof(SectionId));
-            Assert.DoesNotContain(props, p => p.PropertyType == typeof(SectionId[])
-                || (p.PropertyType.IsGenericType && p.PropertyType.GetGenericArguments().Contains(typeof(SectionId))));
+            Assert.DoesNotContain(props, p => p.PropertyType != typeof(SectionId) && TakesSectionIds(p.PropertyType));
             foreach (var ctor in command.GetType().GetConstructors())
             {
                 Assert.DoesNotContain(ctor.GetParameters(), p => p.ParameterType != typeof(SectionId)
-                    && p.ParameterType.IsGenericType && p.ParameterType.GetGenericArguments().Contains(typeof(SectionId)));
+                    && TakesSectionIds(p.ParameterType));
             }
         }
     }
@@ -168,7 +194,8 @@ public class CommandTests
             }
         }
         Assert.DoesNotContain(typeof(IBattleCommand).Assembly.GetTypes(),
-            t => t.Name.Contains("UnitId", StringComparison.OrdinalIgnoreCase));    }
+            t => t.Name.Contains("UnitId", StringComparison.OrdinalIgnoreCase));
+    }
 
     [Fact]
     public void TEC_008_every_command_round_trips_through_json()

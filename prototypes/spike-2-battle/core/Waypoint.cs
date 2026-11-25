@@ -3,8 +3,8 @@ using System;
 namespace WeirdWar.Spike2.Battle.Core
 {
     /// <summary>
-    /// A Move waypoint as an axial hex cell. Stand-in: the map (Story #36) is not in the core yet, so this
-    /// only carries the two numbers. Replace or map it to the real hex type when the map lands.
+    /// A Move waypoint: a placeholder battle position. Stand-in: the battle map (Story #36) is not in the core
+    /// yet, so this only carries two numbers (Q, R). Replace it with the real position type when the map lands.
     /// </summary>
     public readonly struct Waypoint : IEquatable<Waypoint>
     {
