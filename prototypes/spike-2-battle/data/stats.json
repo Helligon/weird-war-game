@@ -8,6 +8,10 @@
     "accuracy": 0.6
   },
   "officer": {
-    "health": 10
+    "health": 10,
+    "speed": 4,
+    "rifleRange": 80,
+    "rifleDamage": 3,
+    "rifleHitRadius": 3
   }
 }

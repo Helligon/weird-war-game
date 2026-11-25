@@ -22,10 +22,23 @@ namespace WeirdWar.Spike2.Battle.Core
         public double RiflemenAccuracy { get; }
         /// <summary>Officer health (placeholder; open, Q-ROS-01).</summary>
         public int OfficerHealth { get; }
+        /// <summary>Officer walking speed in metres per second (placeholder; open).</summary>
+        public double OfficerSpeed { get; }
+        /// <summary>Officer hitscan rifle range in metres (placeholder; open).</summary>
+        public double OfficerRifleRange { get; }
+        /// <summary>Damage of one Officer rifle hit (placeholder; open).</summary>
+        public int OfficerRifleDamage { get; }
+        /// <summary>How close, in metres, a shot must pass to an enemy Section's centre to hit it (placeholder; open).</summary>
+        public double OfficerRifleHitRadius { get; }
 
         public UnitStats(double riflemenSpeed, int riflemenMaxUnits, int riflemenHealthPerUnit, double riflemenRange,
-            int riflemenDamage, double riflemenAccuracy, int officerHealth)
+            int riflemenDamage, double riflemenAccuracy, int officerHealth, double officerSpeed, double officerRifleRange,
+            int officerRifleDamage, double officerRifleHitRadius)
         {
+            OfficerSpeed = officerSpeed;
+            OfficerRifleRange = officerRifleRange;
+            OfficerRifleDamage = officerRifleDamage;
+            OfficerRifleHitRadius = officerRifleHitRadius;
             RiflemenSpeed = riflemenSpeed;
             RiflemenMaxUnits = riflemenMaxUnits;
             RiflemenHealthPerUnit = riflemenHealthPerUnit;
@@ -36,7 +49,7 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>
-        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy" }, "officer": { "health" } }.
+        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy" }, "officer": { "health", "speed", "rifleRange", "rifleDamage", "rifleHitRadius" } }.
         /// </summary>
         public static UnitStats Load(string json)
         {
@@ -55,7 +68,15 @@ namespace WeirdWar.Spike2.Battle.Core
             var accuracy = BattleMapLoader.Number(riflemen, "accuracy", "riflemen");
             if (accuracy < 0 || accuracy > 1) throw new DataLoadException("Stats error: riflemen \"accuracy\" must be from 0 to 1.");
             var officerHealth = Whole(officer, "health", "officer");
-            return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth);
+            var officerSpeed = BattleMapLoader.Number(officer, "speed", "officer");
+            if (officerSpeed <= 0) throw new DataLoadException("Stats error: officer \"speed\" must be above zero.");
+            var rifleRange = BattleMapLoader.Number(officer, "rifleRange", "officer");
+            if (rifleRange <= 0) throw new DataLoadException("Stats error: officer \"rifleRange\" must be above zero.");
+            var rifleDamage = Whole(officer, "rifleDamage", "officer");
+            var hitRadius = BattleMapLoader.Number(officer, "rifleHitRadius", "officer");
+            if (hitRadius <= 0) throw new DataLoadException("Stats error: officer \"rifleHitRadius\" must be above zero.");
+            return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth,
+                officerSpeed, rifleRange, rifleDamage, hitRadius);
         }
 
         private static Dictionary<string, object?> Obj(Dictionary<string, object?> root, string key)

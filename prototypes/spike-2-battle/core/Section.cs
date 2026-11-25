@@ -58,7 +58,9 @@ namespace WeirdWar.Spike2.Battle.Core
     {
         public Side Side { get; }
         public int Health { get; }
-        public MapPoint Position { get; }
+        public MapPoint Position { get; internal set; }
+        /// <summary>Where the Officer aims, in radians. 0 points east (+X); positive turns towards north (+Y).</summary>
+        public double AimRadians { get; internal set; }
 
         public Officer(Side side, int health, MapPoint position) { Side = side; Health = health; Position = position; }
     }

@@ -49,8 +49,15 @@ namespace WeirdWar.Spike2.Battle.Core
         public IEnumerable<Section> Sections => _sections.Values;
         public IReadOnlyList<Officer> Officers => _officers;
 
-        private BattleState(UnitStats stats, BattleParameters parameters, ulong seed)
+        private readonly BattleMap _map;
+        private readonly List<IBattleCommand> _commandLog = new List<IBattleCommand>();
+
+        /// <summary>PCH-009: every accepted Officer command, in the order it was applied.</summary>
+        public IReadOnlyList<IBattleCommand> CommandLog => _commandLog;
+
+        private BattleState(BattleMap map, UnitStats stats, BattleParameters parameters, ulong seed)
         {
+            _map = map;
             _random = new SeededRandom(seed);
             _stats = stats;
             _parameters = parameters;
@@ -63,7 +70,7 @@ namespace WeirdWar.Spike2.Battle.Core
         /// </summary>
         public static BattleState SetUp(BattleMap map, UnitStats stats, BattleParameters parameters, ulong seed)
         {
-            var state = new BattleState(stats, parameters, seed);
+            var state = new BattleState(map, stats, parameters, seed);
             var midY = map.Height / 2;
             var inset = BattleMap.EdgeStripWidth * 2;
             var playerPos = new MapPoint(map.EdgeOf(Side.Player).X + inset, midY);
@@ -120,6 +127,69 @@ namespace WeirdWar.Spike2.Battle.Core
             var before = target.Health;
             target.TakeDamage(hits * _stats.RiflemenDamage);
             return new FireResult(FireOutcome.Fired, shots, hits, before - target.Health, chance);
+        }
+
+        /// <summary>
+        /// Applies one Officer command (PCH-009, DLV-013). This is the only way Officer move, aim and fire change the battle.
+        /// An accepted command is recorded in <see cref="CommandLog"/>; a rejected one changes nothing and says why.
+        /// Move and aim touch only the Officer (PCH-004). Fire is a stand-in hitscan: the shot goes along the Officer's aim and
+        /// hits the nearest living enemy Section whose centre it passes within the hit radius, up to the rifle range.
+        /// </summary>
+        public OfficerCommandResult ApplyOfficerCommand(IBattleCommand command)
+        {
+            if (!(command is OfficerCommand oc)) return OfficerCommandResult.Rejected("Not an Officer command.");
+            if (oc.Officer < 0 || oc.Officer >= _officers.Count) return OfficerCommandResult.Rejected("Officer " + oc.Officer + " does not exist.");
+            var officer = _officers[oc.Officer];
+            switch (oc)
+            {
+                case OfficerAimCommand a:
+                    if (!IsFinite(a.Radians)) return OfficerCommandResult.Rejected("Aim must be a finite number.");
+                    officer.AimRadians = a.Radians;
+                    _commandLog.Add(command);
+                    return OfficerCommandResult.Accepted();
+                case OfficerMoveCommand m:
+                    if (!IsFinite(m.DirectionX) || !IsFinite(m.DirectionY) || !IsFinite(m.Seconds) || m.Seconds <= 0)
+                        return OfficerCommandResult.Rejected("A move needs a finite direction and a duration above zero.");
+                    var length = Math.Sqrt(m.DirectionX * m.DirectionX + m.DirectionY * m.DirectionY);
+                    var scale = length > 1 ? 1 / length : 1;
+                    var step = _stats.OfficerSpeed * m.Seconds * scale;
+                    var x = Math.Min(_map.Width, Math.Max(0, officer.Position.X + m.DirectionX * step));
+                    var y = Math.Min(_map.Height, Math.Max(0, officer.Position.Y + m.DirectionY * step));
+                    officer.Position = new MapPoint(x, y);
+                    _commandLog.Add(command);
+                    return OfficerCommandResult.Accepted();
+                case OfficerFireCommand _:
+                    var shot = ResolveRifleShot(officer);
+                    _commandLog.Add(command);
+                    return OfficerCommandResult.Accepted(shot);
+                default:
+                    return OfficerCommandResult.Rejected("Unknown Officer command.");
+            }
+        }
+
+        private static bool IsFinite(double v) => !double.IsNaN(v) && !double.IsInfinity(v);
+
+        private OfficerShot ResolveRifleShot(Officer officer)
+        {
+            var dx = Math.Cos(officer.AimRadians);
+            var dy = Math.Sin(officer.AimRadians);
+            Section? best = null;
+            var bestAlong = double.MaxValue;
+            foreach (var section in _sections.Values)
+            {
+                if (section.Side == officer.Side || section.IsDestroyed) continue;
+                var rx = section.Position.X - officer.Position.X;
+                var ry = section.Position.Y - officer.Position.Y;
+                var along = rx * dx + ry * dy;
+                if (along < 0 || along > _stats.OfficerRifleRange) continue;
+                var across = Math.Abs(rx * dy - ry * dx);
+                if (across > _stats.OfficerRifleHitRadius) continue;
+                if (along < bestAlong) { best = section; bestAlong = along; }
+            }
+            if (best == null) return new OfficerShot(null, 0, _stats.OfficerRifleRange);
+            var before = best.Health;
+            best.TakeDamage(_stats.OfficerRifleDamage);
+            return new OfficerShot(best.Id, before - best.Health, bestAlong);
         }
     }
 }
