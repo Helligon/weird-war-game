@@ -89,7 +89,7 @@ public class BattleMapTests
     [InlineData("{ \"height\": 10 }")]
     [InlineData("{ \"width\": 10, \"height\": 10, \"cover\": [ { \"id\": \"a\", \"x\": 11, \"y\": 1, \"radius\": 1 } ] }")]
     [InlineData("{ \"width\": 10, \"height\": 10, \"cover\": [ { \"id\": \"a\", \"x\": 1, \"y\": 1, \"radius\": 0 } ] }")]
-    [InlineData("{ \"width\": 10, \"height\": 10, \"cover\": [ { \"id\": \"a\", \"x\": 1, \"y\": 1, \"radius\": 1 }, { \"id\": \"a\", \"x\": 2, \"y\": 2, \"radius\": 1 } ] }")]
+    [InlineData("{ \"width\": 20, \"height\": 10, \"cover\": [ { \"id\": \"a\", \"x\": 8, \"y\": 5, \"radius\": 1 }, { \"id\": \"a\", \"x\": 12, \"y\": 5, \"radius\": 1 } ] }")]
     public void DEC_087_malformed_map_file_is_rejected_with_a_message(string json)
     {
         Assert.Throws<DataLoadException>(() => BattleMapLoader.Load(json));
