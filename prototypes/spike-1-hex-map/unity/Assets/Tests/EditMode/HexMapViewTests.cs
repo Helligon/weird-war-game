@@ -50,6 +50,50 @@ namespace WeirdWar.Spike1.Tests
         }
 
         [Test]
+        public void MAP_017_tile_positions_match_hard_coded_expected_values()
+        {
+            var h = Mathf.Sqrt(3f);
+            AssertPosition(new Vector3(0f, 0f, 0f), 0, 0);
+            AssertPosition(new Vector3(1.5f, -h / 2f, 0f), 1, 0);
+            AssertPosition(new Vector3(0f, -h, 0f), 0, 1);
+            AssertPosition(new Vector3(1.5f * 29f, -h * (49f + 0.5f), 0f), 29, 49);
+        }
+
+        private void AssertPosition(Vector3 expected, int col, int row)
+        {
+            Assert.AreEqual(0f, Vector3.Distance(expected, _view.TileCentres[row * _map.Width + col]), 1e-3f, "col " + col + " row " + row);
+        }
+
+        [TestCase(16f / 9f)]
+        [TestCase(4f / 3f)]
+        public void MAP_019_camera_can_zoom_out_to_show_the_whole_map(float aspect)
+        {
+            var camGo = new GameObject("test-cam");
+            try
+            {
+                var cam = camGo.AddComponent<Camera>();
+                cam.orthographic = true;
+                cam.aspect = aspect;
+                var controller = camGo.AddComponent<MapCameraController>();
+                controller.SetMapBounds(_view.WorldBounds);
+                controller.ZoomOutFully();
+
+                var halfH = cam.orthographicSize;
+                var halfW = halfH * aspect;
+                var view = new Bounds(camGo.transform.position, new Vector3(halfW * 2f, halfH * 2f, 100f));
+                var map = _view.WorldBounds;
+                Assert.LessOrEqual(view.min.x, map.min.x, "left edge");
+                Assert.GreaterOrEqual(view.max.x, map.max.x, "right edge");
+                Assert.LessOrEqual(view.min.y, map.min.y, "bottom edge");
+                Assert.GreaterOrEqual(view.max.y, map.max.y, "top edge");
+            }
+            finally
+            {
+                Object.DestroyImmediate(camGo);
+            }
+        }
+
+        [Test]
         public void MAP_017_odd_columns_sit_half_a_hex_lower_and_columns_are_1_5_apart()
         {
             var even = HexLayout.OffsetToWorld(2, 5);
@@ -119,7 +163,7 @@ namespace WeirdWar.Spike1.Tests
         }
 
         [Test]
-        public void TEC_012_presentation_assembly_has_no_game_rule_dependencies_beyond_the_core()
+        public void TEC_012_core_assembly_references_no_unity_assemblies()
         {
             // The core must not reference UnityEngine (DLV-012); check the loaded core assembly directly.
             foreach (var name in typeof(HexMap).Assembly.GetReferencedAssemblies())
