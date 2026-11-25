@@ -22,7 +22,7 @@ namespace WeirdWar.Spike2.Battle.Core
         public double RiflemenAccuracy { get; }
         /// <summary>Officer health (placeholder; open, Q-ROS-01).</summary>
         public int OfficerHealth { get; }
-        /// <summary>Seconds between one Riflemen volley and the next (placeholder for a rate of fire; open, Q-ROS-01).</summary>
+        /// <summary>Seconds between one Riflemen volley and the next (stand-in for a rate of fire; DEC-098).</summary>
         public double RiflemenVolleyInterval { get; }
         /// <summary>How far, in metres, a Section looks for cover when it has no orders (placeholder; DAI-001 says only "nearby").</summary>
         public double CoverSearchRange { get; }

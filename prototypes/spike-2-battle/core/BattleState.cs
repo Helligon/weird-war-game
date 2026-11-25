@@ -82,7 +82,7 @@ namespace WeirdWar.Spike2.Battle.Core
         public void Add(Section section) { _sections.Add(section.Id.Value, section); }
 
         /// <summary>Adds an Officer. Used by tests that need a particular layout (the enemy has none at set-up).</summary>
-        public void AddOfficer(Officer officer) { _officers.Add(officer); }
+        internal void AddOfficer(Officer officer) { _officers.Add(officer); }
 
         public Section? Find(SectionId id) => _sections.TryGetValue(id.Value, out var s) ? s : null;
 
@@ -127,9 +127,7 @@ namespace WeirdWar.Spike2.Battle.Core
             var chance = HitChance(moving);
             if (shooter.IsDestroyed) return new FireResult(FireOutcome.ShooterDestroyed, 0, 0, 0, chance);
             if (targetDestroyed) return new FireResult(FireOutcome.TargetDestroyed, 0, 0, 0, chance);
-            var dx = shooter.Position.X - targetPosition.X;
-            var dy = shooter.Position.Y - targetPosition.Y;
-            if (dx * dx + dy * dy > _stats.RiflemenRange * _stats.RiflemenRange)
+            if (!InRange(shooter.Position, targetPosition))
             {
                 return new FireResult(FireOutcome.OutOfRange, 0, 0, 0, chance);
             }
@@ -144,6 +142,20 @@ namespace WeirdWar.Spike2.Battle.Core
             if (targetSection != null) targetSection.LastAttacker = shooter.Id;
             return new FireResult(FireOutcome.Fired, shots, hits, before - health(), chance);
         }
+
+        /// <summary>True when the two points are within Riflemen range. The one range check, used by fire and by targeting.</summary>
+        internal bool InRange(MapPoint a, MapPoint b)
+        {
+            var dx = a.X - b.X;
+            var dy = a.Y - b.Y;
+            return dx * dx + dy * dy <= _stats.RiflemenRange * _stats.RiflemenRange;
+        }
+
+        /// <summary>The fixed battle-time step in seconds. The core owns it, so the same commands replay the same battle (TEC-008).</summary>
+        public const double StepSeconds = 0.1;
+
+        /// <summary>Advances the battle by one <see cref="StepSeconds"/>.</summary>
+        public void Step() { Tick(StepSeconds); }
 
         /// <summary>
         /// Advances the battle by <paramref name="seconds"/> of battle time: every living Section, in SectionId order, runs its

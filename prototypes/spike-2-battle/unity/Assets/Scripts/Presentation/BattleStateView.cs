@@ -29,8 +29,7 @@ namespace WeirdWar.Spike2.Presentation
         private Mesh _squareMesh;
         private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
         private string _lastFire = "No shots fired yet.";
-        // Default behaviour (DAI-001..006) runs in fixed core steps so the battle does not depend on the frame rate.
-        private const double StepSeconds = 0.1;
+        // Default behaviour (DAI-001..006) runs in fixed core steps (BattleState.StepSeconds) so the battle does not depend on the frame rate.
         private static readonly int[] SpeedChoices = { 1, 5, 20 };
         private bool _running;
         private int _speedIndex;
@@ -63,12 +62,12 @@ namespace WeirdWar.Spike2.Presentation
             Refresh();
         }
 
-        /// <summary>Runs the battle for the given real seconds (times the speed choice), in fixed core steps, then redraws.</summary>
+        /// <summary>Runs the battle for the given real seconds (times the speed choice), in fixed core steps (BattleState.StepSeconds), then redraws.</summary>
         public void Advance(double realSeconds)
         {
             _carry += realSeconds * SpeedChoices[_speedIndex];
             var stepped = false;
-            while (_carry >= StepSeconds) { _state.Tick(StepSeconds); _carry -= StepSeconds; stepped = true; }
+            while (_carry >= BattleState.StepSeconds) { _state.Step(); _carry -= BattleState.StepSeconds; stepped = true; }
             if (stepped) { Refresh(); }
         }
 

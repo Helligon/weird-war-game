@@ -26,22 +26,22 @@ namespace WeirdWar.Spike2.Battle.Core
         /// </summary>
         public static TargetChoice? ChooseTarget(BattleState state, Section self)
         {
-            var range = state.Stats.RiflemenRange;
             TargetChoice? best = null;
             var bestDistance = double.MaxValue;
             foreach (var other in state.Sections)
             {
                 if (other.Side == self.Side || other.IsDestroyed) continue;
+                if (!state.InRange(self.Position, other.Position)) continue;
                 var d = Distance(self.Position, other.Position);
-                if (d > range) continue;
                 if (self.LastAttacker.HasValue && other.Id.Equals(self.LastAttacker.Value)) return new TargetChoice(other);
                 if (d < bestDistance) { best = new TargetChoice(other); bestDistance = d; }
             }
             foreach (var officer in state.Officers)
             {
                 if (officer.Side == self.Side || officer.IsDestroyed) continue;
+                if (!state.InRange(self.Position, officer.Position)) continue;
                 var d = Distance(self.Position, officer.Position);
-                if (d <= range && d < bestDistance) { best = new TargetChoice(officer); bestDistance = d; }
+                if (d < bestDistance) { best = new TargetChoice(officer); bestDistance = d; }
             }
             return best;
         }
@@ -53,14 +53,17 @@ namespace WeirdWar.Spike2.Battle.Core
 
             if (!self.IsHolding)
             {
-                // DAI-001: take nearby cover, and close in on the nearest enemy until one is in range.
-                var inRange = ChooseTarget(state, self) != null;
-                var enemy = NearestEnemy(state, self);
-                if (enemy.HasValue && !(inRange && state.Map.CoverAt(self.Position) != null))
+                // DAI-001: walk straight at the nearest enemy. Once one is in range, step into nearby cover (if any) and stay.
+                var chosen = ChooseTarget(state, self);
+                if (chosen == null)
                 {
-                    var cover = NearbyCover(state, self, enemy.Value.Position);
+                    var enemy = NearestEnemy(state, self);
+                    if (enemy.HasValue) moved = StepToward(state, self, enemy.Value.Position, seconds);
+                }
+                else if (state.Map.CoverAt(self.Position) == null)
+                {
+                    var cover = NearbyCover(state, self, chosen.Value.Position);
                     if (cover != null) moved = StepToward(state, self, cover.Position, seconds);
-                    else if (!inRange) moved = StepToward(state, self, enemy.Value.Position, seconds);
                 }
             }
 
@@ -68,9 +71,10 @@ namespace WeirdWar.Spike2.Battle.Core
             if (self.VolleyCooldown > 0) return;
             var target = ChooseTarget(state, self);
             if (!target.HasValue) return;
-            if (target.Value.Section != null) state.Fire(self.Id, target.Value.Section.Id, moved);
-            else state.FireAtOfficer(self.Id, target.Value.Officer!, moved);
-            self.VolleyCooldown = state.Stats.RiflemenVolleyInterval;
+            var result = target.Value.Section != null
+                ? state.Fire(self.Id, target.Value.Section.Id, moved)
+                : state.FireAtOfficer(self.Id, target.Value.Officer!, moved);
+            if (result.Outcome == FireOutcome.Fired) self.VolleyCooldown = state.Stats.RiflemenVolleyInterval;
         }
 
         private static TargetChoice? NearestEnemy(BattleState state, Section self)
@@ -93,8 +97,8 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>
-        /// The nearest cover within the search range that the Section is not already in and that is no farther from the
-        /// enemy than the Section is (so it never backs away to find cover).
+        /// The nearest cover within the search range that that is no farther from the
+        /// target than the Section is (so it never backs away to find cover).
         /// </summary>
         private static CoverObject? NearbyCover(BattleState state, Section self, MapPoint enemy)
         {
@@ -103,7 +107,6 @@ namespace WeirdWar.Spike2.Battle.Core
             var own = Distance(self.Position, enemy);
             foreach (var c in state.Map.CoverObjects)
             {
-                if (c.Contains(self.Position)) continue;
                 var d = Distance(self.Position, c.Position);
                 if (d > state.Stats.CoverSearchRange || Distance(c.Position, enemy) > own) continue;
                 if (d < bestDistance) { best = c; bestDistance = d; }
