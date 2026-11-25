@@ -34,9 +34,11 @@ namespace WeirdWar.Spike2.Presentation
         public const int OrderGround = 0;
         public const int OrderEdges = 1;
         public const int OrderCover = 2;
+        public const int OrderSelection = 5;   // tactical view: the selected Section's highlight, under the Units
         public const int OrderUnits = 10;
         public const int OrderOfficer = 11;
         public const int OrderRifle = 12;
+        public const int OrderWaypoints = 14;  // tactical view: waypoint markers and path lines, over the squares
         public const int OrderTracer = 20;
 
         public void Build(BattleMap map)

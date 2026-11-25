@@ -26,6 +26,9 @@ namespace WeirdWar.Spike2.Presentation
         public UnitStats Stats { get; private set; }
         public BattleParameters Parameters { get; private set; }
         public BattleState State { get; private set; }
+        /// <summary>The tactical view's mode and selection for this battle (a new one after every Load).</summary>
+        public TacticalView Tactical { get; private set; }
+        public TacticalController TacticalUi { get; private set; }
         public BattleStateView StateView { get; private set; }
         public BattleMapView View { get; private set; }
 
@@ -45,9 +48,13 @@ namespace WeirdWar.Spike2.Presentation
             var root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", DataFolder));
             Parameters = BattleParameters.Load(File.ReadAllText(Path.Combine(root, ParametersFile)));
             State = BattleState.SetUp(Map, Stats, Parameters, Seed);
+            Tactical = new TacticalView(State);
             if (!TryGetComponent<BattleStateView>(out var stateView)) { stateView = gameObject.AddComponent<BattleStateView>(); }
             StateView = stateView;
             StateView.Show(State, this);
+
+            if (!TryGetComponent<TacticalController>(out var tactical)) { tactical = gameObject.AddComponent<TacticalController>(); }
+            TacticalUi = tactical;
 
             if (ThirdPerson)
             {
@@ -61,6 +68,7 @@ namespace WeirdWar.Spike2.Presentation
                 var cam = Camera.main;
                 if (cam != null) { FitCamera(cam, View.WorldBounds); }
             }
+            TacticalUi.Attach(this);
         }
 
         public static (BattleMap, UnitStats) LoadData(string dataFolder, string mapFile, string statsFile)

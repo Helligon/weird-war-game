@@ -7,8 +7,8 @@ namespace WeirdWar.Spike2.Presentation
 {
     /// <summary>
     /// Draws the core's Sections (one square per Unit, HIE-004) and the Officer (a yellow square, HIE-006), and shows
-    /// health and Unit counts. It changes nothing itself: the temporary order buttons (until the tactical view, SP2-41) only
-    /// build Section commands and apply them with <see cref="BattleState.ApplyCommand"/> (DLV-013). One metre is one Unity unit.
+    /// health and Unit counts. It changes nothing itself. Section orders come from the tactical view (<see cref="TacticalController"/>),
+    /// which applies them with <see cref="BattleState.ApplyCommand"/> (DLV-013). One metre is one Unity unit.
     /// </summary>
     public sealed class BattleStateView : MonoBehaviour
     {
@@ -21,7 +21,7 @@ namespace WeirdWar.Spike2.Presentation
         private const float Size = 1f;
 
         /// <summary>The top-left panel with the stats and the Debug buttons, in screen pixels from the top-left corner.</summary>
-        public static readonly Rect DebugPanel = new Rect(10, 10, 520, 290);
+        public static readonly Rect DebugPanel = new Rect(10, 10, 520, 165);
 
         private BattleState _state;
         private BattleBootstrap _bootstrap;
@@ -30,16 +30,15 @@ namespace WeirdWar.Spike2.Presentation
         private Transform _root;
         private Mesh _squareMesh;
         private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
-        private string _lastOrder = "No orders given yet.";
         // Default behaviour (DAI-001..006) runs in fixed core steps (BattleState.StepSeconds) so the battle does not depend on the frame rate.
         private static readonly int[] SpeedChoices = { 1, 5, 20 };
-        private bool _running;
         private int _speedIndex;
         private double _carry;
-        public bool Running => _running;
+        /// <summary>Whether the battle is running. The tactical view owns the flag (CMD-002): entering it pauses, leaving it resumes.</summary>
+        public bool Running => _bootstrap != null && _bootstrap.Tactical != null && _bootstrap.Tactical.Running;
         /// <summary>The battle speed choice: 1, 5 or 20 battle seconds per real second. It applies to everything the core steps, the Officer too.</summary>
         public int SpeedMultiplier => SpeedChoices[_speedIndex];
-        public void SetRunning(bool running) { _running = running; }
+        public void SetRunning(bool running) { _bootstrap.Tactical.SetRunning(running); }
         public void CycleSpeed() { _speedIndex = (_speedIndex + 1) % SpeedChoices.Length; }
 
         /// <summary>The number of Unit squares currently drawn for a Section.</summary>
@@ -50,9 +49,7 @@ namespace WeirdWar.Spike2.Presentation
         {
             _state = state;
             _bootstrap = bootstrap;
-            _running = false;
             _carry = 0;
-            _lastOrder = "No orders given yet.";
             if (_root != null) { DestroyImmediate(_root.gameObject); }
             ReleaseShared();
             _unitSquares.Clear();
@@ -97,7 +94,7 @@ namespace WeirdWar.Spike2.Presentation
         /// <summary>One frame: the battle advances only while running (not paused).</summary>
         public void Frame(double realSeconds)
         {
-            if (_state != null && _running) { Advance(realSeconds); }
+            if (_state != null && Running) { Advance(realSeconds); }
         }
 
         private void Update() { Frame(Time.deltaTime); }
@@ -170,24 +167,21 @@ namespace WeirdWar.Spike2.Presentation
             foreach (var o in _state.Officers) { sb.AppendLine(o.Side + " Officer: health " + o.Health + " (not in a Section), at " + o.Position.X.ToString("0") + ", " + o.Position.Y.ToString("0")); }
             sb.AppendLine("Hit chance standing still: " + _state.HitChance(false).ToString("0.00")
                 + ", moving: " + _state.HitChance(true).ToString("0.00"));
-            sb.AppendLine("Last order: " + _lastOrder);
+            sb.AppendLine("View: " + ViewText());
 
             GUI.Box(DebugPanel, GUIContent.none);
             GUI.Label(new Rect(18, 14, 505, 110), sb.ToString());
             // Default behaviour: Sections with no orders move, take cover and fire on their own. Time is not a player action.
-            if (GUI.Button(new Rect(10, 125, 270, 28), _running ? "Pause battle" : "Run battle (default behaviour)")) { SetRunning(!_running); }
-            if (GUI.Button(new Rect(285, 125, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { CycleSpeed(); }
-            if (GUI.Button(new Rect(420, 125, 110, 28), "Reset battle")) { _bootstrap.Load(); return; }
+            if (GUI.Button(new Rect(10, 130, 270, 28), Running ? "Pause battle" : "Run battle (default behaviour)")) { SetRunning(!Running); }
+            if (GUI.Button(new Rect(285, 130, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { CycleSpeed(); }
+            if (GUI.Button(new Rect(420, 130, 110, 28), "Reset battle")) { _bootstrap.Load(); return; }
+        }
 
-            // Temporary orders for the player's Section (SP2-41 builds the real tactical view). Each button is one command.
-            GUI.Label(new Rect(18, 158, 505, 22), "Orders for the player Section (each button is one command):");
-            if (GUI.Button(new Rect(10, 180, 170, 28), "Move +10 m east")) { Give(OrderFor.MoveBy(_state, BattleState.PlayerSectionId, 10, 0)); }
-            if (GUI.Button(new Rect(185, 180, 170, 28), "Move +10 m north")) { Give(OrderFor.MoveBy(_state, BattleState.PlayerSectionId, 0, 10)); }
-            if (GUI.Button(new Rect(360, 180, 170, 28), "Move beside cover")) { Give(OrderFor.MoveBesideCover(_state, BattleState.PlayerSectionId)); }
-            if (GUI.Button(new Rect(10, 212, 170, 28), "Stop (hold)")) { Give(new StopCommand(BattleState.PlayerSectionId)); }
-            if (GUI.Button(new Rect(185, 212, 170, 28), "Clear waypoints")) { Give(new ClearWaypointsCommand(BattleState.PlayerSectionId)); }
-            if (GUI.Button(new Rect(360, 212, 170, 28), "Fall back")) { Give(new FallBackCommand(BattleState.PlayerSectionId)); }
-            if (GUI.Button(new Rect(10, 244, 270, 28), "Target the enemy Section")) { Give(new TargetCommand(BattleState.PlayerSectionId, BattleState.EnemySectionId)); }
+        private string ViewText()
+        {
+            var t = _bootstrap.Tactical;
+            if (!t.Active) return "third person (Tab: tactical view)";
+            return "TACTICAL" + (t.Running ? ", running, Officer under AI control" : ", paused");
         }
 
         private static string OrdersText(Section s)
@@ -199,19 +193,5 @@ namespace WeirdWar.Spike2.Presentation
             parts.Add("at " + s.Position.X.ToString("0") + ", " + s.Position.Y.ToString("0"));
             return string.Join(", ", parts);
         }
-
-        /// <summary>
-        /// Applies one Section command to the battle through the core (DLV-013) and shows the answer. The core logs it with its
-        /// step number. The state changes only inside <see cref="BattleState.ApplyCommand"/>.
-        /// </summary>
-        public CommandResult Give(IBattleCommand command)
-        {
-            var result = _state.ApplyCommand(command);
-            _lastOrder = result.IsAccepted ? "accepted (" + command.GetType().Name + " at step " + _state.StepCount + ")" : "REJECTED: " + result.Reason;
-            Refresh();
-            return result;
-        }
-
-        public string LastOrder => _lastOrder;
     }
 }
