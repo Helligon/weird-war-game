@@ -26,6 +26,7 @@ If the Story is labelled `blocked`, cites a rule that isn't `decided`, or has no
 
 ## Limits
 - Change only what the Story needs. Note anything else you find in the PR body.
-- Never push to `main`, open a PR into `main`, or merge any PR (DLV-007, DLV-016).
+- Never push to `main`, open a PR into `main`, or merge into `main` (DLV-007, DLV-016).
+- You MAY merge your Story PR into its Feature branch (DLV-017), but only when the prompt that started you says to, CI is green, and the Reviewer's verdict is Approve or Approve with nits (Definition of Done, DLV-011).
 - Never weaken or skip a test to make it pass. If a criterion can't be met, say why in the PR.
 - If the docs need to change because behaviour changed, say so in the PR. Do not edit `docs/` yourself.
