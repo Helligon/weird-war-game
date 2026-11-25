@@ -14,9 +14,13 @@ namespace WeirdWar.Spike2.Presentation
         public string DataFolder = "../data";
         public string MapFile = "map.json";
         public string StatsFile = "stats.json";
+        public string ParametersFile = "parameters.json";
 
         public BattleMap Map { get; private set; }
         public UnitStats Stats { get; private set; }
+        public BattleParameters Parameters { get; private set; }
+        public BattleState State { get; private set; }
+        public BattleStateView StateView { get; private set; }
         public BattleMapView View { get; private set; }
 
         private void Start()
@@ -31,6 +35,13 @@ namespace WeirdWar.Spike2.Presentation
             if (!TryGetComponent<BattleMapView>(out var view)) { view = gameObject.AddComponent<BattleMapView>(); }
             View = view;
             View.Build(Map);
+
+            var root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", DataFolder));
+            Parameters = BattleParameters.Load(File.ReadAllText(Path.Combine(root, ParametersFile)));
+            State = BattleState.SetUp(Map, Stats, Parameters);
+            if (!TryGetComponent<BattleStateView>(out var stateView)) { stateView = gameObject.AddComponent<BattleStateView>(); }
+            StateView = stateView;
+            StateView.Show(State, this);
 
             var cam = Camera.main;
             if (cam != null) { FitCamera(cam, View.WorldBounds); }
