@@ -18,7 +18,7 @@ public class DeterminismTests
     private static readonly PlayerId P1 = PlayerId.Player1;
     private static readonly PlayerId P2 = PlayerId.Player2;
 
-    // The pinned command list: fixtures/determinism-commands.json, 30 commands over 4 turns, saved as plain data so
+    // The pinned command list: fixtures/determinism-commands.json, 29 commands over 4 turns, saved as plain data so
     // the test does not run the engine to build its own input. It holds valid moves, rejected moves (wrong turn,
     // not adjacent, off the map, another player's token, out of budget), rejected end turns and accepted end turns.
     private static List<GameCommand> CommandList() =>

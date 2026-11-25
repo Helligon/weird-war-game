@@ -212,7 +212,7 @@ public class MoveTests
         var s = New(p1: (3, 4), p2: (3, 7)); // two hexes between them
         var enemy = s.TokenOf(PlayerId.Player2).Position;
         var target = Hex(3, 5);
-        Assert.Equal(2, target.DistanceTo(enemy)); // (5,21) is fine
+        Assert.Equal(2, target.DistanceTo(enemy)); // (3,5) is fine
         s = Accept(s, Move(PlayerId.Player1, target));
         var next = Hex(3, 6);
         Assert.Equal(1, next.DistanceTo(enemy));

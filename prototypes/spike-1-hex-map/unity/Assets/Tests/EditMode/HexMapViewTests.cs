@@ -113,8 +113,16 @@ namespace WeirdWar.Spike1.Tests
                 var expected = Mathf.Max(controller.MinSize, e.y + controller.FitMargin, (e.x + controller.FitMargin) / aspect);
                 Assert.AreEqual(expected, controller.MaxSize, 1e-4f);
                 Assert.AreEqual(expected, cam.orthographicSize, 1e-4f);
-                // Landscape map in a landscape window: the height decides, so the map fills the width of the screen.
+                // Landscape map in a landscape window: the height decides, so the map fills the height of the screen and leaves spare width.
                 if (aspect > 1f) Assert.AreEqual(e.y + controller.FitMargin, cam.orthographicSize, 1e-4f);
+                // Independent of the formula above: in a narrow window the width decides, so the view is exactly as
+                // wide as the map plus the margin on each side, and the map's bounds sit inside the view.
+                if (aspect < 1f)
+                {
+                    Assert.AreEqual(e.x + controller.FitMargin, cam.orthographicSize * aspect, 1e-3f);
+                    Assert.LessOrEqual(_view.WorldBounds.max.y - _view.WorldBounds.min.y, cam.orthographicSize * 2f);
+                    Assert.LessOrEqual(_view.WorldBounds.max.x, camGo.transform.position.x + cam.orthographicSize * aspect);
+                }
             }
             finally
             {
