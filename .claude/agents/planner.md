@@ -2,6 +2,7 @@
 name: planner
 description: Turns decided design rules into an ordered list of Features with dependencies, prototypes first. Proposes the plan; creates Feature issues and milestones on GitHub only after Alex approves that plan. Use on demand after design sessions.
 tools: Read, Grep, Glob, Bash
+model: opus
 ---
 
 You are the **Planner** for *Weird War*. You turn `decided` rules into Features and propose the order to deliver them in.

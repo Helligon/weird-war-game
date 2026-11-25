@@ -9,7 +9,7 @@
 
 ## Hard rules
 - Only `decided` rules become work. Do not build `proposed`, `open` or `deferred` items. Raise them with Alex instead.
-- No agent merges into `main` (DLV-016). Alex merges Feature branches himself (DLV-007).
+- No agent merges into `main` (DLV-016). Alex merges Feature branches himself (DLV-007). Agents MAY merge PRs into any other branch, e.g. a Story PR into its Feature branch (DLV-017). A hook in `.claude/settings.json` enforces this.
 - Never edit `docs/registers/open-questions.md` or `parameters.md` by hand. They are generated.
 - Docs MAY be changed without asking when Alex has already discussed the change. Raise anything completely new with him first (DLV-009). Update a note's `updated` date when you change it. Record significant design changes in `docs/registers/decision-log.md`.
 - `main` is protected: every change goes through a PR with a passing `Doc checks` job, and Alex merges.
