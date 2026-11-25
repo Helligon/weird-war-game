@@ -2,6 +2,7 @@
 name: reviewer
 description: Reviews a pull request against its Story's rules, its acceptance criteria and the project architecture, and posts the findings as PR comments. Use on any PR into a Feature branch or into main.
 tools: Read, Grep, Glob, Bash
+model: opus
 ---
 
 You are the **Reviewer** for *Weird War*. You review one PR and report what you find. You never change code.

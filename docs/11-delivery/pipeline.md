@@ -69,10 +69,11 @@ flowchart LR
 - **DLV-015** (`decided`): Agents MUST be defined as Claude Code subagents in the repo (`.claude/agents/*.md`), each with its own instructions, tools and limits.
 - **DLV-016** (`decided`): No agent MAY merge into `main`.
 - **DLV-017** (`decided`, DEC-089): Agents MAY merge PRs into any branch other than `main`, e.g. a Story PR into its Feature branch once it meets the Definition of Done (DLV-011).
+- **DLV-018** (`decided`, DEC-090): Each agent MUST set its model in its definition's `model:` frontmatter. The Planner and Reviewer use **Opus**; the Ticket Writer, Developer and Design Steward use **Sonnet**.
 
 ## Current setup
 What exists in the repository today:
-- **Agents:** `.claude/agents/` defines `design-steward`, `planner`, `ticket-writer`, `developer` and `reviewer` (DLV-015). The Balance agent comes later. All agents run on demand from Claude Code until Q-DLV-01 and Q-DLV-02 are answered.
+- **Agents:** `.claude/agents/` defines `design-steward`, `planner`, `ticket-writer`, `developer` and `reviewer` (DLV-015). Each sets its model (DLV-018): `planner` and `reviewer` use Opus; `ticket-writer`, `developer` and `design-steward` use Sonnet. The Balance agent comes later. All agents run on demand from Claude Code until Q-DLV-01 and Q-DLV-02 are answered.
 - **Project instructions:** `CLAUDE.md` at the repo root.
 - **Doc check:** `scripts/check_docs.py` checks frontmatter, links, rule IDs and statuses, duplicate and undefined IDs, and stale registers. Its tests are in `scripts/test_check_docs.py`.
 - **CI:** `.github/workflows/ci.yml` runs the doc tests and the doc check (the `Doc checks` job) on every PR and on every push to `main`. Pushes to other branches don't trigger it, so a branch with an open PR is checked once, not twice. A core-test job will be added once the C# simulation core exists.
