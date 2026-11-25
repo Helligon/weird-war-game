@@ -14,7 +14,7 @@ updated: 2026-11-25
 The game will be built in **Unity** and published on **itch.io**. Alex is new to game engines (his experience is simple browser games), so early work should include learning spikes and small prototypes.
 
 ## Rules
-- **TEC-001** (`decided`, tentative): The game engine SHOULD be **Unity**.
+- **TEC-001** (`decided`, confirmed by DEC-095): The game engine MUST be **Unity**. Spike 1 confirmed it (see [[spike-1-learnings]]).
 - **TEC-002** (`decided`): The game MUST be publishable on **itch.io**.
 - **TEC-003** (`proposed`): The primary itch.io build SHOULD be a **downloadable desktop build** (Windows, then Mac and Linux). A **browser (Web) build** is a stretch goal.
   - Reason: Unity's Web platform has limits. Browsers don't allow direct socket access, so browser multiplayer needs WebSockets through a server or relay, and threading is limited. A downloadable build avoids these.
@@ -33,5 +33,5 @@ The game will be built in **Unity** and published on **itch.io**. Alex is new to
 
 ## Open questions
 - Q-TEC-01 (answered → TEC-007): Not essential; possibly single-player only.
-- Q-TEC-02 (deferred → after first prototype): Confirm Unity.
+- Q-TEC-02 (answered → TEC-001): Unity confirmed after Spike 1 (DEC-095).
 - Q-TEC-03 (answered → TEC-010): On Alex's Windows PC.

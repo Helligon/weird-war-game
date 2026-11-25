@@ -1,0 +1,16 @@
+{
+    "name": "WeirdWar.Spike1.Presentation",
+    "rootNamespace": "WeirdWar.Spike1.Presentation",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "WeirdWar.Spike1.Core.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

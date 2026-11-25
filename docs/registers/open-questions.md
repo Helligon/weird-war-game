@@ -13,7 +13,7 @@ Generated from the **Open questions** sections of every feature note. The note i
 | ID | Note | Question | Status |
 |---|---|---|---|
 | Q-TEC-01 | [[platform-and-tech]] | Not essential; possibly single-player only. | answered → TEC-007 |
-| Q-TEC-02 | [[platform-and-tech]] | Confirm Unity. | deferred → after first prototype |
+| Q-TEC-02 | [[platform-and-tech]] | Unity confirmed after Spike 1 (DEC-095). | answered → TEC-001 |
 | Q-TEC-03 | [[platform-and-tech]] | On Alex's Windows PC. | answered → TEC-010 |
 | Q-SET-02 | [[setting]] | Real names, with fictional monster hunters alongside. | answered → SET-005, SET-006 |
 | Q-SET-01 | [[setting]] | Final game title (*Weird War* is a working title from the repo name). | open |
