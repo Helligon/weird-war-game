@@ -33,12 +33,22 @@ namespace WeirdWar.Spike1.Core
             {
                 throw new SetupException("\"startingBudget\" must be a whole number from 1 to 10000.");
             }
+            // P-SUP-09 is open: the per-hex cost is data, defaulting to 1.
+            long cost = 1;
+            if (root.TryGetValue("movementCostPerHex", out var mc))
+            {
+                if (!(mc is long c) || c < 1 || c > 10000)
+                {
+                    throw new SetupException("\"movementCostPerHex\" must be a whole number from 1 to 10000.");
+                }
+                cost = c;
+            }
             var tokens = root.TryGetValue("tokens", out var t) ? t as Dictionary<string, object?> : null;
             if (tokens == null)
             {
                 throw new SetupException("\"tokens\" must be an object with keys \"1\" and \"2\".");
             }
-            return new GameConfig((PlayerId)(int)f, (int)b, ReadStart(tokens, "1"), ReadStart(tokens, "2"));
+            return new GameConfig((PlayerId)(int)f, (int)b, ReadStart(tokens, "1"), ReadStart(tokens, "2"), (int)cost);
         }
 
         private static OffsetCoord ReadStart(Dictionary<string, object?> tokens, string key)

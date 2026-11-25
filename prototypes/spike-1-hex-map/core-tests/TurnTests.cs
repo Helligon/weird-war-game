@@ -182,18 +182,30 @@ public class TurnTests
     public void DEC_087_budget_refills_only_the_token_of_the_player_whose_turn_starts()
     {
         var s = New();
-        // Test-only: build a state where both tokens are partly spent via the internal handler.
-        s = s.WithToken(new Token(PlayerId.Player1, s.TokenOf(PlayerId.Player1).Position, 3))
-             .WithToken(new Token(PlayerId.Player2, s.TokenOf(PlayerId.Player2).Position, 4));
+        var p1 = s.TokenOf(PlayerId.Player1).Position;
+        var p2 = s.TokenOf(PlayerId.Player2).Position;
 
-        s = Accept(s, new EndTurnCommand(PlayerId.Player1)); // Player 2's turn starts
-        Assert.Equal(3, s.TokenOf(PlayerId.Player1).Budget);
+        // Player 1 spends 3 with real Move commands, then ends the turn: Player 2's turn starts.
+        for (var i = 0; i < 3; i++)
+        {
+            s = Accept(s, new MoveCommand(PlayerId.Player1, PlayerId.Player1, s.TokenOf(PlayerId.Player1).Position.Neighbours()[0]));
+        }
+        Assert.Equal(7, s.TokenOf(PlayerId.Player1).Budget);
+        s = Accept(s, new EndTurnCommand(PlayerId.Player1));
+        Assert.Equal(7, s.TokenOf(PlayerId.Player1).Budget); // not refilled: it is not their turn starting
         Assert.Equal(10, s.TokenOf(PlayerId.Player2).Budget);
 
-        s = s.WithToken(new Token(PlayerId.Player2, s.TokenOf(PlayerId.Player2).Position, 6));
-        s = Accept(s, new EndTurnCommand(PlayerId.Player2)); // Player 1's turn starts
+        // Player 2 spends 4, then ends the turn: Player 1's turn starts and refills only Player 1.
+        for (var i = 0; i < 4; i++)
+        {
+            s = Accept(s, new MoveCommand(PlayerId.Player2, PlayerId.Player2, s.TokenOf(PlayerId.Player2).Position.Neighbours()[1]));
+        }
+        Assert.Equal(6, s.TokenOf(PlayerId.Player2).Budget);
+        s = Accept(s, new EndTurnCommand(PlayerId.Player2));
         Assert.Equal(10, s.TokenOf(PlayerId.Player1).Budget);
         Assert.Equal(6, s.TokenOf(PlayerId.Player2).Budget);
+        Assert.NotEqual(p1, s.TokenOf(PlayerId.Player1).Position);
+        Assert.NotEqual(p2, s.TokenOf(PlayerId.Player2).Position);
     }
 
     [Fact]

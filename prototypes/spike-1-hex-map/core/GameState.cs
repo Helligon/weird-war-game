@@ -43,6 +43,10 @@ namespace WeirdWar.Spike1.Core
             {
                 throw new SetupException("The starting budget must be at least 1.");
             }
+            if (config.MovementCostPerHex < 1)
+            {
+                throw new SetupException("The movement cost per hex must be at least 1.");
+            }
             var p1 = HexCoord.FromOffset(config.Player1Start);
             var p2 = HexCoord.FromOffset(config.Player2Start);
             CheckStart(map, PlayerId.Player1, config.Player1Start, p1);
@@ -96,6 +100,8 @@ namespace WeirdWar.Spike1.Core
             }
             switch (command)
             {
+                case MoveCommand move:
+                    return ApplyMove(move);
                 case EndTurnCommand _:
                     return ApplyEndTurn();
                 default:
@@ -112,7 +118,48 @@ namespace WeirdWar.Spike1.Core
             return CommandResult.Accept(new GameState(Map, Config, next, tokens));
         }
 
-        /// <summary>For later command handlers (the Move Story): a new state with one token replaced.</summary>
+        // SUP-005, SUP-006, TRN-020, TRN-023, TRN-024, TRN-029: one hex per Move; the budget is spent straight away.
+        private CommandResult ApplyMove(MoveCommand move)
+        {
+            if (move.TokenOwner != PlayerId.Player1 && move.TokenOwner != PlayerId.Player2)
+            {
+                return CommandResult.Reject(this, "Unknown token.");
+            }
+            if (move.TokenOwner != move.Player)
+            {
+                return CommandResult.Reject(this, "A player can only move their own token.");
+            }
+            var token = TokenOf(move.TokenOwner);
+            var enemy = TokenOf(move.TokenOwner == PlayerId.Player1 ? PlayerId.Player2 : PlayerId.Player1);
+            var target = move.Target;
+            if (!Map.Contains(target))
+            {
+                return CommandResult.Reject(this, "Target is outside the map.");
+            }
+            if (!Map.IsPassable(target))
+            {
+                return CommandResult.Reject(this, "Target is impassable " + Map.TerrainAt(target) + ".");
+            }
+            if (target.Equals(enemy.Position))
+            {
+                return CommandResult.Reject(this, "Target is occupied by the other token.");
+            }
+            if (token.Position.DistanceTo(target) != 1)
+            {
+                return CommandResult.Reject(this, "Target is not next to the token.");
+            }
+            if (target.DistanceTo(enemy.Position) == 1)
+            {
+                return CommandResult.Reject(this, "contact: battles not in spike");
+            }
+            if (token.Budget < Config.MovementCostPerHex)
+            {
+                return CommandResult.Reject(this, "Not enough movement budget (" + token.Budget + " left, " + Config.MovementCostPerHex + " needed).");
+            }
+            return CommandResult.Accept(WithToken(token.WithPosition(target, token.Budget - Config.MovementCostPerHex)));
+        }
+
+        /// <summary>A new state with one token replaced.</summary>
         internal GameState WithToken(Token token)
         {
             var tokens = (Token[])_tokens.Clone();
