@@ -5,8 +5,8 @@ using WeirdWar.Spike1.Core;
 namespace WeirdWar.Spike1.Presentation
 {
     /// <summary>
-    /// Scene entry point. Loads the sample map and scenario through the core, builds the game state and draws the map.
-    /// The Unity layer only reads core state (DLV-012).
+    /// Scene entry point. Loads the sample map and scenario through the core, builds the game state, draws the map and tokens, and wires hot-seat input.
+    /// The Unity layer only reads core state and sends commands (DLV-012, DLV-013).
     /// </summary>
     public sealed class HexMapBootstrap : MonoBehaviour
     {
@@ -17,6 +17,7 @@ namespace WeirdWar.Spike1.Presentation
 
         public GameState State { get; private set; }
         public HexMapView View { get; private set; }
+        public GameController Controller { get; private set; }
 
         private void Start()
         {
@@ -30,6 +31,12 @@ namespace WeirdWar.Spike1.Presentation
             if (!TryGetComponent<HexMapView>(out var view)) { view = gameObject.AddComponent<HexMapView>(); }
             View = view;
             View.Build(State.Map);
+
+            // Input and drawing of the tokens: commands only, then re-render from the core state (DLV-013).
+            Controller = new GameController(State);
+            if (!TryGetComponent<TokenView>(out var tokens)) { tokens = gameObject.AddComponent<TokenView>(); }
+            if (!TryGetComponent<HotSeatInput>(out var input)) { input = gameObject.AddComponent<HotSeatInput>(); }
+            input.Init(Controller, tokens);
 
             var cam = Camera.main;
             if (cam != null)

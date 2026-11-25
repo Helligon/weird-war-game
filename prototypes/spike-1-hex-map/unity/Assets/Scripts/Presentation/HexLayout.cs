@@ -19,6 +19,26 @@ namespace WeirdWar.Spike1.Presentation
             return new Vector3(x, y, 0f);
         }
 
+        /// <summary>
+        /// Inverse of <see cref="HexToWorld"/>: the hex whose cell contains a world point (z is ignored). Pure maths,
+        /// so clicks can be tested without a mouse. The result may be off the map; the caller checks that.
+        /// </summary>
+        public static HexCoord WorldToHex(Vector3 world, float size = 1f)
+        {
+            var qf = 2f / 3f * world.x / size;
+            var rf = -world.y / (size * Sqrt3) - qf / 2f;
+            var sf = -qf - rf;
+            var q = Mathf.RoundToInt(qf);
+            var r = Mathf.RoundToInt(rf);
+            var s = Mathf.RoundToInt(sf);
+            var dq = Mathf.Abs(q - qf);
+            var dr = Mathf.Abs(r - rf);
+            var ds = Mathf.Abs(s - sf);
+            if (dq > dr && dq > ds) { q = -r - s; }
+            else if (dr > ds) { r = -q - s; }
+            return new HexCoord(q, r);
+        }
+
         public static Vector3 OffsetToWorld(int column, int row, float size = 1f)
         {
             return HexToWorld(HexCoord.FromOffset(new OffsetCoord(column, row)), size);
