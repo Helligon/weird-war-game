@@ -64,9 +64,9 @@ namespace WeirdWar.Spike2.Presentation
             _root.localPosition = new Vector3(0f, 0f, -1f);
             foreach (var o in state.Officers)
             {
-                var square = Square("Officer", new Vector3((float)o.Position.X, (float)o.Position.Y, 0f), OfficerColour);
+                var square = Square("Officer", new Vector3((float)o.Position.X, (float)o.Position.Y, 0f), OfficerColour, BattleMapView.OrderOfficer);
                 // A thin dark bar from the centre shows where the rifle points (PCH-001).
-                var bar = Square("Rifle", new Vector3(1f, 0f, -0.1f), Color.black);
+                var bar = Square("Rifle", new Vector3(1f, 0f, -0.1f), Color.black, BattleMapView.OrderRifle);
                 bar.transform.SetParent(square.transform, false);
                 bar.transform.localPosition = new Vector3(1f, 0f, -0.1f);
                 bar.transform.localScale = new Vector3(2f, 0.2f, 1f);
@@ -117,13 +117,13 @@ namespace WeirdWar.Spike2.Presentation
                 {
                     var x = (float)section.Position.X + (i % Columns - (Columns - 1) / 2f) * Spacing;
                     var y = (float)section.Position.Y + ((rows - 1) / 2f - i / Columns) * Spacing;
-                    list.Add(Square("Unit", new Vector3(x, y, 0f), colour));
+                    list.Add(Square("Unit", new Vector3(x, y, 0f), colour, BattleMapView.OrderUnits));
                 }
                 _unitSquares[section.Id.Value] = list;
             }
         }
 
-        private GameObject Square(string name, Vector3 position, Color colour)
+        private GameObject Square(string name, Vector3 position, Color colour, int order)
         {
             if (_squareMesh == null)
             {
@@ -144,7 +144,9 @@ namespace WeirdWar.Spike2.Presentation
             go.transform.SetParent(_root, false);
             go.transform.localPosition = position;
             go.AddComponent<MeshFilter>().sharedMesh = _squareMesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = material;
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.sortingOrder = order;
             return go;
         }
 

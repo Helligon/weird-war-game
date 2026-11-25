@@ -28,6 +28,17 @@ namespace WeirdWar.Spike2.Presentation
 
         private readonly List<Transform> _cover = new List<Transform>();
 
+        // The flat layers use a transparent shader, so Unity sorts them by distance from the camera.
+        // With the third-person camera that order flips as the camera moves, and the ground can hide
+        // the cover and the squares. A fixed sorting order keeps ground < edges < cover < units.
+        public const int OrderGround = 0;
+        public const int OrderEdges = 1;
+        public const int OrderCover = 2;
+        public const int OrderUnits = 10;
+        public const int OrderOfficer = 11;
+        public const int OrderRifle = 12;
+        public const int OrderTracer = 20;
+
         public void Build(BattleMap map)
         {
             for (var i = transform.childCount - 1; i >= 0; i--) { DestroyImmediate(transform.GetChild(i).gameObject); }
@@ -35,20 +46,20 @@ namespace WeirdWar.Spike2.Presentation
 
             var w = (float)map.Width;
             var h = (float)map.Height;
-            Ground = Layer("Ground", 0f, GroundColour, Rect(0f, 0f, w, h));
-            WestEdge = Layer("West edge", -0.1f, WestEdgeColour, Rect(0f, 0f, EdgeStripWidth, h));
-            EastEdge = Layer("East edge", -0.1f, EastEdgeColour, Rect(w - EdgeStripWidth, 0f, w, h));
+            Ground = Layer("Ground", 0f, OrderGround, GroundColour, Rect(0f, 0f, w, h));
+            WestEdge = Layer("West edge", -0.1f, OrderEdges, WestEdgeColour, Rect(0f, 0f, EdgeStripWidth, h));
+            EastEdge = Layer("East edge", -0.1f, OrderEdges, EastEdgeColour, Rect(w - EdgeStripWidth, 0f, w, h));
 
             foreach (var c in map.CoverObjects)
             {
-                var disc = Layer("Cover " + c.Id, -0.2f, CoverColour, Disc((float)c.Position.X, (float)c.Position.Y, (float)c.Radius));
+                var disc = Layer("Cover " + c.Id, -0.2f, OrderCover, CoverColour, Disc((float)c.Position.X, (float)c.Position.Y, (float)c.Radius));
                 _cover.Add(disc);
             }
             CoverCount = _cover.Count;
             WorldBounds = new Bounds(new Vector3(w / 2f, h / 2f, 0f), new Vector3(w, h, 0f));
         }
 
-        private Transform Layer(string name, float z, Color colour, (Vector3[] vertices, int[] triangles) shape)
+        private Transform Layer(string name, float z, int order, Color colour, (Vector3[] vertices, int[] triangles) shape)
         {
             var go = new GameObject(name);
             go.transform.SetParent(transform, false);
@@ -57,7 +68,9 @@ namespace WeirdWar.Spike2.Presentation
             mesh.RecalculateBounds();
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var material = new Material(Shader.Find("Sprites/Default")) { name = name, color = colour };
-            go.AddComponent<MeshRenderer>().sharedMaterial = material;
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.sortingOrder = order;
             return go.transform;
         }
 
