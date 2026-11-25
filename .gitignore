@@ -30,3 +30,6 @@ docs/.obsidian/
 # Spike 1: the core DLL is built for Unity with "dotnet build" and never committed (DLV-012, TEC-014)
 prototypes/spike-1-hex-map/unity/Assets/Plugins/WeirdWarCore/
 prototypes/spike-1-hex-map/unity/Assets/Plugins/WeirdWarCore.meta
+# Spike 2: same for the battle core DLL
+prototypes/spike-2-battle/unity/Assets/Plugins/WeirdWarBattleCore/
+prototypes/spike-2-battle/unity/Assets/Plugins/WeirdWarBattleCore.meta

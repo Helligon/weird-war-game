@@ -7,3 +7,4 @@ Everything under `prototypes/` is **throwaway** spike code (TEC-013). It exists 
 | Spike | Folder |
 |---|---|
 | Spike 1: hex map | `spike-1-hex-map/` (plain C# `core`, Unity project in `unity/`) |
+| Spike 2: third-person battle | `spike-2-battle/` (plain C# `core`, Unity project in `unity/`; throwaway) |
