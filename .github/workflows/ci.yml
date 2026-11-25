@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    name: Doc checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test the doc scripts
+        run: python3 -m unittest discover -s scripts -v
+      - name: Check the design vault
+        run: python3 scripts/check_docs.py
+
+  # Core tests: add a job here (e.g. actions/setup-dotnet + `dotnet test`) once the C# simulation core exists.

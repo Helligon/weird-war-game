@@ -3,7 +3,7 @@ id: REG-D
 title: Decision log
 status: decided
 tags: [register]
-updated: 2026-11-21
+updated: 2026-11-24
 ---
 
 # Decision log
@@ -95,3 +95,4 @@ Significant design decisions, recorded in a lightweight version of the ADR (Arch
 | DEC-082 | 2026-11-24 | Garrison details: destroyed when beaten; attacking one uses the turn and costs SP; can share a hex with a friendly Brigade and fights as an extra Section; any owned ST; lost when the ST changes hands. | Completes garrisons. | [[map-and-locations]] |
 | DEC-083 | 2026-11-24 | Delivery: public GitHub repo; GitHub Issues + Projects; simple Kanban with Features → Stories and a milestone per Feature; feature branches merged by Alex; the Steward may commit agreed doc fixes; plain C# core + Unity presentation layer; agents as Claude Code subagents. | A professional AI-assisted workflow, kept light. | [[pipeline]] |
 | DEC-025 | 2026-11-21 | Design docs live in `docs/` as an Obsidian vault with rule IDs, status per rule and registers. | Deterministic input for AI ticketing. | [[AGENTS]] |
+| DEC-084 | 2026-11-24 | Agents may change the docs without asking when Alex has already discussed the change; only completely new things need his input first. Revises DLV-009. | Less friction for changes that are already agreed in principle. | [[pipeline]] |
