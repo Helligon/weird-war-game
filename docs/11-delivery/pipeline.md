@@ -47,7 +47,7 @@ flowchart LR
 - **DLV-009** (`decided`, revised by DEC-084): Agents MAY change the docs directly when Alex has already discussed the change. Anything completely new MUST be raised with Alex first.
 
 ### Ready and Done
-- **DLV-010** (`proposed`): **Definition of Ready**: a Story cites its rule IDs and parameter IDs, has Given/When/Then acceptance criteria, has no blocking open questions, and fits in one PR.
+- **DLV-010** (`decided`, confirmed by DEC-088): **Definition of Ready**: a Story cites its rule IDs and parameter IDs, has Given/When/Then acceptance criteria, has no blocking open questions, and fits in one PR.
 - **DLV-011** (`decided`, confirmed by DEC-088): **Definition of Done**: the acceptance criteria pass as automated tests named after the rules; the Reviewer has approved; CI is green; docs are updated if behaviour changed.
 
 ### Architecture
