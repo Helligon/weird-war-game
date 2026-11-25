@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Plain C# battle command core (DLV-012, DLV-013, TEC-012). No Unity references. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>WeirdWar.Spike2.Battle.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>

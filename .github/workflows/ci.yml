@@ -30,6 +30,11 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: prototypes/spike-1-hex-map/global.json
+      - name: Check both spikes pin the same SDK
+        run: cmp prototypes/spike-1-hex-map/global.json prototypes/spike-2-battle/global.json
       - name: Test the spike 1 simulation core
         working-directory: prototypes/spike-1-hex-map
+        run: dotnet test core-tests
+      - name: Test the spike 2 battle core
+        working-directory: prototypes/spike-2-battle
         run: dotnet test core-tests
