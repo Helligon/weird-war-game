@@ -41,6 +41,7 @@ namespace WeirdWar.Spike2.Battle.Core
 
         private readonly SortedDictionary<int, Section> _sections = new SortedDictionary<int, Section>();
         private readonly List<Officer> _officers = new List<Officer>();
+        private readonly BattleMap _map;
         private readonly UnitStats _stats;
         private readonly BattleParameters _parameters;
         private readonly SeededRandom _random;
@@ -48,9 +49,12 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>All Sections, in SectionId order (stable, TEC-008).</summary>
         public IEnumerable<Section> Sections => _sections.Values;
         public IReadOnlyList<Officer> Officers => _officers;
+        public BattleMap Map => _map;
+        public UnitStats Stats => _stats;
 
-        private BattleState(UnitStats stats, BattleParameters parameters, ulong seed)
+        private BattleState(BattleMap map, UnitStats stats, BattleParameters parameters, ulong seed)
         {
+            _map = map;
             _random = new SeededRandom(seed);
             _stats = stats;
             _parameters = parameters;
@@ -63,7 +67,7 @@ namespace WeirdWar.Spike2.Battle.Core
         /// </summary>
         public static BattleState SetUp(BattleMap map, UnitStats stats, BattleParameters parameters, ulong seed)
         {
-            var state = new BattleState(stats, parameters, seed);
+            var state = new BattleState(map, stats, parameters, seed);
             var midY = map.Height / 2;
             var inset = BattleMap.EdgeStripWidth * 2;
             var playerPos = new MapPoint(map.EdgeOf(Side.Player).X + inset, midY);
@@ -76,6 +80,9 @@ namespace WeirdWar.Spike2.Battle.Core
 
         /// <summary>Adds a Section. Used by set-up and by tests that need a particular layout.</summary>
         public void Add(Section section) { _sections.Add(section.Id.Value, section); }
+
+        /// <summary>Adds an Officer. Used by tests that need a particular layout (the enemy has none at set-up).</summary>
+        public void AddOfficer(Officer officer) { _officers.Add(officer); }
 
         public Section? Find(SectionId id) => _sections.TryGetValue(id.Value, out var s) ? s : null;
 
@@ -102,11 +109,26 @@ namespace WeirdWar.Spike2.Battle.Core
             var shooter = Find(shooterId) ?? throw new ArgumentException(shooterId + " does not exist.");
             var target = Find(targetId) ?? throw new ArgumentException(targetId + " does not exist.");
             if (shooter.Side == target.Side) throw new ArgumentException(shooterId + " cannot fire at its own side (CMD-008).");
+            return Volley(shooter, target.Position, target.IsDestroyed, moving, target.TakeDamage, () => target.Health, target);
+        }
+
+        /// <summary>DAI-006 (DEC-096): the same placeholder volley, at an enemy Officer. Officers do not fire back in this spike.</summary>
+        public FireResult FireAtOfficer(SectionId shooterId, Officer target, bool moving = false)
+        {
+            var shooter = Find(shooterId) ?? throw new ArgumentException(shooterId + " does not exist.");
+            if (!_officers.Contains(target)) throw new ArgumentException("That Officer is not in this battle.");
+            if (shooter.Side == target.Side) throw new ArgumentException(shooterId + " cannot fire at its own side (CMD-008).");
+            return Volley(shooter, target.Position, target.IsDestroyed, moving, target.TakeDamage, () => target.Health, null);
+        }
+
+        private FireResult Volley(Section shooter, MapPoint targetPosition, bool targetDestroyed, bool moving,
+            Action<int> damage, Func<int> health, Section? targetSection)
+        {
             var chance = HitChance(moving);
             if (shooter.IsDestroyed) return new FireResult(FireOutcome.ShooterDestroyed, 0, 0, 0, chance);
-            if (target.IsDestroyed) return new FireResult(FireOutcome.TargetDestroyed, 0, 0, 0, chance);
-            var dx = shooter.Position.X - target.Position.X;
-            var dy = shooter.Position.Y - target.Position.Y;
+            if (targetDestroyed) return new FireResult(FireOutcome.TargetDestroyed, 0, 0, 0, chance);
+            var dx = shooter.Position.X - targetPosition.X;
+            var dy = shooter.Position.Y - targetPosition.Y;
             if (dx * dx + dy * dy > _stats.RiflemenRange * _stats.RiflemenRange)
             {
                 return new FireResult(FireOutcome.OutOfRange, 0, 0, 0, chance);
@@ -117,9 +139,23 @@ namespace WeirdWar.Spike2.Battle.Core
             {
                 if (_random.NextDouble() < chance) hits++;
             }
-            var before = target.Health;
-            target.TakeDamage(hits * _stats.RiflemenDamage);
-            return new FireResult(FireOutcome.Fired, shots, hits, before - target.Health, chance);
+            var before = health();
+            damage(hits * _stats.RiflemenDamage);
+            if (targetSection != null) targetSection.LastAttacker = shooter.Id;
+            return new FireResult(FireOutcome.Fired, shots, hits, before - health(), chance);
+        }
+
+        /// <summary>
+        /// Advances the battle by <paramref name="seconds"/> of battle time: every living Section, in SectionId order, runs its
+        /// default behaviour (DAI-001..006). Deterministic: no clock, only the battle's seeded random source (TEC-008).
+        /// </summary>
+        public void Tick(double seconds)
+        {
+            if (seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
+            foreach (var section in _sections.Values)
+            {
+                if (!section.IsDestroyed) DefaultBehaviour.Run(this, section, seconds);
+            }
         }
     }
 }
