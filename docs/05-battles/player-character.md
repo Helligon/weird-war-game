@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [battle, controls, third-person]
 related: ["[[officers]]", "[[heroes]]", "[[commands]]"]
-updated: 2026-11-21
+updated: 2026-11-25
 ---
 
 # Player character in battle
@@ -19,7 +19,7 @@ In battle, the player fights in third person as an officer or hero, and switches
 - **PCH-003** (`decided`): When the controlled character dies, control MUST move to another living officer or hero on the player's side.
 - **PCH-004** (`decided`): The player MUST NOT be able to directly control a single Unit inside a Section (may change; see [[future-ideas]]).
 - **PCH-005** (`decided`): If all of a side's officers and heroes die, that side's remaining troops MUST suffer a large morale penalty (P-PCH-01).
-- **PCH-006** (`proposed`): If no officer or hero is left, the player SHOULD stay in the tactical view only.
+- **PCH-006** (`decided`, DEC-094): If no officer or hero is left, the player SHOULD stay in the tactical view only.
 - **PCH-008** (`decided`): Officers MUST NOT have active abilities.
 - **PCH-007** (`decided`): Heroes MUST fight with special weapons and gear. Active abilities are deferred (HER-010, HER-011).
 
