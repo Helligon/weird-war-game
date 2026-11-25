@@ -68,6 +68,7 @@ flowchart LR
 
 - **DLV-015** (`decided`): Agents MUST be defined as Claude Code subagents in the repo (`.claude/agents/*.md`), each with its own instructions, tools and limits.
 - **DLV-016** (`decided`): No agent MAY merge into `main`.
+- **DLV-017** (`decided`, DEC-089): Agents MAY merge PRs into any branch other than `main`, e.g. a Story PR into its Feature branch once it meets the Definition of Done (DLV-011).
 
 ## Current setup
 What exists in the repository today:
@@ -76,7 +77,13 @@ What exists in the repository today:
 - **Doc check:** `scripts/check_docs.py` checks frontmatter, links, rule IDs and statuses, duplicate and undefined IDs, and stale registers. Its tests are in `scripts/test_check_docs.py`.
 - **CI:** `.github/workflows/ci.yml` runs the doc tests and the doc check (the `Doc checks` job) on every PR and on every push to `main`. Pushes to other branches don't trigger it, so a branch with an open PR is checked once, not twice. A core-test job will be added once the C# simulation core exists.
 - **Branch protection on `main`** (enforces DLV-007 and DLV-016): changes go through a PR, the `Doc checks` job must pass, and force-pushes and deletion are blocked. This applies to admins too. No approval count is required, because Alex can't approve his own PRs.
-- **Agent permissions:** `.claude/settings.json` denies `gh pr merge` and pushes to `main`. Agents use Alex's GitHub account, so GitHub alone can't tell them apart from Alex.
+- **Agent permissions:** `.claude/settings.json` blocks pushes to `main`, and runs a hook (`.claude/hooks/block_main_merge.py`) before every shell command. The hook lets agents merge PRs into other branches (DLV-017) but blocks:
+  - any merge into `main` (DLV-016)
+  - any merge whose target branch it can't find
+  - any command that mentions merging a PR but can't be read as a merge
+  - merges through the raw GitHub API
+
+  Its tests are in `scripts/test_block_main_merge.py`. Agents use Alex's GitHub account, so GitHub alone can't tell them apart from Alex.
 - **Repository:** merged branches are deleted automatically.
 - **Project board:** "@Helligon's Weird War", user project **#1** (https://github.com/users/Helligon/projects/1), linked to the repo. Its Status columns follow DLV-005.
 
