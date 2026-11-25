@@ -15,7 +15,7 @@ public class TurnTests
     {
         var a = p1 ?? (5, 20);
         var b = p2 ?? (24, 30);
-        return new GameConfig(first, budget, new OffsetCoord(a.Item1, a.Item2), new OffsetCoord(b.Item1, b.Item2));
+        return new GameConfig(first, budget, new OffsetCoord(a.Item1, a.Item2), new OffsetCoord(b.Item1, b.Item2), 1);
     }
 
     private static GameState New(GameConfig? config = null) => GameState.NewGame(Map(), config ?? Config());
@@ -52,6 +52,23 @@ public class TurnTests
             typeof(CommandResult), typeof(HexCoord), typeof(OffsetCoord),
         };
         foreach (var type in types)
+        {
+            Assert.All(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), p =>
+                Assert.True(p.SetMethod == null || !p.SetMethod.IsPublic, type.Name + "." + p.Name + " has a public setter"));
+            Assert.All(type.GetFields(BindingFlags.Public | BindingFlags.Instance), f =>
+                Assert.True(f.IsInitOnly, type.Name + "." + f.Name + " is a public mutable field"));
+        }
+    }
+
+    [Fact]
+    public void DLV_013_every_command_type_is_immutable()
+    {
+        var commandTypes = typeof(GameCommand).Assembly.GetTypes()
+            .Where(t => typeof(GameCommand).IsAssignableFrom(t)).ToList();
+
+        Assert.Contains(typeof(MoveCommand), commandTypes);
+        Assert.Contains(typeof(EndTurnCommand), commandTypes);
+        foreach (var type in commandTypes)
         {
             Assert.All(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), p =>
                 Assert.True(p.SetMethod == null || !p.SetMethod.IsPublic, type.Name + "." + p.Name + " has a public setter"));
@@ -182,18 +199,30 @@ public class TurnTests
     public void DEC_087_budget_refills_only_the_token_of_the_player_whose_turn_starts()
     {
         var s = New();
-        // Test-only: build a state where both tokens are partly spent via the internal handler.
-        s = s.WithToken(new Token(PlayerId.Player1, s.TokenOf(PlayerId.Player1).Position, 3))
-             .WithToken(new Token(PlayerId.Player2, s.TokenOf(PlayerId.Player2).Position, 4));
+        var p1 = s.TokenOf(PlayerId.Player1).Position;
+        var p2 = s.TokenOf(PlayerId.Player2).Position;
 
-        s = Accept(s, new EndTurnCommand(PlayerId.Player1)); // Player 2's turn starts
-        Assert.Equal(3, s.TokenOf(PlayerId.Player1).Budget);
+        // Player 1 spends 3 with real Move commands, then ends the turn: Player 2's turn starts.
+        for (var i = 0; i < 3; i++)
+        {
+            s = Accept(s, new MoveCommand(PlayerId.Player1, PlayerId.Player1, s.TokenOf(PlayerId.Player1).Position.Neighbours()[0]));
+        }
+        Assert.Equal(7, s.TokenOf(PlayerId.Player1).Budget);
+        s = Accept(s, new EndTurnCommand(PlayerId.Player1));
+        Assert.Equal(7, s.TokenOf(PlayerId.Player1).Budget); // not refilled: it is not their turn starting
         Assert.Equal(10, s.TokenOf(PlayerId.Player2).Budget);
 
-        s = s.WithToken(new Token(PlayerId.Player2, s.TokenOf(PlayerId.Player2).Position, 6));
-        s = Accept(s, new EndTurnCommand(PlayerId.Player2)); // Player 1's turn starts
+        // Player 2 spends 4, then ends the turn: Player 1's turn starts and refills only Player 1.
+        for (var i = 0; i < 4; i++)
+        {
+            s = Accept(s, new MoveCommand(PlayerId.Player2, PlayerId.Player2, s.TokenOf(PlayerId.Player2).Position.Neighbours()[1]));
+        }
+        Assert.Equal(6, s.TokenOf(PlayerId.Player2).Budget);
+        s = Accept(s, new EndTurnCommand(PlayerId.Player2));
         Assert.Equal(10, s.TokenOf(PlayerId.Player1).Budget);
         Assert.Equal(6, s.TokenOf(PlayerId.Player2).Budget);
+        Assert.NotEqual(p1, s.TokenOf(PlayerId.Player1).Position);
+        Assert.NotEqual(p2, s.TokenOf(PlayerId.Player2).Position);
     }
 
     [Fact]
@@ -258,7 +287,7 @@ public class TurnTests
     [Fact]
     public void DEC_087_scenario_file_sets_first_player_budget_and_positions()
     {
-        var config = GameConfigLoader.Load("{\"firstPlayer\":2,\"startingBudget\":7,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
+        var config = GameConfigLoader.Load("{\"firstPlayer\":2,\"startingBudget\":7,\"movementCostPerHex\":1,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
 
         Assert.Equal(PlayerId.Player2, config.FirstPlayer);
         Assert.Equal(7, config.StartingBudget);
@@ -269,7 +298,7 @@ public class TurnTests
     [Fact]
     public void TRN_033_stand_in_first_player_defaults_to_player_1_when_missing()
     {
-        var config = GameConfigLoader.Load("{\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
+        var config = GameConfigLoader.Load("{\"movementCostPerHex\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
 
         Assert.Equal(PlayerId.Player1, config.FirstPlayer);
     }
@@ -287,11 +316,11 @@ public class TurnTests
     [Theory]
     [InlineData("[]")]
     [InlineData("not json")]
-    [InlineData("{\"firstPlayer\":3,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}")]
-    [InlineData("{\"firstPlayer\":1,\"startingBudget\":0,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}")]
-    [InlineData("{\"firstPlayer\":1,\"startingBudget\":10}")]
-    [InlineData("{\"firstPlayer\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2]}}")]
-    [InlineData("{\"firstPlayer\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3]}}")]
+    [InlineData("{\"firstPlayer\":3,\"movementCostPerHex\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}")]
+    [InlineData("{\"firstPlayer\":1,\"movementCostPerHex\":1,\"startingBudget\":0,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}")]
+    [InlineData("{\"firstPlayer\":1,\"movementCostPerHex\":1,\"startingBudget\":10}")]
+    [InlineData("{\"firstPlayer\":1,\"movementCostPerHex\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2]}}")]
+    [InlineData("{\"firstPlayer\":1,\"movementCostPerHex\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3]}}")]
     public void DEC_087_malformed_scenario_files_are_rejected(string json)
     {
         Assert.Throws<SetupException>(() => GameConfigLoader.Load(json));
