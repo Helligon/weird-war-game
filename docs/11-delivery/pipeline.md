@@ -39,16 +39,16 @@ flowchart LR
 - **DLV-003** (`decided`): The workflow MUST be **simple Kanban**, not SAFe.
 - **DLV-004** (`decided`): Work MUST be split into **Features** and **Stories**. Each completed Feature MUST close a **milestone**.
 - **DLV-005** (`decided`, confirmed by DEC-085): Board columns: Backlog → Ready → In progress → In review → Done.
-- **DLV-006** (`proposed`): A Feature is a parent issue with the `feature` label and a milestone; Stories are sub-issues with the `story` label.
+- **DLV-006** (`decided`, confirmed by DEC-088): A Feature is a parent issue with the `feature` label and a milestone; Stories are sub-issues with the `story` label.
 
 ### Branching and merging
 - **DLV-007** (`decided`): Each Feature MUST have a **feature branch**. Alex MUST merge the feature branch into `main` himself, only when completely happy with it.
-- **DLV-008** (`proposed`): Each Story SHOULD have its own short-lived branch, merged into the feature branch by PR after automatic review and passing tests.
+- **DLV-008** (`decided`, confirmed by DEC-088): Each Story SHOULD have its own short-lived branch, merged into the feature branch by PR after automatic review and passing tests.
 - **DLV-009** (`decided`, revised by DEC-084): Agents MAY change the docs directly when Alex has already discussed the change. Anything completely new MUST be raised with Alex first.
 
 ### Ready and Done
 - **DLV-010** (`proposed`): **Definition of Ready**: a Story cites its rule IDs and parameter IDs, has Given/When/Then acceptance criteria, has no blocking open questions, and fits in one PR.
-- **DLV-011** (`proposed`): **Definition of Done**: the acceptance criteria pass as automated tests named after the rules; the Reviewer has approved; CI is green; docs are updated if behaviour changed.
+- **DLV-011** (`decided`, confirmed by DEC-088): **Definition of Done**: the acceptance criteria pass as automated tests named after the rules; the Reviewer has approved; CI is green; docs are updated if behaviour changed.
 
 ### Architecture
 - **DLV-012** (`decided`): The game MUST be split into a **simulation core in plain C#** (no Unity dependency: hex map, supply, turns, Cards, morale, auto-resolve) and a **Unity presentation layer** (rendering, input, third-person battles).
