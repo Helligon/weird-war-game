@@ -61,12 +61,16 @@ public class BattleMapTests
         Assert.InRange(seconds, 60.0, 90.0); // P-BMP-01
     }
 
+    // DLV-014: a stats file with a missing value is an error, so these tests give every value.
+    private static string StatsWithSpeed(string speed) =>
+        "{ \"riflemen\": { \"speed\": " + speed + ", \"P-HIE-01\": 8, \"P-HIE-02\": 3, \"range\": 40, \"damage\": 1, \"accuracy\": 0.6 }, \"officer\": { \"health\": 10 } }";
+
     [Fact]
     public void BMP_010_crossing_time_uses_the_speed_from_the_data_file_not_a_hard_coded_value()
     {
         var map = LoadMap();
-        var slow = UnitStats.Load("{ \"riflemen\": { \"speed\": 1.0 } }");
-        var fast = UnitStats.Load("{ \"riflemen\": { \"speed\": 2.0 } }");
+        var slow = UnitStats.Load(StatsWithSpeed("1.0"));
+        var fast = UnitStats.Load(StatsWithSpeed("2.0"));
 
         Assert.Equal(map.EdgeDistance / 1.0, map.CrossingSeconds(slow.RiflemenSpeed), 6);
         Assert.Equal(map.EdgeDistance / 2.0, map.CrossingSeconds(fast.RiflemenSpeed), 6);

@@ -1,5 +1,13 @@
 {
   "riflemen": {
-    "speed": 1.5
+    "speed": 1.5,
+    "P-HIE-01": 8,
+    "P-HIE-02": 3,
+    "range": 90,
+    "damage": 1,
+    "accuracy": 0.6
+  },
+  "officer": {
+    "health": 10
   }
 }

@@ -16,6 +16,8 @@ The DLL is git-ignored, so it is never committed (`*.dll` would go to LFS and go
 
 Open `Assets/Scenes/Battle.unity` and press Play. The scene is made by the menu item *Weird War > Build Battle scene*.
 
+Sections, Units, the Officer and the Fire buttons are drawn by `BattleStateView` (one square per Unit; yellow square = Officer). Stats and parameters come from `../data/stats.json` and `../data/parameters.json`.
+
 The map and the Riflemen speed are read at run time from `../data/map.json` and `../data/stats.json` (metres; one metre is one Unity unit). Blue strip = west edge, red strip = east edge, green discs = cover, tan = open ground.
 
 EditMode tests: Window > General > Test Runner, or `Unity -batchmode -nographics -projectPath unity -runTests -testPlatform EditMode -testResults results.xml`.
