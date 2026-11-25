@@ -13,6 +13,7 @@ docs/.obsidian/cache
 [Uu]ser[Ss]ettings/
 *.csproj
 *.sln
+*.slnx
 *.suo
 *.user
 *.pidb
