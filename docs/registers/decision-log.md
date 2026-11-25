@@ -3,7 +3,7 @@ id: REG-D
 title: Decision log
 status: decided
 tags: [register]
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Decision log
@@ -96,3 +96,4 @@ Significant design decisions, recorded in a lightweight version of the ADR (Arch
 | DEC-083 | 2026-11-24 | Delivery: public GitHub repo; GitHub Issues + Projects; simple Kanban with Features → Stories and a milestone per Feature; feature branches merged by Alex; the Steward may commit agreed doc fixes; plain C# core + Unity presentation layer; agents as Claude Code subagents. | A professional AI-assisted workflow, kept light. | [[pipeline]] |
 | DEC-025 | 2026-11-21 | Design docs live in `docs/` as an Obsidian vault with rule IDs, status per rule and registers. | Deterministic input for AI ticketing. | [[AGENTS]] |
 | DEC-084 | 2026-11-24 | Agents may change the docs without asking when Alex has already discussed the change; only completely new things need his input first. Revises DLV-009. | Less friction for changes that are already agreed in principle. | [[pipeline]] |
+| DEC-085 | 2026-11-25 | Board columns confirmed: Backlog → Ready → In progress → In review → Done, on the project board "@Helligon's Weird War" (#1). DLV-005 is now `decided`. | The board was set up with these columns and Alex confirmed them. | [[pipeline]] |
