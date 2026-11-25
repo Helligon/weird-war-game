@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [process, agents]
 related: ["[[AGENTS]]", "[[platform-and-tech]]", "[[decision-log]]"]
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Delivery pipeline and agents
@@ -38,7 +38,7 @@ flowchart LR
 - **DLV-002** (`decided`): Work MUST be tracked in **GitHub Issues and GitHub Projects** (free). Agents SHOULD set these up through the GitHub API/CLI.
 - **DLV-003** (`decided`): The workflow MUST be **simple Kanban**, not SAFe.
 - **DLV-004** (`decided`): Work MUST be split into **Features** and **Stories**. Each completed Feature MUST close a **milestone**.
-- **DLV-005** (`proposed`): Board columns: Backlog → Ready → In progress → In review → Done.
+- **DLV-005** (`decided`, confirmed by DEC-085): Board columns: Backlog → Ready → In progress → In review → Done.
 - **DLV-006** (`proposed`): A Feature is a parent issue with the `feature` label and a milestone; Stories are sub-issues with the `story` label.
 
 ### Branching and merging
@@ -58,12 +58,12 @@ flowchart LR
 ## Agents
 | Agent | Does | May touch | Trigger |
 |---|---|---|---|
-| Design Steward | Checks docs (links, IDs, statuses, contradictions); regenerates registers | `docs/` only | On demand. The scripted doc check also runs in CI on every push / PR |
+| Design Steward | Checks docs (links, IDs, statuses, contradictions); regenerates registers | `docs/` only | On demand. The scripted doc check also runs in CI on every PR and every push to `main` |
 | Planner | Turns decided rules into Features in order, with dependencies; prototypes first | Issues (read docs) | On demand, after design sessions |
 | Ticket Writer | Writes Stories with rule IDs, acceptance criteria and parameters; marks blocked ones | Issues (read docs) | On demand, per Feature |
 | Developer | Implements one Story per branch, with tests; cites rule IDs in commits | Code, its own branch | On demand, per Story |
 | Reviewer | Reviews each PR against its Story's rules and the architecture | PR comments only | **Automatic on every PR** (proposed) |
-| CI | Runs core tests and doc checks | – | **Automatic on every push / PR** |
+| CI | Runs core tests and doc checks | – | **Automatic on every PR and every push to `main`** |
 | Balance agent | Runs auto-resolve simulations to tune numbers | Proposals only | Later, on demand |
 
 - **DLV-015** (`decided`): Agents MUST be defined as Claude Code subagents in the repo (`.claude/agents/*.md`), each with its own instructions, tools and limits.
@@ -74,10 +74,11 @@ What exists in the repository today:
 - **Agents:** `.claude/agents/` defines `design-steward`, `planner`, `ticket-writer`, `developer` and `reviewer` (DLV-015). The Balance agent comes later. All agents run on demand from Claude Code until Q-DLV-01 and Q-DLV-02 are answered.
 - **Project instructions:** `CLAUDE.md` at the repo root.
 - **Doc check:** `scripts/check_docs.py` checks frontmatter, links, rule IDs and statuses, duplicate and undefined IDs, and stale registers. Its tests are in `scripts/test_check_docs.py`.
-- **CI:** `.github/workflows/ci.yml` runs the doc tests and the doc check (the `Doc checks` job) on every push and PR. A core-test job will be added once the C# simulation core exists.
+- **CI:** `.github/workflows/ci.yml` runs the doc tests and the doc check (the `Doc checks` job) on every PR and on every push to `main`. Pushes to other branches don't trigger it, so a branch with an open PR is checked once, not twice. A core-test job will be added once the C# simulation core exists.
 - **Branch protection on `main`** (enforces DLV-007 and DLV-016): changes go through a PR, the `Doc checks` job must pass, and force-pushes and deletion are blocked. This applies to admins too. No approval count is required, because Alex can't approve his own PRs.
 - **Agent permissions:** `.claude/settings.json` denies `gh pr merge` and pushes to `main`. Agents use Alex's GitHub account, so GitHub alone can't tell them apart from Alex.
 - **Repository:** merged branches are deleted automatically.
+- **Project board:** "@Helligon's Weird War", user project **#1** (https://github.com/users/Helligon/projects/1), linked to the repo. Its Status columns follow DLV-005.
 
 ## Open questions
 - Q-DLV-01: Trigger for each agent: on demand vs automated (Reviewer and CI automated is proposed). Under discussion.
