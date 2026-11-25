@@ -33,6 +33,10 @@ namespace WeirdWar.Spike1.Core
                 for (var col = 0; col < state.Map.Width; col++)
                 {
                     var terrain = state.Map.TerrainAt(HexCoord.FromOffset(new OffsetCoord(col, row)));
+                    if ((int)terrain < 0 || (int)terrain > 9)
+                    {
+                        throw new System.InvalidOperationException("Terrain value " + (int)terrain + " does not fit the one-digit cell format.");
+                    }
                     sb.Append(Num((int)terrain));
                 }
             }
