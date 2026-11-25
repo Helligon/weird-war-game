@@ -16,7 +16,7 @@ The DLL is git-ignored, so it is never committed (`*.dll` would go to LFS and go
 
 Open `Assets/Scenes/Battle.unity` and press Play. The scene is made by the menu item *Weird War > Build Battle scene*.
 
-Sections, Units, the Officer and the temporary order buttons are drawn by `BattleStateView` (one square per Unit; yellow square = Officer). Stats and parameters come from `../data/stats.json` and `../data/parameters.json`.
+Sections, Units and the Officer are drawn by `BattleStateView` (one square per Unit; yellow square = Officer). Stats and parameters come from `../data/stats.json` and `../data/parameters.json`.
 
 The map and the Riflemen speed are read at run time from `../data/map.json` and `../data/stats.json` (metres; one metre is one Unity unit). Blue strip = west edge, red strip = east edge, green discs = cover, tan = open ground.
 
@@ -24,4 +24,4 @@ Third-person Officer (PCH-001): press Play and click once in the Game view to gi
 
 EditMode tests: Window > General > Test Runner, or `Unity -batchmode -nographics -projectPath unity -runTests -testPlatform EditMode -testResults results.xml`.
 
-Section orders (SP2-40): the top-left panel has temporary buttons that give the player Section Move (+10 m east, +10 m north, beside cover), Stop, Clear waypoints, Fall back and Target. Each one builds a plain command (`OrderFor`) and applies it with `BattleState.ApplyCommand`, which logs it with its step. SP2-41 replaces them with the tactical view. The old "Debug: fire" buttons are gone because they changed state outside a command.
+Tactical view (SP2-41): press Tab to enter or leave it. Entering pauses the battle (CMD-002) and gives a top-down camera and the command panel on the right; leaving resumes the battle and returns the third-person camera. Section commands are only possible inside it (CMD-001). Click a blue Section to select it (one at a time, CMD-016), click the map to place up to 2 waypoints (queued ones count, P-CMD-01), then "Confirm Move". Click a red Section to Target it. Stop, Clear waypoints and Fall back are buttons. Right click clears the selection. There is no ability trigger (CMD-013). The rules live in the core's `TacticalView`; `TacticalController` only reads input and draws. Every order is a command applied with `BattleState.ApplyCommand`. If you press "Run battle" while still in the tactical view, the Officer takes no player input and is flagged `TacticalView.OfficerUnderAi` (its AI behaviour is SP2-42).

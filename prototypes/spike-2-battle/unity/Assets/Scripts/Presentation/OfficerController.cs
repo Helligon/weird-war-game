@@ -41,6 +41,12 @@ namespace WeirdWar.Spike2.Presentation
             _bootstrap = bootstrap;
             _submitted.Clear(); // a reset starts a new battle with a new command log
             _lastShot = "No shots fired yet.";
+            UseThirdPersonCamera();
+        }
+
+        /// <summary>Puts the camera back behind and above the Officer (also after leaving the tactical view).</summary>
+        public void UseThirdPersonCamera()
+        {
             _camera = TargetCamera != null ? TargetCamera : Camera.main;
             if (_camera != null)
             {
@@ -64,6 +70,8 @@ namespace WeirdWar.Spike2.Presentation
         private void Update()
         {
             if (_bootstrap == null || _bootstrap.State == null || _bootstrap.State.Officers.Count == 0) { return; }
+            // CMD-004: in the tactical view the Officer takes no player input (it is under AI control while the battle runs).
+            if (!_bootstrap.Tactical.OfficerAcceptsInput) { return; }
             if (Input.GetKeyDown(KeyCode.Escape)) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
             var locked = Cursor.lockState == CursorLockMode.Locked;
             if (!locked)
@@ -102,6 +110,7 @@ namespace WeirdWar.Spike2.Presentation
         private void LateUpdate()
         {
             if (_camera == null || _bootstrap == null || _bootstrap.State == null || _bootstrap.State.Officers.Count == 0) { return; }
+            if (_bootstrap.Tactical.Active) { return; } // the tactical view owns the camera
             PlaceCamera();
             if (_tracer != null && Time.time > _tracerUntil) { _tracer.enabled = false; }
         }
@@ -148,11 +157,11 @@ namespace WeirdWar.Spike2.Presentation
 
         private void OnGUI()
         {
-            if (_bootstrap == null) { return; }
+            if (_bootstrap == null || _bootstrap.Tactical.Active) { return; }
             var y = Screen.height - 70f;
             GUI.Box(new Rect(10, y, 520, 60), GUIContent.none);
             GUI.Label(new Rect(18, y + 3, 505, 56),
-                "WASD move, mouse look, left click fire, Esc frees the mouse (click to take it back)\n"
+                "WASD move, mouse look, left click fire, Esc frees the mouse (click to take it back), Tab: tactical view\n"
                 + "Rifle: " + _lastShot);
         }
     }
