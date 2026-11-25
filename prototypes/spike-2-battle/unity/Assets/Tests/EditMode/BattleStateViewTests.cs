@@ -38,9 +38,9 @@ namespace WeirdWar.Spike2.Tests
             var enemy = _boot.State.Find(BattleState.EnemySectionId);
             var before = _boot.StateView.SquaresFor(enemy.Id);
 
-            for (ulong seed = 1; seed < 20 && enemy.UnitCount == before; seed++)
+            for (var i = 0; i < 20 && enemy.UnitCount == before; i++)
             {
-                _boot.State.Fire(BattleState.PlayerSectionId, enemy.Id, new SeededRandom(seed));
+                _boot.State.Fire(BattleState.PlayerSectionId, enemy.Id);
             }
             _boot.StateView.Refresh();
 

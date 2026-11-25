@@ -36,7 +36,7 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>
-        /// Format: { "riflemen": { "speed", "maxUnits", "healthPerUnit", "range", "damage", "accuracy" }, "officer": { "health" } }.
+        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy" }, "officer": { "health" } }.
         /// </summary>
         public static UnitStats Load(string json)
         {
@@ -47,8 +47,8 @@ namespace WeirdWar.Spike2.Battle.Core
 
             var speed = BattleMapLoader.Number(riflemen, "speed", "riflemen");
             if (speed <= 0) throw new DataLoadException("Stats error: riflemen \"speed\" must be above zero.");
-            var maxUnits = Whole(riflemen, "maxUnits", "riflemen");
-            var healthPerUnit = Whole(riflemen, "healthPerUnit", "riflemen");
+            var maxUnits = Whole(riflemen, "P-HIE-01", "riflemen");
+            var healthPerUnit = Whole(riflemen, "P-HIE-02", "riflemen");
             var range = BattleMapLoader.Number(riflemen, "range", "riflemen");
             if (range <= 0) throw new DataLoadException("Stats error: riflemen \"range\" must be above zero.");
             var damage = Whole(riflemen, "damage", "riflemen");
@@ -65,11 +65,14 @@ namespace WeirdWar.Spike2.Battle.Core
             return o;
         }
 
+        // Keeps units x health far below int.MaxValue.
+        private const int MaxValue = 10000;
+
         private static int Whole(Dictionary<string, object?> o, string key, string what)
         {
             var n = BattleMapLoader.Number(o, key, what);
-            if (n < 1 || n != System.Math.Floor(n) || n > 100000)
-                throw new DataLoadException("Stats error: " + what + " \"" + key + "\" must be a whole number of 1 or more.");
+            if (n < 1 || n != System.Math.Floor(n) || n > MaxValue)
+                throw new DataLoadException("Stats error: " + what + " \"" + key + "\" must be a whole number from 1 to " + MaxValue + ".");
             return (int)n;
         }
     }

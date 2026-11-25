@@ -10,8 +10,8 @@ namespace WeirdWar.Spike2.Battle.Core
 
         public SeededRandom(ulong seed) { _state = seed; }
 
-        /// <summary>The next number in [0, 1).</summary>
-        public double NextDouble()
+        /// <summary>The next raw 64-bit value of the sequence.</summary>
+        public ulong NextUInt64()
         {
             unchecked
             {
@@ -19,9 +19,11 @@ namespace WeirdWar.Spike2.Battle.Core
                 var z = _state;
                 z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9UL;
                 z = (z ^ (z >> 27)) * 0x94D049BB133111EBUL;
-                z ^= z >> 31;
-                return (z >> 11) * (1.0 / 9007199254740992.0);
+                return z ^ (z >> 31);
             }
         }
+
+        /// <summary>The next number in [0, 1): the top 53 bits of the next raw value.</summary>
+        public double NextDouble() => (NextUInt64() >> 11) * (1.0 / 9007199254740992.0);
     }
 }

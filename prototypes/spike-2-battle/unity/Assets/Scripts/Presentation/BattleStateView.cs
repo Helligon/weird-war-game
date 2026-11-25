@@ -25,7 +25,9 @@ namespace WeirdWar.Spike2.Presentation
         private readonly Dictionary<int, List<GameObject>> _unitSquares = new Dictionary<int, List<GameObject>>();
         private readonly List<GameObject> _officerSquares = new List<GameObject>();
         private Transform _root;
-        private ulong _volley;
+        private int _volley;
+        private Mesh _squareMesh;
+        private readonly Dictionary<Color, Material> _materials = new Dictionary<Color, Material>();
         private string _lastFire = "No shots fired yet.";
 
         /// <summary>The number of Unit squares currently drawn for a Section.</summary>
@@ -39,6 +41,7 @@ namespace WeirdWar.Spike2.Presentation
             _volley = 0;
             _lastFire = "No shots fired yet.";
             if (_root != null) { DestroyImmediate(_root.gameObject); }
+            ReleaseShared();
             _unitSquares.Clear();
             _officerSquares.Clear();
             _root = new GameObject("Sections").transform;
@@ -72,20 +75,38 @@ namespace WeirdWar.Spike2.Presentation
 
         private GameObject Square(string name, Vector3 position, Color colour)
         {
+            if (_squareMesh == null)
+            {
+                var h = Size / 2f;
+                _squareMesh = new Mesh
+                {
+                    name = "Unit square",
+                    vertices = new[] { new Vector3(-h, -h), new Vector3(-h, h), new Vector3(h, h), new Vector3(h, -h) },
+                    triangles = new[] { 0, 1, 2, 0, 2, 3 },
+                };
+            }
+            if (!_materials.TryGetValue(colour, out var material))
+            {
+                material = new Material(Shader.Find("Sprites/Default")) { color = colour };
+                _materials[colour] = material;
+            }
             var go = new GameObject(name);
             go.transform.SetParent(_root, false);
             go.transform.localPosition = position;
-            var h = Size / 2f;
-            var mesh = new Mesh
-            {
-                name = name,
-                vertices = new[] { new Vector3(-h, -h), new Vector3(-h, h), new Vector3(h, h), new Vector3(h, -h) },
-                triangles = new[] { 0, 1, 2, 0, 2, 3 },
-            };
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Sprites/Default")) { color = colour };
+            go.AddComponent<MeshFilter>().sharedMesh = _squareMesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = material;
             return go;
         }
+
+        // One mesh and one material per colour are shared by every square; destroy them with the view.
+        private void ReleaseShared()
+        {
+            if (_squareMesh != null) { DestroyImmediate(_squareMesh); _squareMesh = null; }
+            foreach (var m in _materials.Values) { if (m != null) { DestroyImmediate(m); } }
+            _materials.Clear();
+        }
+
+        private void OnDestroy() { ReleaseShared(); }
 
         private void OnGUI()
         {
@@ -103,22 +124,29 @@ namespace WeirdWar.Spike2.Presentation
 
             GUI.Box(new Rect(10, 10, 520, 110), GUIContent.none);
             GUI.Label(new Rect(18, 14, 505, 100), sb.ToString());
-            if (GUI.Button(new Rect(10, 125, 250, 28), "Fire player Section at enemy Section")) { Fire(false); }
-            if (GUI.Button(new Rect(265, 125, 130, 28), "Fire (moving)")) { Fire(true); }
-            if (GUI.Button(new Rect(400, 125, 130, 28), "Reset battle")) { _bootstrap.Load(); }
+            // TODO(#40, DLV-013): these Debug buttons change battle state outside a command. Remove them, or route them
+            // through a command, once Story #40 applies TargetCommand (CMD-008).
+            if (GUI.Button(new Rect(10, 125, 270, 28), "Debug: fire player Section at enemy")) { Fire(false); }
+            if (GUI.Button(new Rect(285, 125, 130, 28), "Debug: fire moving")) { Fire(true); }
+            if (GUI.Button(new Rect(420, 125, 110, 28), "Debug: reset")) { _bootstrap.Load(); }
         }
 
-        private void Fire(bool asIfMoving)
+        private void Fire(bool moving)
         {
-            // The moving button shows the CMD-019 penalty: it rolls with the moving hit chance via a moving copy of the Section.
-            var shooter = _state.Find(BattleState.PlayerSectionId);
-            if (asIfMoving) { shooter = new Section(shooter.Id, shooter.Side, shooter.Type, shooter.MaxUnits, shooter.HealthPerUnit, shooter.Position, true); }
             var target = _state.Find(BattleState.EnemySectionId);
             var before = target.Health;
             _volley++;
-            var r = _state.Fire(shooter, target.Id, new SeededRandom(_volley));
-            _lastFire = "Volley " + _volley + (asIfMoving ? " (moving)" : "") + ": " + (r.InRange ? r.Hits + " hits of " + r.Shots + " shots, "
-                + (before - target.Health) + " damage" : "target out of range");
+            var r = _state.Fire(BattleState.PlayerSectionId, target.Id, moving);
+            var what = moving ? " (moving)" : "";
+            switch (r.Outcome)
+            {
+                case FireOutcome.Fired:
+                    _lastFire = "Volley " + _volley + what + ": " + r.Hits + " hits of " + r.Shots + " shots, " + (before - target.Health) + " damage";
+                    break;
+                case FireOutcome.OutOfRange: _lastFire = "Volley " + _volley + what + ": target out of range"; break;
+                case FireOutcome.TargetDestroyed: _lastFire = "Volley " + _volley + what + ": target already destroyed"; break;
+                default: _lastFire = "Volley " + _volley + what + ": shooter destroyed"; break;
+            }
             Refresh();
         }
     }

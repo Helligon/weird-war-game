@@ -15,6 +15,8 @@ namespace WeirdWar.Spike2.Presentation
         public string MapFile = "map.json";
         public string StatsFile = "stats.json";
         public string ParametersFile = "parameters.json";
+        /// <summary>Seed for the battle's random source (TEC-008). Fixed, so a Reset repeats the same battle.</summary>
+        public ulong Seed = 1;
 
         public BattleMap Map { get; private set; }
         public UnitStats Stats { get; private set; }
@@ -38,7 +40,7 @@ namespace WeirdWar.Spike2.Presentation
 
             var root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", DataFolder));
             Parameters = BattleParameters.Load(File.ReadAllText(Path.Combine(root, ParametersFile)));
-            State = BattleState.SetUp(Map, Stats, Parameters);
+            State = BattleState.SetUp(Map, Stats, Parameters, Seed);
             if (!TryGetComponent<BattleStateView>(out var stateView)) { stateView = gameObject.AddComponent<BattleStateView>(); }
             StateView = stateView;
             StateView.Show(State, this);

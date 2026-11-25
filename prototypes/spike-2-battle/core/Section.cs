@@ -23,10 +23,8 @@ namespace WeirdWar.Spike2.Battle.Core
         public int HealthPerUnit { get; }
         public int Health { get; private set; }
         public MapPoint Position { get; }
-        /// <summary>True while the Section is moving. Movement itself arrives in a later Story; this is what CMD-019 reads.</summary>
-        public bool IsMoving { get; }
 
-        public Section(SectionId id, Side side, UnitType type, int maxUnits, int healthPerUnit, MapPoint position, bool isMoving = false)
+        public Section(SectionId id, Side side, UnitType type, int maxUnits, int healthPerUnit, MapPoint position)
         {
             if (maxUnits < 1) throw new ArgumentOutOfRangeException(nameof(maxUnits), "A Section needs at least 1 Unit (HIE-002).");
             if (healthPerUnit < 1) throw new ArgumentOutOfRangeException(nameof(healthPerUnit), "Health per Unit must be at least 1.");
@@ -37,7 +35,6 @@ namespace WeirdWar.Spike2.Battle.Core
             HealthPerUnit = healthPerUnit;
             Health = maxUnits * healthPerUnit;
             Position = position;
-            IsMoving = isMoving;
         }
 
         /// <summary>HIE-004, HIE-010: health divided by health per Unit, rounded up. 0 when destroyed.</summary>

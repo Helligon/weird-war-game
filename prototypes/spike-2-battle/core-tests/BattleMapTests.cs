@@ -63,7 +63,7 @@ public class BattleMapTests
 
     // DLV-014: a stats file with a missing value is an error, so these tests give every value.
     private static string StatsWithSpeed(string speed) =>
-        "{ \"riflemen\": { \"speed\": " + speed + ", \"maxUnits\": 8, \"healthPerUnit\": 3, \"range\": 40, \"damage\": 1, \"accuracy\": 0.6 }, \"officer\": { \"health\": 10 } }";
+        "{ \"riflemen\": { \"speed\": " + speed + ", \"P-HIE-01\": 8, \"P-HIE-02\": 3, \"range\": 40, \"damage\": 1, \"accuracy\": 0.6 }, \"officer\": { \"health\": 10 } }";
 
     [Fact]
     public void BMP_010_crossing_time_uses_the_speed_from_the_data_file_not_a_hard_coded_value()

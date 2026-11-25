@@ -1,8 +1,8 @@
 {
   "riflemen": {
     "speed": 1.5,
-    "maxUnits": 8,
-    "healthPerUnit": 3,
+    "P-HIE-01": 8,
+    "P-HIE-02": 3,
     "range": 90,
     "damage": 1,
     "accuracy": 0.6
