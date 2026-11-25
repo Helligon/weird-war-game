@@ -252,6 +252,7 @@ public class DefaultBehaviourTests
         Assert.Equal(Player(a).Position.Y, Player(c).Position.Y);
         Assert.Equal(Player(a).Health, Player(c).Health);
         Assert.Equal(Enemy(a).Position.X, Enemy(c).Position.X);
+        Assert.Equal(Enemy(a).Position.Y, Enemy(c).Position.Y);
         Assert.Equal(Enemy(a).Health, Enemy(c).Health);
     }
 

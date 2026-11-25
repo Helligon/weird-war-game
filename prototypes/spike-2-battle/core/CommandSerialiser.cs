@@ -31,6 +31,13 @@ namespace WeirdWar.Spike2.Battle.Core
                     return Simple("clearWaypoints", c.Section) + "}";
                 case FallBackCommand f:
                     return Simple("fallBack", f.Section) + "}";
+                case OfficerMoveCommand om:
+                    return "{\"type\":\"officerMove\",\"officer\":" + Num(om.Officer) + ",\"x\":" + Dbl(om.DirectionX)
+                        + ",\"y\":" + Dbl(om.DirectionY) + "}";
+                case OfficerAimCommand oa:
+                    return "{\"type\":\"officerAim\",\"officer\":" + Num(oa.Officer) + ",\"radians\":" + Dbl(oa.Radians) + "}";
+                case OfficerFireCommand of:
+                    return "{\"type\":\"officerFire\",\"officer\":" + Num(of.Officer) + "}";
                 default:
                     throw new CommandFormatException("Cannot save unknown command type " + (command == null ? "null" : command.GetType().Name) + ".");
             }
@@ -48,6 +55,12 @@ namespace WeirdWar.Spike2.Battle.Core
             if (!o.TryGetValue("type", out var type) || !(type is string name))
             {
                 throw new CommandFormatException("A command needs a \"type\".");
+            }
+            switch (name)
+            {
+                case "officerMove": return new OfficerMoveCommand(ReadInt(o, "officer"), ReadDouble(o, "x"), ReadDouble(o, "y"));
+                case "officerAim": return new OfficerAimCommand(ReadInt(o, "officer"), ReadDouble(o, "radians"));
+                case "officerFire": return new OfficerFireCommand(ReadInt(o, "officer"));
             }
             var section = new SectionId(ReadInt(o, "section"));
             switch (name)
@@ -87,6 +100,19 @@ namespace WeirdWar.Spike2.Battle.Core
             }
             throw new CommandFormatException("\"" + key + "\" must be a whole number.");
         }
+
+        private static double ReadDouble(Dictionary<string, object?> o, string key)
+        {
+            if (o.TryGetValue(key, out var v))
+            {
+                if (v is long l) return l;
+                if (v is double d) return d;
+            }
+            throw new CommandFormatException("\"" + key + "\" must be a number.");
+        }
+
+        // "R" round-trips a double exactly; the invariant culture keeps the point a point.
+        private static string Dbl(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
         private static string Num(int value) => value.ToString(CultureInfo.InvariantCulture);
     }

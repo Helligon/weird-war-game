@@ -22,14 +22,27 @@ namespace WeirdWar.Spike2.Battle.Core
         public double RiflemenAccuracy { get; }
         /// <summary>Officer health (placeholder; open, Q-ROS-01).</summary>
         public int OfficerHealth { get; }
+        /// <summary>Officer walking speed in metres per second (placeholder; open).</summary>
+        public double OfficerSpeed { get; }
+        /// <summary>Officer hitscan rifle range in metres (placeholder; open).</summary>
+        public double OfficerRifleRange { get; }
+        /// <summary>Damage of one Officer rifle hit (placeholder; open).</summary>
+        public int OfficerRifleDamage { get; }
+        /// <summary>How close, in metres, a shot must pass to an enemy Section's centre to hit it (placeholder; open).</summary>
+        public double OfficerRifleHitRadius { get; }
         /// <summary>Seconds between one Riflemen volley and the next (stand-in for a rate of fire; DEC-098).</summary>
         public double RiflemenVolleyInterval { get; }
         /// <summary>How far, in metres, a Section looks for cover when it has no orders (placeholder; DAI-001 says only "nearby").</summary>
         public double CoverSearchRange { get; }
 
         public UnitStats(double riflemenSpeed, int riflemenMaxUnits, int riflemenHealthPerUnit, double riflemenRange,
-            int riflemenDamage, double riflemenAccuracy, int officerHealth, double riflemenVolleyInterval, double coverSearchRange)
+            int riflemenDamage, double riflemenAccuracy, int officerHealth, double riflemenVolleyInterval, double coverSearchRange,
+            double officerSpeed, double officerRifleRange, int officerRifleDamage, double officerRifleHitRadius)
         {
+            OfficerSpeed = officerSpeed;
+            OfficerRifleRange = officerRifleRange;
+            OfficerRifleDamage = officerRifleDamage;
+            OfficerRifleHitRadius = officerRifleHitRadius;
             RiflemenSpeed = riflemenSpeed;
             RiflemenMaxUnits = riflemenMaxUnits;
             RiflemenHealthPerUnit = riflemenHealthPerUnit;
@@ -42,7 +55,7 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>
-        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy", "volleyInterval", "coverSearchRange" }, "officer": { "health" } }.
+        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy", "volleyInterval", "coverSearchRange" }, "officer": { "health", "speed", "rifleRange", "rifleDamage", "rifleHitRadius" } }.
         /// </summary>
         public static UnitStats Load(string json)
         {
@@ -65,7 +78,15 @@ namespace WeirdWar.Spike2.Battle.Core
             var coverRange = BattleMapLoader.Number(riflemen, "coverSearchRange", "riflemen");
             if (coverRange <= 0) throw new DataLoadException("Stats error: riflemen \"coverSearchRange\" must be above zero.");
             var officerHealth = Whole(officer, "health", "officer");
-            return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth, interval, coverRange);
+            var officerSpeed = BattleMapLoader.Number(officer, "speed", "officer");
+            if (officerSpeed <= 0) throw new DataLoadException("Stats error: officer \"speed\" must be above zero.");
+            var rifleRange = BattleMapLoader.Number(officer, "rifleRange", "officer");
+            if (rifleRange <= 0) throw new DataLoadException("Stats error: officer \"rifleRange\" must be above zero.");
+            var rifleDamage = Whole(officer, "rifleDamage", "officer");
+            var hitRadius = BattleMapLoader.Number(officer, "rifleHitRadius", "officer");
+            if (hitRadius <= 0) throw new DataLoadException("Stats error: officer \"rifleHitRadius\" must be above zero.");
+            return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth, interval, coverRange,
+                officerSpeed, rifleRange, rifleDamage, hitRadius);
         }
 
         private static Dictionary<string, object?> Obj(Dictionary<string, object?> root, string key)

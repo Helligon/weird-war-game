@@ -33,7 +33,7 @@ namespace WeirdWar.Spike2.Battle.Core
                 if (other.Side == self.Side || other.IsDestroyed) continue;
                 if (!state.InRange(self.Position, other.Position)) continue;
                 var d = Distance(self.Position, other.Position);
-                if (self.LastAttacker.HasValue && other.Id.Equals(self.LastAttacker.Value)) return new TargetChoice(other);
+                if (self.LastAttacker?.Section is SectionId attackerId && other.Id.Equals(attackerId)) return new TargetChoice(other);
                 if (d < bestDistance) { best = new TargetChoice(other); bestDistance = d; }
             }
             foreach (var officer in state.Officers)
@@ -41,6 +41,7 @@ namespace WeirdWar.Spike2.Battle.Core
                 if (officer.Side == self.Side || officer.IsDestroyed) continue;
                 if (!state.InRange(self.Position, officer.Position)) continue;
                 var d = Distance(self.Position, officer.Position);
+                if (self.LastAttacker?.Officer == officer) return new TargetChoice(officer);
                 if (d < bestDistance) { best = new TargetChoice(officer); bestDistance = d; }
             }
             return best;
@@ -97,7 +98,7 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>
-        /// The nearest cover within the search range that that is no farther from the
+        /// The nearest cover within the search range that is no farther from the
         /// target than the Section is (so it never backs away to find cover).
         /// </summary>
         private static CoverObject? NearbyCover(BattleState state, Section self, MapPoint enemy)

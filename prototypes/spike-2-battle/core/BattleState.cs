@@ -52,6 +52,14 @@ namespace WeirdWar.Spike2.Battle.Core
         public BattleMap Map => _map;
         public UnitStats Stats => _stats;
 
+        private readonly List<LoggedCommand> _commandLog = new List<LoggedCommand>();
+
+        /// <summary>The number of <see cref="Step"/> calls so far. A command applied now is logged with this number.</summary>
+        public int StepCount { get; private set; }
+
+        /// <summary>PCH-009, TEC-008: every accepted Officer command with the step it was applied at, in order.</summary>
+        public IReadOnlyList<LoggedCommand> CommandLog => _commandLog;
+
         private BattleState(BattleMap map, UnitStats stats, BattleParameters parameters, ulong seed)
         {
             _map = map;
@@ -139,7 +147,7 @@ namespace WeirdWar.Spike2.Battle.Core
             }
             var before = health();
             damage(hits * _stats.RiflemenDamage);
-            if (targetSection != null) targetSection.LastAttacker = shooter.Id;
+            if (targetSection != null) targetSection.LastAttacker = new Attacker(shooter.Id);
             return new FireResult(FireOutcome.Fired, shots, hits, before - health(), chance);
         }
 
@@ -154,20 +162,126 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>The fixed battle-time step in seconds. The core owns it, so the same commands replay the same battle (TEC-008).</summary>
         public const double StepSeconds = 0.1;
 
-        /// <summary>Advances the battle by one <see cref="StepSeconds"/>.</summary>
-        public void Step() { Tick(StepSeconds); }
+        /// <summary>
+        /// Advances the battle by one <see cref="StepSeconds"/>. This is the only public way time passes (TEC-008): the Officers
+        /// walk along their move direction, then every Section runs its default behaviour.
+        /// </summary>
+        public void Step() { Tick(StepSeconds); StepCount++; }
 
         /// <summary>
-        /// Advances the battle by <paramref name="seconds"/> of battle time: every living Section, in SectionId order, runs its
-        /// default behaviour (DAI-001..006). Deterministic: no clock, only the battle's seeded random source (TEC-008).
+        /// Advances the battle by <paramref name="seconds"/> of battle time: every living Officer walks along its move direction
+        /// (PCH-001), then every living Section, in SectionId order, runs its default behaviour (DAI-001..006).
+        /// Deterministic: no clock, only the battle's seeded random source (TEC-008). Internal so only <see cref="Step"/> (and tests) advance time.
         /// </summary>
-        public void Tick(double seconds)
+        internal void Tick(double seconds)
         {
             if (seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
+            foreach (var officer in _officers)
+            {
+                if (officer.IsDestroyed) continue;
+                var dir = officer.MoveDirection;
+                if (dir.X == 0 && dir.Y == 0) continue;
+                var step = _stats.OfficerSpeed * seconds;
+                officer.Position = new MapPoint(
+                    Math.Min(_map.Width, Math.Max(0, officer.Position.X + dir.X * step)),
+                    Math.Min(_map.Height, Math.Max(0, officer.Position.Y + dir.Y * step)));
+            }
             foreach (var section in _sections.Values)
             {
                 if (!section.IsDestroyed) DefaultBehaviour.Run(this, section, seconds);
             }
+        }
+
+        /// <summary>
+        /// Applies one Officer command (PCH-009, DLV-013). This is the only way Officer move, aim and fire change the battle.
+        /// An accepted command is recorded in <see cref="CommandLog"/>; a rejected one changes nothing and says why.
+        /// Move and aim touch only the Officer (PCH-004). Fire is a stand-in hitscan: the shot goes along the Officer's aim and
+        /// hits the nearest living enemy Section whose centre it passes within the hit radius, up to the rifle range.
+        /// </summary>
+        public OfficerCommandResult ApplyOfficerCommand(IBattleCommand command)
+        {
+            if (!(command is OfficerCommand oc)) return OfficerCommandResult.Rejected("Not an Officer command.");
+            if (oc.Officer < 0 || oc.Officer >= _officers.Count) return OfficerCommandResult.Rejected("Officer " + oc.Officer + " does not exist.");
+            var officer = _officers[oc.Officer];
+            if (officer.IsDestroyed) return OfficerCommandResult.Rejected("Officer " + oc.Officer + " is destroyed and cannot be commanded.");
+            switch (oc)
+            {
+                case OfficerAimCommand a:
+                    if (!IsFinite(a.Radians)) return OfficerCommandResult.Rejected("Aim must be a finite number.");
+                    officer.AimRadians = a.Radians;
+                    Log(command);
+                    return OfficerCommandResult.Accepted();
+                case OfficerMoveCommand m:
+                    if (!IsFinite(m.DirectionX) || !IsFinite(m.DirectionY))
+                        return OfficerCommandResult.Rejected("A move needs a finite direction.");
+                    // The speed cap holds whatever the client sends: the direction is cut to length 1 here, and the speed is the stats value.
+                    var length = Math.Sqrt(m.DirectionX * m.DirectionX + m.DirectionY * m.DirectionY);
+                    var scale = length > 1 ? 1 / length : 1;
+                    officer.MoveDirection = new MapPoint(m.DirectionX * scale, m.DirectionY * scale);
+                    Log(command);
+                    return OfficerCommandResult.Accepted();
+                case OfficerFireCommand _:
+                    var shot = ResolveRifleShot(officer);
+                    Log(command);
+                    return OfficerCommandResult.Accepted(shot);
+                default:
+                    return OfficerCommandResult.Rejected("Unknown Officer command.");
+            }
+        }
+
+        private void Log(IBattleCommand command) { _commandLog.Add(new LoggedCommand(StepCount, command)); }
+
+        /// <summary>
+        /// Replays a command log on a fresh battle (TEC-008): for each step number in turn, applies that step's commands in log
+        /// order, then calls <see cref="Step"/>, until <paramref name="steps"/> steps have run. Commands logged at step
+        /// <paramref name="steps"/> (after the last step) are applied last, without a further step.
+        /// It is a divergence detector: a command that was accepted when it was logged but is rejected now throws
+        /// <see cref="InvalidOperationException"/> with the step and the reason, and so does a logged step outside 0..<paramref name="steps"/>.
+        /// </summary>
+        public void Replay(IEnumerable<LoggedCommand> log, int steps)
+        {
+            var queue = new List<LoggedCommand>(log);
+            foreach (var l in queue)
+            {
+                if (l.Step < 0 || l.Step > steps) throw new InvalidOperationException("Replay: a command is logged at step " + l.Step + ", outside 0.." + steps + ".");
+            }
+            var next = 0;
+            for (var step = 0; step <= steps; step++)
+            {
+                while (next < queue.Count && queue[next].Step <= step)
+                {
+                    var result = ApplyOfficerCommand(queue[next].Command);
+                    if (!result.IsAccepted) throw new InvalidOperationException("Replay diverged at step " + step + ": " + result.Reason);
+                    next++;
+                }
+                if (step < steps) Step();
+            }
+        }
+
+        private static bool IsFinite(double v) => !double.IsNaN(v) && !double.IsInfinity(v);
+
+        private OfficerShot ResolveRifleShot(Officer officer)
+        {
+            var dx = Math.Cos(officer.AimRadians);
+            var dy = Math.Sin(officer.AimRadians);
+            Section? best = null;
+            var bestAlong = double.MaxValue;
+            foreach (var section in _sections.Values)
+            {
+                if (section.Side == officer.Side || section.IsDestroyed) continue;
+                var rx = section.Position.X - officer.Position.X;
+                var ry = section.Position.Y - officer.Position.Y;
+                var along = rx * dx + ry * dy;
+                if (along < 0 || along > _stats.OfficerRifleRange) continue;
+                var across = Math.Abs(rx * dy - ry * dx);
+                if (across > _stats.OfficerRifleHitRadius) continue;
+                if (along < bestAlong) { best = section; bestAlong = along; }
+            }
+            if (best == null) return new OfficerShot(null, 0, _stats.OfficerRifleRange);
+            var before = best.Health;
+            best.TakeDamage(_stats.OfficerRifleDamage);
+            best.LastAttacker = new Attacker(officer); // DAI-006: the Section will prefer to shoot back at the Officer.
+            return new OfficerShot(best.Id, before - best.Health, bestAlong);
         }
     }
 }

@@ -20,6 +20,9 @@ namespace WeirdWar.Spike2.Presentation
         private const float Spacing = 1.3f;
         private const float Size = 1f;
 
+        /// <summary>The top-left panel with the stats and the Debug buttons, in screen pixels from the top-left corner.</summary>
+        public static readonly Rect DebugPanel = new Rect(10, 10, 520, 180);
+
         private BattleState _state;
         private BattleBootstrap _bootstrap;
         private readonly Dictionary<int, List<GameObject>> _unitSquares = new Dictionary<int, List<GameObject>>();
@@ -35,6 +38,10 @@ namespace WeirdWar.Spike2.Presentation
         private int _speedIndex;
         private double _carry;
         public bool Running => _running;
+        /// <summary>The battle speed choice: 1, 5 or 20 battle seconds per real second. It applies to everything the core steps, the Officer too.</summary>
+        public int SpeedMultiplier => SpeedChoices[_speedIndex];
+        public void SetRunning(bool running) { _running = running; }
+        public void CycleSpeed() { _speedIndex = (_speedIndex + 1) % SpeedChoices.Length; }
 
         /// <summary>The number of Unit squares currently drawn for a Section.</summary>
         public int SquaresFor(SectionId id) => _unitSquares.TryGetValue(id.Value, out var l) ? l.Count : 0;
@@ -57,9 +64,27 @@ namespace WeirdWar.Spike2.Presentation
             _root.localPosition = new Vector3(0f, 0f, -1f);
             foreach (var o in state.Officers)
             {
-                _officerSquares.Add(Square("Officer", new Vector3((float)o.Position.X, (float)o.Position.Y, 0f), OfficerColour));
+                var square = Square("Officer", new Vector3((float)o.Position.X, (float)o.Position.Y, 0f), OfficerColour);
+                // A thin dark bar from the centre shows where the rifle points (PCH-001).
+                var bar = Square("Rifle", new Vector3(1f, 0f, -0.1f), Color.black);
+                bar.transform.SetParent(square.transform, false);
+                bar.transform.localPosition = new Vector3(1f, 0f, -0.1f);
+                bar.transform.localScale = new Vector3(2f, 0.2f, 1f);
+                _officerSquares.Add(square);
             }
             Refresh();
+        }
+
+        // Read-only: the squares follow the core's Officer state every frame.
+        private void LateUpdate()
+        {
+            if (_state == null) { return; }
+            for (var i = 0; i < _officerSquares.Count && i < _state.Officers.Count; i++)
+            {
+                var o = _state.Officers[i];
+                _officerSquares[i].transform.localPosition = new Vector3((float)o.Position.X, (float)o.Position.Y, 0f);
+                _officerSquares[i].transform.localRotation = Quaternion.Euler(0f, 0f, (float)(o.AimRadians * Mathf.Rad2Deg));
+            }
         }
 
         /// <summary>Runs the battle for the given real seconds (times the speed choice), in fixed core steps (BattleState.StepSeconds), then redraws.</summary>
@@ -71,10 +96,13 @@ namespace WeirdWar.Spike2.Presentation
             if (stepped) { Refresh(); }
         }
 
-        private void Update()
+        /// <summary>One frame: the battle advances only while running (not paused).</summary>
+        public void Frame(double realSeconds)
         {
-            if (_state != null && _running) { Advance(Time.deltaTime); }
+            if (_state != null && _running) { Advance(realSeconds); }
         }
+
+        private void Update() { Frame(Time.deltaTime); }
 
         /// <summary>Redraws one square per remaining Unit, so losing health visibly removes Units.</summary>
         public void Refresh()
@@ -139,7 +167,7 @@ namespace WeirdWar.Spike2.Presentation
                 sb.AppendLine(s.Side + " Riflemen: " + s.UnitCount + " of " + s.MaxUnits + " Units, health " + s.Health
                     + " of " + s.MaxUnits * s.HealthPerUnit + (s.IsDestroyed ? " (destroyed)" : ""));
             }
-            foreach (var o in _state.Officers) { sb.AppendLine(o.Side + " Officer: health " + o.Health + " (not in a Section)"); }
+            foreach (var o in _state.Officers) { sb.AppendLine(o.Side + " Officer: health " + o.Health + " (not in a Section), at " + o.Position.X.ToString("0") + ", " + o.Position.Y.ToString("0")); }
             sb.AppendLine("Hit chance standing still: " + _state.HitChance(false).ToString("0.00")
                 + ", moving: " + _state.HitChance(true).ToString("0.00"));
             sb.AppendLine(_lastFire);
@@ -152,8 +180,8 @@ namespace WeirdWar.Spike2.Presentation
             if (GUI.Button(new Rect(285, 125, 130, 28), "Debug: fire moving")) { Fire(true); }
             if (GUI.Button(new Rect(420, 125, 110, 28), "Debug: reset")) { _bootstrap.Load(); return; }
             // Default behaviour: Sections with no orders move, take cover and fire on their own. Time is not a player action.
-            if (GUI.Button(new Rect(10, 158, 270, 28), _running ? "Pause battle" : "Run battle (default behaviour)")) { _running = !_running; }
-            if (GUI.Button(new Rect(285, 158, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { _speedIndex = (_speedIndex + 1) % SpeedChoices.Length; }
+            if (GUI.Button(new Rect(10, 158, 270, 28), _running ? "Pause battle" : "Run battle (default behaviour)")) { SetRunning(!_running); }
+            if (GUI.Button(new Rect(285, 158, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { CycleSpeed(); }
         }
 
         private void Fire(bool moving)
