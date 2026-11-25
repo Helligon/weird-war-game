@@ -88,6 +88,48 @@ namespace WeirdWar.Spike2.Tests
             Assert.Greater(player.Position.X, startX);
         }
 
+        [Test]
+        public void DLV_013_the_order_buttons_apply_logged_commands_through_the_core()
+        {
+            var player = _boot.State.Find(BattleState.PlayerSectionId);
+            var result = _boot.StateView.Give(OrderFor.MoveBy(_boot.State, player.Id, 10, 0));
+
+            Assert.IsTrue(result.IsAccepted, result.Reason);
+            Assert.AreEqual(1, _boot.State.CommandLog.Count);
+            Assert.AreEqual(1, player.Waypoints.Count);
+            Assert.AreEqual(player.Position.X + 10, player.Waypoints[0].X, 1e-9);
+        }
+
+        [Test]
+        public void CMD_020_a_third_waypoint_is_rejected_and_the_view_says_why()
+        {
+            var id = BattleState.PlayerSectionId;
+            _boot.StateView.Give(OrderFor.MoveBy(_boot.State, id, 10, 0));
+            _boot.StateView.Give(OrderFor.MoveBy(_boot.State, id, 10, 0));
+            var third = _boot.StateView.Give(OrderFor.MoveBy(_boot.State, id, 10, 0));
+
+            Assert.IsFalse(third.IsAccepted);
+            StringAssert.Contains("REJECTED", _boot.StateView.LastOrder);
+            Assert.AreEqual(2, _boot.State.CommandLog.Count);
+        }
+
+        [Test]
+        public void CMD_005_move_beside_cover_makes_a_waypoint_next_to_cover()
+        {
+            var id = BattleState.PlayerSectionId;
+            var result = _boot.StateView.Give(OrderFor.MoveBesideCover(_boot.State, id));
+
+            Assert.IsTrue(result.IsAccepted, result.Reason);
+            var wp = _boot.State.Find(id).Waypoints[0];
+            var near = false;
+            foreach (var c in _boot.State.Map.CoverObjects)
+            {
+                var d = System.Math.Sqrt((wp.X - c.Position.X) * (wp.X - c.Position.X) + (wp.Y - c.Position.Y) * (wp.Y - c.Position.Y)) - c.Radius;
+                if (d <= _boot.Stats.CoverAdjacencyDistance) { near = true; }
+            }
+            Assert.IsTrue(near);
+        }
+
         private static double Distance(Section a, Section b)
         {
             var dx = a.Position.X - b.Position.X;
