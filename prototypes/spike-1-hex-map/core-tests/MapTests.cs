@@ -89,6 +89,9 @@ public class MapTests
             Assert.True(neighbours.Count < 6, cell + " should have fewer than 6 neighbours");
             Assert.All(neighbours, n => Assert.True(map.Contains(n)));
         }
+
+        Assert.Equal(2, map.Neighbours(At(0, 0)).Count);
+        Assert.Equal(4, map.Neighbours(At(0, 20)).Count);
     }
 
     [Fact]
@@ -126,6 +129,10 @@ public class MapTests
     public void TRN_024_sample_river_line_must_be_gone_around()
     {
         var map = Sample();
+        for (var row = 0; row <= 34; row++)
+        {
+            Assert.Equal(TerrainType.River, map.TerrainAt(At(14, row)));
+        }
         var start = At(10, 5);
         var goal = At(20, 5);
 
