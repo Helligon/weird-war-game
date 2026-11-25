@@ -3,7 +3,7 @@ id: REG-P
 title: Parameters register
 status: decided
 tags: [register]
-updated: 2026-11-24
+updated: 2026-11-25
 ---
 
 # Parameters register

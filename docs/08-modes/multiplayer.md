@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [modes, multiplayer]
 related: ["[[battle-initiation]]", "[[officers]]", "[[commands]]"]
-updated: 2026-11-21
+updated: 2026-11-25
 ---
 
 # Multiplayer
@@ -39,3 +39,4 @@ The long-term goal is to play against other humans and against bots with adjusta
 - Q-MUL-02 (answered → MUL-010): Any pairing, including mirrors.
 - Q-MUL-03 (answered → MUL-012): Private invites only, no matchmaking.
 - Q-MUL-04 (answered → MUL-013): Single session for now; asynchronous play later.
+- Q-MUL-05: How will real-time battles be networked (e.g. a deterministic simulation driven by commands, or Unity netcode syncing state)? MUST be answered before production battle work starts, so battles aren't rebuilt later (DEC-087).

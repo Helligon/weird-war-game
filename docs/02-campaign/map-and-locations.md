@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [campaign, map]
 related: ["[[supply]]", "[[upkeep-and-desertion]]", "[[brigades]]", "[[battle-maps]]", "[[fog-of-war]]", "[[resources]]", "[[map-editor]]"]
-updated: 2026-11-22
+updated: 2026-11-25
 ---
 
 # Map and locations
@@ -142,4 +142,4 @@ The campaign is played on fixed, hand-made hex maps (about 30×50 to start), bui
 - Q-MAP-19 (answered → MAP-050): Destroyed; uses the turn; costs SP.
 - Q-MAP-20 (answered → MAP-051): Yes; it fights as an extra Section.
 - Q-MAP-21 (answered → MAP-052): Any owned ST; lost on capture.
-- Q-MAP-11 (answered → SUP-014 withdrawn): The Field depot Card is dropped.
+- Q-MAP-11 (answered → SUP-014 withdrawn, then reinstated by DEC-065): The Field depot Card was dropped, then brought back as a single-use Card.
