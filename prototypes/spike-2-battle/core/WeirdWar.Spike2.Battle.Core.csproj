@@ -7,4 +7,8 @@
     <RootNamespace>WeirdWar.Spike2.Battle.Core</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="WeirdWar.Spike2.Battle.Core.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <None Include="../data/parameters.json" Link="data/parameters.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../data/stats.json" Link="data/stats.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
