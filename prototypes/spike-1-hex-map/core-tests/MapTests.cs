@@ -12,12 +12,13 @@ public class MapTests
     private static HexCoord At(int col, int row) => HexCoord.FromOffset(new OffsetCoord(col, row));
 
     [Fact]
-    public void MAP_019_sample_map_is_30_columns_by_50_rows_and_every_cell_has_terrain()
+    public void MAP_019_sample_map_is_20_columns_by_12_rows_landscape_and_every_cell_has_terrain()
     {
         var map = Sample();
 
-        Assert.Equal(30, map.Width);
-        Assert.Equal(50, map.Height);
+        Assert.Equal(20, map.Width);
+        Assert.Equal(12, map.Height);
+        Assert.True(map.Width > map.Height, "landscape");
         for (var c = 0; c < map.Width; c++)
         {
             for (var r = 0; r < map.Height; r++)
@@ -75,7 +76,7 @@ public class MapTests
     {
         var map = Sample();
 
-        Assert.Equal(6, map.Neighbours(At(10, 20)).Count);
+        Assert.Equal(6, map.Neighbours(At(10, 6)).Count);
     }
 
     [Fact]
@@ -83,7 +84,7 @@ public class MapTests
     {
         var map = Sample();
 
-        foreach (var cell in new[] { At(0, 0), At(29, 49), At(10, 0), At(0, 20), At(29, 20), At(15, 49) })
+        foreach (var cell in new[] { At(0, 0), At(19, 11), At(10, 0), At(0, 6), At(19, 6), At(15, 11) })
         {
             var neighbours = map.Neighbours(cell);
             Assert.True(neighbours.Count < 6, cell + " should have fewer than 6 neighbours");
@@ -91,7 +92,7 @@ public class MapTests
         }
 
         Assert.Equal(2, map.Neighbours(At(0, 0)).Count);
-        Assert.Equal(4, map.Neighbours(At(0, 20)).Count);
+        Assert.Equal(4, map.Neighbours(At(0, 6)).Count);
     }
 
     [Fact]
@@ -105,8 +106,8 @@ public class MapTests
         Assert.NotEmpty(outside);
         Assert.All(outside, n => Assert.False(map.IsPassable(n)));
         Assert.False(map.IsPassable(At(-1, 5)));
-        Assert.False(map.IsPassable(At(30, 5)));
-        Assert.False(map.IsPassable(At(5, 50)));
+        Assert.False(map.IsPassable(At(20, 5)));
+        Assert.False(map.IsPassable(At(5, 12)));
     }
 
     [Fact]
@@ -129,17 +130,69 @@ public class MapTests
     public void TRN_024_sample_river_line_must_be_gone_around()
     {
         var map = Sample();
-        for (var row = 0; row <= 34; row++)
+        for (var row = 0; row <= 9; row++)
         {
-            Assert.Equal(TerrainType.River, map.TerrainAt(At(14, row)));
+            Assert.Equal(TerrainType.River, map.TerrainAt(At(9, row)));
         }
-        var start = At(10, 5);
-        var goal = At(20, 5);
+        var start = At(5, 5);
+        var goal = At(13, 5);
 
         var steps = ShortestPassableSteps(map, start, goal);
 
         Assert.NotNull(steps);
         Assert.True(steps > start.DistanceTo(goal), "river should force a longer route than the straight line");
+    }
+
+    [Fact]
+    public void MAP_019_river_is_column_9_rows_0_to_9_and_rows_10_and_11_are_the_one_gap()
+    {
+        var map = Sample();
+
+        for (var row = 0; row < map.Height; row++)
+        {
+            var expected = row <= 9 ? TerrainType.River : TerrainType.Plain;
+            Assert.Equal(expected, map.TerrainAt(At(9, row)));
+        }
+        for (var c = 0; c < map.Width; c++)
+        {
+            if (c == 9) continue;
+            for (var r = 0; r < map.Height; r++)
+                Assert.NotEqual(TerrainType.River, map.TerrainAt(At(c, r)));
+        }
+    }
+
+    [Fact]
+    public void MAP_019_the_river_splits_the_players_and_the_only_way_across_is_the_gap()
+    {
+        var map = Sample();
+        var scenario = GameConfigLoader.Load(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "maps", "sample-scenario.json")));
+        var p1 = HexCoord.FromOffset(scenario.Player1Start);
+        var p2 = HexCoord.FromOffset(scenario.Player2Start);
+
+        Assert.True(map.IsPassable(p1));
+        Assert.True(map.IsPassable(p2));
+        Assert.True(scenario.Player1Start.Column < 9, "Player 1 is left of the river");
+        Assert.True(scenario.Player2Start.Column > 9, "Player 2 is right of the river");
+
+        var around = ShortestPassableSteps(map, p1, p2);
+        Assert.NotNull(around);
+        Assert.True(around > p1.DistanceTo(p2), "the way round is longer than the straight line");
+
+        // Close the gap (and nothing else): the two sides are then cut off from each other.
+        var gapClosed = new HashSet<HexCoord> { At(9, 10), At(9, 11) };
+        Assert.Null(ShortestPassableSteps(map, p1, p2, gapClosed));
+    }
+
+    [Fact]
+    public void TEC_008_changing_one_map_hex_changes_the_map()
+    {
+        var a = Sample();
+        var cells = new TerrainType[a.Width * a.Height];
+        for (var i = 0; i < cells.Length; i++)
+            cells[i] = a.TerrainAt(At(i % a.Width, i / a.Width));
+        cells[10 * a.Width + 9] = TerrainType.River; // close the gap at (9,10)
+
+        Assert.NotEqual(a, new HexMap(a.Width, a.Height, cells));
     }
 
     [Fact]
@@ -182,7 +235,7 @@ public class MapTests
         Assert.Throws<MapLoadException>(() => MapLoader.Load(json));
     }
 
-    private static int? ShortestPassableSteps(HexMap map, HexCoord start, HexCoord goal)
+    private static int? ShortestPassableSteps(HexMap map, HexCoord start, HexCoord goal, ISet<HexCoord>? closed = null)
     {
         var dist = new Dictionary<HexCoord, int> { [start] = 0 };
         var queue = new Queue<HexCoord>();
@@ -193,7 +246,7 @@ public class MapTests
             if (cur == goal) return dist[cur];
             foreach (var n in map.Neighbours(cur))
             {
-                if (map.IsPassable(n) && !dist.ContainsKey(n))
+                if (map.IsPassable(n) && (closed == null || !closed.Contains(n)) && !dist.ContainsKey(n))
                 {
                     dist[n] = dist[cur] + 1;
                     queue.Enqueue(n);

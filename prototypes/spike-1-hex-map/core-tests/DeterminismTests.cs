@@ -7,7 +7,7 @@ public class DeterminismTests
 {
     // Pinned on macOS and checked on Linux CI (TEC-008). If it changes, the canonical format or the rules changed:
     // update it on purpose, never to make a failing run pass.
-    private const string GoldenHash = "428af84e3ada6e71215cbe7246739497ecd6e5e3a5db388047156f41f63848d4";
+    private const string GoldenHash = "207eae769b75679381c33a4c24aa30489bdb7ff57e7e3e1f85857ba4f3ec83b0";
 
     private static string MapsFile(string name) =>
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "maps", name));
@@ -139,10 +139,10 @@ public class DeterminismTests
     }
 
     // Negative numbers are where culture-dependent formatting shows (ar-SA and de-DE use other minus signs or
-    // digits), so this state has negative axial coordinates: col 24, row 0 is r = -12.
+    // digits), so this state has negative axial coordinates: col 18, row 0 is r = -9.
     private static GameState NegativeCoordinateState() =>
         GameState.NewGame(MapLoader.Load(MapsFile("sample.json")),
-            new GameConfig(P1, 10, new OffsetCoord(24, 0), new OffsetCoord(5, 20), 1));
+            new GameConfig(P1, 10, new OffsetCoord(18, 0), new OffsetCoord(3, 4), 1));
 
     [Theory]
     [InlineData("ar-SA")]
@@ -155,14 +155,14 @@ public class DeterminismTests
         {
             System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
             var negative = NegativeCoordinateState();
-            Assert.Equal(-12, negative.TokenOf(P1).Position.R);
+            Assert.Equal(-9, negative.TokenOf(P1).Position.R);
             var expectedText = CanonicalState.Serialise(negative);
             var expectedHash = CanonicalState.Hash(negative);
             var command = new MoveCommand(P1, P1, new HexCoord(-3, -4));
             var expectedCommand = CommandSerialiser.Serialise(command);
             var expectedList = CommandSerialiser.SerialiseList(CommandList());
             var expectedFinal = CanonicalState.Hash(Replay(CommandList()));
-            Assert.Contains("\"r\":-12", expectedText);
+            Assert.Contains("\"r\":-9", expectedText);
             Assert.Contains("\"q\":-3,\"r\":-4", expectedCommand);
 
             System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(culture);
@@ -260,6 +260,37 @@ public class DeterminismTests
         var hashes = new[] { Replay(list), Replay(shorter), Replay(other), Fresh() }.Select(CanonicalState.Hash).ToList();
 
         Assert.Equal(hashes.Count, hashes.Distinct().Count());
+    }
+
+    [Fact]
+    public void TEC_005_changing_one_command_in_the_list_changes_the_final_hash()
+    {
+        var list = CommandList();
+        var changed = new List<GameCommand>(list);
+        // The first command is a valid move of Player 1; send it to another valid hex instead.
+        var first = (MoveCommand)list[0];
+        var fresh = Fresh();
+        var other = fresh.TokenOf(P1).Position.Neighbours().First(n => fresh.Map.IsPassable(n) && !n.Equals(first.Target));
+        changed[0] = new MoveCommand(P1, P1, other);
+
+        Assert.NotEqual(CanonicalState.Hash(Replay(list)), CanonicalState.Hash(Replay(changed)));
+    }
+
+    [Fact]
+    public void TEC_005_changing_one_map_hex_changes_the_final_hash_for_the_same_commands()
+    {
+        var map = MapLoader.Load(MapsFile("sample.json"));
+        var cells = new TerrainType[map.Width * map.Height];
+        for (var i = 0; i < cells.Length; i++)
+            cells[i] = map.TerrainAt(HexCoord.FromOffset(new OffsetCoord(i % map.Width, i / map.Width)));
+        cells[10 * map.Width + 9] = TerrainType.River; // close the river gap at (9,10), far from any move in the list
+        var changedStart = GameState.NewGame(new HexMap(map.Width, map.Height, cells), GameConfigLoader.Load(MapsFile("sample-scenario.json")));
+
+        var original = Replay(Fresh(), CommandList(), out var acceptedA, out var rejectedA);
+        var changed = Replay(changedStart, CommandList(), out var acceptedB, out var rejectedB);
+
+        Assert.Equal((acceptedA, rejectedA), (acceptedB, rejectedB)); // the same moves still happen: only the map differs
+        Assert.NotEqual(CanonicalState.Hash(original), CanonicalState.Hash(changed));
     }
 
     [Fact]

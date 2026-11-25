@@ -1,18 +1,18 @@
 # Hand-written maps (spike 1)
 
-Stand-in for the map editor (DEC-087, exception to MAP-020). `sample.json` is the 30 columns x 50 rows spike map (MAP-019, P-MAP-04).
+Stand-in for the map editor (DEC-087, exception to MAP-020). `sample.json` is the 20 columns x 12 rows landscape spike map (MAP-019 as revised by DEC-093: the real starting map is about 50 x 30, prototypes may be smaller).
 
 ## Format
 
 ```json
 {
-  "width": 30,
-  "height": 50,
+  "width": 20,
+  "height": 12,
   "default": "plain",
   "terrain": {
     "sea":      [[0,0], [1,0]],
     "mountain": [[20,10]],
-    "river":    [[14,0], [14,1]]
+    "river":    [[9,0], [9,1]]
   }
 }
 ```
@@ -26,9 +26,9 @@ Stand-in for the map editor (DEC-087, exception to MAP-020). `sample.json` is th
 
 ## Sample map
 
-- Sea in the top-left and bottom-right corners.
-- A river down column 14 from row 0 to row 34. A whole column of hexes blocks crossing, so tokens must go around its south end (rows 35 to 49).
-- Three small mountain clusters.
+- Sea in the top-left and bottom-right corners (3 hexes each).
+- A river down column 9 from row 0 to row 9. A whole column of hexes blocks crossing, so tokens must go around its south end: the gap is the two plain hexes (9,10) and (9,11), the only way across.
+- Three small mountain clusters: (4,1), (5,1), (4,2); (14,8), (15,8), (14,9); (3,9), (4,9).
 
 ## Scenario file (`sample-scenario.json`)
 
@@ -39,7 +39,7 @@ A separate file from the map, so one map can host several starts. Stand-ins from
   "firstPlayer": 1,
   "startingBudget": 10,
   "movementCostPerHex": 1,
-  "tokens": { "1": [5, 20], "2": [24, 30] }
+  "tokens": { "1": [3, 4], "2": [16, 5] }
 }
 ```
 

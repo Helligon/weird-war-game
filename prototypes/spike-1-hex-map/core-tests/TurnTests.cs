@@ -13,8 +13,8 @@ public class TurnTests
     private static GameConfig Config(PlayerId first = PlayerId.Player1, int budget = 10,
         (int, int)? p1 = null, (int, int)? p2 = null)
     {
-        var a = p1 ?? (5, 20);
-        var b = p2 ?? (24, 30);
+        var a = p1 ?? (3, 4);
+        var b = p2 ?? (16, 5);
         return new GameConfig(first, budget, new OffsetCoord(a.Item1, a.Item2), new OffsetCoord(b.Item1, b.Item2), 1);
     }
 
@@ -215,7 +215,7 @@ public class TurnTests
         // Player 2 spends 4, then ends the turn: Player 1's turn starts and refills only Player 1.
         for (var i = 0; i < 4; i++)
         {
-            s = Accept(s, new MoveCommand(PlayerId.Player2, PlayerId.Player2, s.TokenOf(PlayerId.Player2).Position.Neighbours()[1]));
+            s = Accept(s, new MoveCommand(PlayerId.Player2, PlayerId.Player2, s.TokenOf(PlayerId.Player2).Position.Neighbours()[new[] { 1, 4, 1, 2 }[i]])); // out, back, out, on: the map is only 20 wide
         }
         Assert.Equal(6, s.TokenOf(PlayerId.Player2).Budget);
         s = Accept(s, new EndTurnCommand(PlayerId.Player2));
@@ -238,22 +238,22 @@ public class TurnTests
     {
         var s = New();
 
-        Assert.Equal(HexCoord.FromOffset(new OffsetCoord(5, 20)), s.TokenOf(PlayerId.Player1).Position);
-        Assert.Equal(HexCoord.FromOffset(new OffsetCoord(24, 30)), s.TokenOf(PlayerId.Player2).Position);
+        Assert.Equal(HexCoord.FromOffset(new OffsetCoord(3, 4)), s.TokenOf(PlayerId.Player1).Position);
+        Assert.Equal(HexCoord.FromOffset(new OffsetCoord(16, 5)), s.TokenOf(PlayerId.Player2).Position);
         Assert.All(s.Tokens, t => Assert.Equal(10, t.Budget));
         Assert.Equal(PlayerId.Player1, s.TokenOf(PlayerId.Player1).Owner);
         Assert.Equal(PlayerId.Player2, s.TokenOf(PlayerId.Player2).Owner);
     }
 
     [Theory]
-    [InlineData(0, 0, 24, 30)]    // Player 1 on sea
-    [InlineData(5, 20, 20, 10)]   // Player 2 on mountain
-    [InlineData(14, 5, 24, 30)]   // Player 1 on river
-    [InlineData(5, 20, 5, 20)]    // same hex
-    [InlineData(5, 20, 6, 20)]    // adjacent
-    [InlineData(5, 20, 5, 21)]    // adjacent
-    [InlineData(-1, 0, 24, 30)]   // off the map
-    [InlineData(5, 20, 30, 5)]    // off the map
+    [InlineData(0, 0, 16, 5)]     // Player 1 on sea
+    [InlineData(3, 4, 14, 8)]     // Player 2 on mountain
+    [InlineData(9, 5, 16, 5)]     // Player 1 on river
+    [InlineData(3, 4, 3, 4)]      // same hex
+    [InlineData(3, 4, 4, 4)]      // adjacent
+    [InlineData(3, 4, 3, 5)]      // adjacent
+    [InlineData(-1, 0, 16, 5)]    // off the map
+    [InlineData(3, 4, 20, 5)]     // off the map
     public void DEC_087_setup_rejects_impassable_shared_adjacent_or_off_map_starts(int c1, int r1, int c2, int r2)
     {
         Assert.Throws<SetupException>(() => New(Config(p1: (c1, r1), p2: (c2, r2))));
@@ -262,7 +262,7 @@ public class TurnTests
     [Fact]
     public void DEC_087_setup_accepts_tokens_two_hexes_apart()
     {
-        var s = New(Config(p1: (5, 20), p2: (5, 22)));
+        var s = New(Config(p1: (3, 4), p2: (3, 6)));
         Assert.Equal(2, s.TokenOf(PlayerId.Player1).Position.DistanceTo(s.TokenOf(PlayerId.Player2).Position));
     }
 
