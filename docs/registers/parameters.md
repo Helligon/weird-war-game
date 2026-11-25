@@ -18,7 +18,7 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-MAP-01 | FOB-capture bonus | ~50% of build cost, in SP + CP | decided | [[map-and-locations]] |
 | P-MAP-02 | Territory radius | sight − 1, min 1 | decided | [[map-and-locations]] |
 | P-MAP-03 | Supply ST→FOB upgrade cost | standard SP + rising CP | decided (values open) | [[map-and-locations]] |
-| P-MAP-04 | Starting map size | ~30×50 hexes | decided | [[map-and-locations]] |
+| P-MAP-04 | Starting map size | ~50×30 hexes (50 wide, 30 tall) | decided | [[map-and-locations]] |
 | P-MAP-05 | HQ income per turn (SP, CP) | – | open | [[map-and-locations]] |
 | P-MAP-06 | Income per ST type | – | open | [[map-and-locations]] |
 | P-MAP-07 | Major ST bombardment defence | – | open | [[map-and-locations]] |
