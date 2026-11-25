@@ -13,3 +13,8 @@ This project is also an experiment in an **AI-assisted software development life
 ```
 python3 scripts/generate_registers.py
 ```
+
+## Checking the docs
+```
+python3 scripts/check_docs.py
+```
