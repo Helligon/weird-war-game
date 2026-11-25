@@ -66,6 +66,7 @@ namespace WeirdWar.Spike1.Tests
 
         [TestCase(16f / 9f)]
         [TestCase(4f / 3f)]
+        [TestCase(0.4f)]
         public void MAP_019_camera_can_zoom_out_to_show_the_whole_map(float aspect)
         {
             var camGo = new GameObject("test-cam");
