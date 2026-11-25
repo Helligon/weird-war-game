@@ -26,19 +26,27 @@ namespace WeirdWar.Spike2.Tests
         }
 
         [Test]
-        public void PCH_001_cover_and_squares_always_draw_above_the_ground_whatever_the_camera_angle()
+        public void PCH_001_every_layer_has_a_fixed_draw_order_so_cover_and_squares_stay_above_the_ground()
         {
             // Transparent layers are sorted by camera distance unless a sorting order is set, which made
             // cover and squares flicker or vanish under the third-person camera. Every layer needs a fixed order.
-            int Order(string name) => _go.GetComponentsInChildren<MeshRenderer>().First(r => r.name.StartsWith(name)).sortingOrder;
-            var ground = Order("Ground");
-            Assert.Greater(Order("West edge"), ground);
-            Assert.Greater(Order("Cover"), Order("West edge"));
-            foreach (var r in _go.GetComponentsInChildren<MeshRenderer>().Where(r => r.name == "Unit" || r.name == "Officer" || r.name == "Rifle"))
-            {
-                Assert.Greater(r.sortingOrder, Order("Cover"), r.name);
-            }
-            Assert.Greater(Order("Rifle"), Order("Officer"));
+            var renderers = _go.GetComponentsInChildren<MeshRenderer>();
+            int[] Orders(System.Func<string, bool> match) => renderers.Where(r => match(r.name)).Select(r => r.sortingOrder).ToArray();
+            var ground = Orders(n => n == "Ground");
+            var edges = Orders(n => n == "West edge" || n == "East edge");
+            var cover = Orders(n => n.StartsWith("Cover"));
+            var squares = Orders(n => n == "Unit" || n == "Officer");
+            var rifle = Orders(n => n == "Rifle");
+            Assert.AreEqual(1, ground.Length);
+            Assert.AreEqual(2, edges.Length);
+            Assert.AreEqual(_boot.Map.CoverObjects.Count, cover.Length);
+            Assert.Greater(squares.Length, 0);
+            Assert.AreEqual(1, rifle.Length);
+            Assert.Greater(edges.Min(), ground.Max());
+            Assert.Greater(cover.Min(), edges.Max());
+            Assert.Greater(squares.Min(), cover.Max());
+            Assert.Greater(rifle.Min(), squares.Max());
+            Assert.Greater(BattleMapView.OrderTracer, rifle.Max());
         }
 
         [Test]
