@@ -29,9 +29,15 @@ public class CoreArchitectureTests
     }
 
     [Fact]
-    public void DLV_013_commands_are_plain_data_in_the_core()
+    public void DLV_013_command_interface_is_a_plain_data_marker_in_the_core()
     {
-        Assert.True(typeof(IBattleCommand).IsInterface);
-        Assert.Equal("WeirdWar.Spike2.Battle.Core", typeof(IBattleCommand).Namespace);
+        var type = typeof(IBattleCommand);
+
+        Assert.Same(Core, type.Assembly);
+        Assert.True(type.IsInterface);
+        // No behaviour: a command only carries data, and state changes happen elsewhere.
+        Assert.Empty(type.GetMethods());
+        Assert.Empty(type.GetProperties());
+        Assert.Empty(type.GetEvents());
     }
 }
