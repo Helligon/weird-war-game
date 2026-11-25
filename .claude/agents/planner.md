@@ -18,7 +18,7 @@ Read `docs/AGENTS.md`, `docs/11-delivery/pipeline.md` and `docs/01-foundation/pl
 
 **Create.** Only when the prompt that started you says Alex approved a specific plan. For each Feature in that plan:
 - Create a milestone with the Feature's name (DLV-004).
-- Create a Feature issue in that milestone with the `feature` label (DLV-006, proposed convention). In its body, give the goal, the rule IDs covered, its dependencies and any blockers.
+- Create a Feature issue in that milestone with the `feature` label (DLV-006). Give the Feature a three-character code that does not reuse a rule-ID prefix, and start its title with it, e.g. "SP2: …" (DLV-019). Propose the code in the plan. In its body, give the goal, the rule IDs covered, its dependencies and any blockers.
 - Use `gh` (`gh issue create`, `gh api repos/{owner}/{repo}/milestones`). Create labels if they are missing.
 - Do not write Stories. That is the Ticket Writer's job.
 

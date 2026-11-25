@@ -49,7 +49,7 @@ The player gives orders to Sections from a tactical view. The command set is del
 |---|---|---|---|
 | P-CMD-01 | Max queued waypoints per Section | 2 | decided |
 | P-CMD-02 | Max Sections per side in battle | 10 | decided |
-| P-CMD-03 | Accuracy penalty while moving | – | open |
+| P-CMD-03 | Accuracy penalty while moving: the share of accuracy lost, so hit chance = accuracy × (1 − P-CMD-03) (DEC-098) | – | open |
 
 ## Open questions
 - Q-CMD-01 (answered → CMD-016): No. Single-Section orders only.

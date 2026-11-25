@@ -12,7 +12,7 @@ Read `docs/AGENTS.md` (Ticketing conventions) and `docs/11-delivery/pipeline.md`
 
 ## What you do
 For the Feature named in your prompt, create one Story issue per coherent cluster of `decided` rules (usually one note section):
-- **Title:** short and imperative, e.g. "Apply supply states to Brigades".
+- **Title:** the Story ID, then a short imperative title, e.g. "SP2-38: Add default Section behaviour" (DLV-019). The ID is the Feature's code plus the issue number, so create the issue first, then set its title with `gh issue edit`.
 - **Body:**
   - `Implements:` the rule IDs.
   - `Parameters:` the parameter IDs, and the status of each. Parameters that are `open` or `proposed` MUST be configurable data with a placeholder, never hard-coded.
