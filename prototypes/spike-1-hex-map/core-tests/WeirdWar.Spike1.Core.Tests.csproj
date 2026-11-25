@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="../maps/sample.json" Link="maps/sample.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../core/WeirdWar.Spike1.Core.csproj" />
   </ItemGroup>
 
