@@ -49,9 +49,27 @@ namespace WeirdWar.Spike2.Presentation
             _root.localPosition = new Vector3(0f, 0f, -1f);
             foreach (var o in state.Officers)
             {
-                _officerSquares.Add(Square("Officer", new Vector3((float)o.Position.X, (float)o.Position.Y, 0f), OfficerColour));
+                var square = Square("Officer", new Vector3((float)o.Position.X, (float)o.Position.Y, 0f), OfficerColour);
+                // A thin dark bar from the centre shows where the rifle points (PCH-001).
+                var bar = Square("Rifle", new Vector3(1f, 0f, -0.1f), Color.black);
+                bar.transform.SetParent(square.transform, false);
+                bar.transform.localPosition = new Vector3(1f, 0f, -0.1f);
+                bar.transform.localScale = new Vector3(2f, 0.2f, 1f);
+                _officerSquares.Add(square);
             }
             Refresh();
+        }
+
+        // Read-only: the squares follow the core's Officer state every frame.
+        private void LateUpdate()
+        {
+            if (_state == null) { return; }
+            for (var i = 0; i < _officerSquares.Count && i < _state.Officers.Count; i++)
+            {
+                var o = _state.Officers[i];
+                _officerSquares[i].transform.localPosition = new Vector3((float)o.Position.X, (float)o.Position.Y, 0f);
+                _officerSquares[i].transform.localRotation = Quaternion.Euler(0f, 0f, (float)(o.AimRadians * Mathf.Rad2Deg));
+            }
         }
 
         /// <summary>Redraws one square per remaining Unit, so losing health visibly removes Units.</summary>
@@ -117,7 +135,7 @@ namespace WeirdWar.Spike2.Presentation
                 sb.AppendLine(s.Side + " Riflemen: " + s.UnitCount + " of " + s.MaxUnits + " Units, health " + s.Health
                     + " of " + s.MaxUnits * s.HealthPerUnit + (s.IsDestroyed ? " (destroyed)" : ""));
             }
-            foreach (var o in _state.Officers) { sb.AppendLine(o.Side + " Officer: health " + o.Health + " (not in a Section)"); }
+            foreach (var o in _state.Officers) { sb.AppendLine(o.Side + " Officer: health " + o.Health + " (not in a Section), at " + o.Position.X.ToString("0") + ", " + o.Position.Y.ToString("0")); }
             sb.AppendLine("Hit chance standing still: " + _state.HitChance(false).ToString("0.00")
                 + ", moving: " + _state.HitChance(true).ToString("0.00"));
             sb.AppendLine(_lastFire);

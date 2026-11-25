@@ -20,4 +20,6 @@ Sections, Units, the Officer and the Fire buttons are drawn by `BattleStateView`
 
 The map and the Riflemen speed are read at run time from `../data/map.json` and `../data/stats.json` (metres; one metre is one Unity unit). Blue strip = west edge, red strip = east edge, green discs = cover, tan = open ground.
 
+Third-person Officer (PCH-001): press Play and click once in the Game view to give the game your mouse. W/S walk forward/back along the aim, A/D step sideways, the mouse turns the aim (the camera sits behind and above the Officer), left click fires the stand-in hitscan rifle, Esc frees the mouse (to use the Debug buttons). Every input becomes a plain command (`OfficerMoveCommand`, `OfficerAimCommand`, `OfficerFireCommand`) made by the core's `OfficerInputMapper` and applied with `BattleState.ApplyOfficerCommand`; applied commands are listed in `BattleState.CommandLog` (PCH-009, DLV-013). It uses Unity's existing legacy Input Manager, so no package was added.
+
 EditMode tests: Window > General > Test Runner, or `Unity -batchmode -nographics -projectPath unity -runTests -testPlatform EditMode -testResults results.xml`.

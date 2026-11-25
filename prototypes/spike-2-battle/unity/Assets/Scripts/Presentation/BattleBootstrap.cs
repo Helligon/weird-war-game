@@ -18,6 +18,10 @@ namespace WeirdWar.Spike2.Presentation
         /// <summary>Seed for the battle's random source (TEC-008). Fixed, so a Reset repeats the same battle.</summary>
         public ulong Seed = 1;
 
+        /// <summary>True: third-person Officer view (PCH-001). False: the whole map from above, as in the earlier Stories.</summary>
+        public bool ThirdPerson = true;
+
+        public OfficerController Officer { get; private set; }
         public BattleMap Map { get; private set; }
         public UnitStats Stats { get; private set; }
         public BattleParameters Parameters { get; private set; }
@@ -45,8 +49,18 @@ namespace WeirdWar.Spike2.Presentation
             StateView = stateView;
             StateView.Show(State, this);
 
-            var cam = Camera.main;
-            if (cam != null) { FitCamera(cam, View.WorldBounds); }
+            if (ThirdPerson)
+            {
+                // PCH-001: the camera follows the Officer from behind and above, instead of showing the whole map.
+                if (!TryGetComponent<OfficerController>(out var controller)) { controller = gameObject.AddComponent<OfficerController>(); }
+                Officer = controller;
+                Officer.Attach(this);
+            }
+            else
+            {
+                var cam = Camera.main;
+                if (cam != null) { FitCamera(cam, View.WorldBounds); }
+            }
         }
 
         public static (BattleMap, UnitStats) LoadData(string dataFolder, string mapFile, string statsFile)
