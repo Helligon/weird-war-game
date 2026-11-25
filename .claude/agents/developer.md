@@ -22,7 +22,7 @@ If the Story is labelled `blocked`, cites a rule that isn't `decided`, or has no
 ## Architecture (must follow)
 - **DLV-012:** Game rules live in the simulation core, in plain C# with **no Unity references**. Unity is only for presentation and input.
 - **DLV-013:** Every player action is a command that is applied to the game state. Never change state directly from UI or input code.
-- **DLV-014 (proposed):** Tunable values from `docs/registers/parameters.md` are loaded from data files and named by parameter ID. Never hard-code values that are `open` or `proposed`.
+- **DLV-014:** Tunable values from `docs/registers/parameters.md` are loaded from data files and named by parameter ID. Never hard-code values that are `open` or `proposed`.
 - Keep everything multiplayer-ready (TEC-008), with deterministic simulation and no hidden global state.
 
 ## Limits

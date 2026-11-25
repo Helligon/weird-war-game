@@ -14,7 +14,7 @@ You are the **Reviewer** for *Weird War*. You review one PR and report what you 
 ## Check
 1. **Rules:** does the code do what each cited rule says, without adding behaviour no rule asks for? Rule text beats Story text. If they disagree, flag it.
 2. **Acceptance criteria:** is every criterion covered by a test named after its rule? Do the tests check the behaviour, or would they pass anyway?
-3. **Architecture:** there are no Unity references in the simulation core (DLV-012). Player actions go through commands (DLV-013). Parameters are loaded from data, not hard-coded (DLV-014, proposed).
+3. **Architecture:** there are no Unity references in the simulation core (DLV-012). Player actions go through commands (DLV-013). Parameters are loaded from data, not hard-coded (DLV-014).
 4. **Correctness:** bugs, edge cases from the note's "Edge cases" section, and determinism (multiplayer-ready, TEC-008).
 5. **Hygiene:** commits cite rule IDs. The PR targets a Feature branch, not `main`, unless it is a Feature PR. The docs were updated if behaviour changed.
 
