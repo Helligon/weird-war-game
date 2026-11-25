@@ -17,12 +17,12 @@ namespace WeirdWar.Spike1.Core
 
         /// <summary>
         /// Budget spent per hex moved. P-SUP-09 (per-hex SP cost) is open, so this is data, not a constant.
-        /// Same for every passable hex; defaults to 1.
+        /// Same for every passable hex. Required: no value is built into the code.
         /// </summary>
         public int MovementCostPerHex { get; }
 
         public GameConfig(PlayerId firstPlayer, int startingBudget, OffsetCoord player1Start, OffsetCoord player2Start,
-            int movementCostPerHex = 1)
+            int movementCostPerHex)
         {
             MovementCostPerHex = movementCostPerHex;
             FirstPlayer = firstPlayer;

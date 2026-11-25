@@ -15,7 +15,7 @@ public class TurnTests
     {
         var a = p1 ?? (5, 20);
         var b = p2 ?? (24, 30);
-        return new GameConfig(first, budget, new OffsetCoord(a.Item1, a.Item2), new OffsetCoord(b.Item1, b.Item2));
+        return new GameConfig(first, budget, new OffsetCoord(a.Item1, a.Item2), new OffsetCoord(b.Item1, b.Item2), 1);
     }
 
     private static GameState New(GameConfig? config = null) => GameState.NewGame(Map(), config ?? Config());
@@ -52,6 +52,23 @@ public class TurnTests
             typeof(CommandResult), typeof(HexCoord), typeof(OffsetCoord),
         };
         foreach (var type in types)
+        {
+            Assert.All(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), p =>
+                Assert.True(p.SetMethod == null || !p.SetMethod.IsPublic, type.Name + "." + p.Name + " has a public setter"));
+            Assert.All(type.GetFields(BindingFlags.Public | BindingFlags.Instance), f =>
+                Assert.True(f.IsInitOnly, type.Name + "." + f.Name + " is a public mutable field"));
+        }
+    }
+
+    [Fact]
+    public void DLV_013_every_command_type_is_immutable()
+    {
+        var commandTypes = typeof(GameCommand).Assembly.GetTypes()
+            .Where(t => typeof(GameCommand).IsAssignableFrom(t)).ToList();
+
+        Assert.Contains(typeof(MoveCommand), commandTypes);
+        Assert.Contains(typeof(EndTurnCommand), commandTypes);
+        foreach (var type in commandTypes)
         {
             Assert.All(type.GetProperties(BindingFlags.Public | BindingFlags.Instance), p =>
                 Assert.True(p.SetMethod == null || !p.SetMethod.IsPublic, type.Name + "." + p.Name + " has a public setter"));
@@ -270,7 +287,7 @@ public class TurnTests
     [Fact]
     public void DEC_087_scenario_file_sets_first_player_budget_and_positions()
     {
-        var config = GameConfigLoader.Load("{\"firstPlayer\":2,\"startingBudget\":7,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
+        var config = GameConfigLoader.Load("{\"firstPlayer\":2,\"startingBudget\":7,\"movementCostPerHex\":1,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
 
         Assert.Equal(PlayerId.Player2, config.FirstPlayer);
         Assert.Equal(7, config.StartingBudget);
@@ -281,7 +298,7 @@ public class TurnTests
     [Fact]
     public void TRN_033_stand_in_first_player_defaults_to_player_1_when_missing()
     {
-        var config = GameConfigLoader.Load("{\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
+        var config = GameConfigLoader.Load("{\"movementCostPerHex\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
 
         Assert.Equal(PlayerId.Player1, config.FirstPlayer);
     }
@@ -299,11 +316,11 @@ public class TurnTests
     [Theory]
     [InlineData("[]")]
     [InlineData("not json")]
-    [InlineData("{\"firstPlayer\":3,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}")]
-    [InlineData("{\"firstPlayer\":1,\"startingBudget\":0,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}")]
-    [InlineData("{\"firstPlayer\":1,\"startingBudget\":10}")]
-    [InlineData("{\"firstPlayer\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2]}}")]
-    [InlineData("{\"firstPlayer\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3]}}")]
+    [InlineData("{\"firstPlayer\":3,\"movementCostPerHex\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}")]
+    [InlineData("{\"firstPlayer\":1,\"movementCostPerHex\":1,\"startingBudget\":0,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}")]
+    [InlineData("{\"firstPlayer\":1,\"movementCostPerHex\":1,\"startingBudget\":10}")]
+    [InlineData("{\"firstPlayer\":1,\"movementCostPerHex\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2]}}")]
+    [InlineData("{\"firstPlayer\":1,\"movementCostPerHex\":1,\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3]}}")]
     public void DEC_087_malformed_scenario_files_are_rejected(string json)
     {
         Assert.Throws<SetupException>(() => GameConfigLoader.Load(json));

@@ -33,15 +33,10 @@ namespace WeirdWar.Spike1.Core
             {
                 throw new SetupException("\"startingBudget\" must be a whole number from 1 to 10000.");
             }
-            // P-SUP-09 is open: the per-hex cost is data, defaulting to 1.
-            long cost = 1;
-            if (root.TryGetValue("movementCostPerHex", out var mc))
+            // P-SUP-09 is open: the per-hex cost is required data, with no default in code.
+            if (!root.TryGetValue("movementCostPerHex", out var mc) || !(mc is long cost) || cost < 1 || cost > 10000)
             {
-                if (!(mc is long c) || c < 1 || c > 10000)
-                {
-                    throw new SetupException("\"movementCostPerHex\" must be a whole number from 1 to 10000.");
-                }
-                cost = c;
+                throw new SetupException("\"movementCostPerHex\" must be a whole number from 1 to 10000.");
             }
             var tokens = root.TryGetValue("tokens", out var t) ? t as Dictionary<string, object?> : null;
             if (tokens == null)

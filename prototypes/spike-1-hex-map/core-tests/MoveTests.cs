@@ -294,15 +294,22 @@ public class MoveTests
     }
 
     [Fact]
-    public void SUP_005_movement_cost_per_hex_is_read_from_the_scenario_file_and_defaults_to_1()
+    public void SUP_005_movement_cost_per_hex_is_read_from_the_scenario_file()
     {
         var withCost = GameConfigLoader.Load("{\"startingBudget\":10,\"movementCostPerHex\":2,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
-        var without = GameConfigLoader.Load("{\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}");
         var sample = GameConfigLoader.Load(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "maps", "sample-scenario.json")));
 
         Assert.Equal(2, withCost.MovementCostPerHex);
-        Assert.Equal(1, without.MovementCostPerHex);
         Assert.Equal(1, sample.MovementCostPerHex);
+    }
+
+    [Fact]
+    public void SUP_005_a_scenario_file_without_a_movement_cost_is_rejected_there_is_no_default()
+    {
+        var e = Assert.Throws<SetupException>(() =>
+            GameConfigLoader.Load("{\"startingBudget\":10,\"tokens\":{\"1\":[1,2],\"2\":[3,4]}}"));
+
+        Assert.Contains("movementCostPerHex", e.Message);
     }
 
     [Theory]

@@ -140,6 +140,9 @@ namespace WeirdWar.Spike1.Core
             {
                 return CommandResult.Reject(this, "Target is impassable " + Map.TerrainAt(target) + ".");
             }
+            // Order matters: the tokens can never be adjacent today (setup and the contact rule forbid it), so
+            // "occupied" is only reachable if it is checked before "adjacent". Revisit when battles make
+            // adjacency legal (TRN-003, TRN-008).
             if (target.Equals(enemy.Position))
             {
                 return CommandResult.Reject(this, "Target is occupied by the other token.");
