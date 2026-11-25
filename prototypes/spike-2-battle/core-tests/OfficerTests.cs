@@ -6,13 +6,13 @@ namespace WeirdWar.Spike2.Battle.Core.Tests;
 public class OfficerTests
 {
     // TEC-008: fixed stats, parameters and map written here, so tuning the files in data/ cannot break these tests.
-    private const string StatsJson = "{ \"riflemen\": { \"speed\": 1.5, \"P-HIE-01\": 8, \"P-HIE-02\": 3, \"range\": 30, \"damage\": 1, \"accuracy\": 0.6, \"volleyInterval\": 2, \"P-DAI-01\": 25, \"coverAdjacencyDistance\": 3 },"
+    private const string StatsJson = "{ \"riflemen\": { \"speed\": 1.5, \"P-HIE-01\": 8, \"P-HIE-02\": 3, \"range\": 30, \"damage\": 1, \"accuracy\": 0.6, \"volleyInterval\": 2, \"coverAdjacencyDistance\": 3 },"
         + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
     private const string MapJson = "{ \"width\": 100, \"height\": 60, \"cover\": ["
         + "{ \"id\": \"ruin-west\", \"x\": 30, \"y\": 15, \"radius\": 4 }, { \"id\": \"wall-centre\", \"x\": 50, \"y\": 32, \"radius\": 5 },"
         + "{ \"id\": \"copse-north\", \"x\": 45, \"y\": 50, \"radius\": 4 }, { \"id\": \"crater-east\", \"x\": 72, \"y\": 20, \"radius\": 4 },"
         + "{ \"id\": \"ruin-east\", \"x\": 68, \"y\": 45, \"radius\": 4 } ] }";
-    private const string ParametersJson = "{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5}";
+    private const string ParametersJson = "{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25}";
 
     private static string Text(string file) => file == "stats.json" ? StatsJson : file == "map.json" ? MapJson : ParametersJson;
     private static UnitStats Stats() => UnitStats.Load(StatsJson);
@@ -536,7 +536,7 @@ public class OfficerTests
     }
 
     [Fact]
-    public void PCH_004_a_section_command_leaves_the_officer_untouched()
+    public void CMD_016_a_section_command_leaves_the_officer_untouched()
     {
         var b = NewBattle();
         var o = b.Officers[0];

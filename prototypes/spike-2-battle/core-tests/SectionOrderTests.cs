@@ -7,7 +7,7 @@ public class SectionOrderTests
 {
     private static string Stats(double adjacency = 3, double accuracy = 0.6) =>
         "{ \"riflemen\": { \"speed\": 2, \"P-HIE-01\": 8, \"P-HIE-02\": 30, \"range\": 30, \"damage\": 1, \"accuracy\": " + accuracy.ToString(System.Globalization.CultureInfo.InvariantCulture)
-        + ", \"volleyInterval\": 2, \"P-DAI-01\": 25, \"coverAdjacencyDistance\": " + adjacency.ToString(System.Globalization.CultureInfo.InvariantCulture) + " },"
+        + ", \"volleyInterval\": 2, \"coverAdjacencyDistance\": " + adjacency.ToString(System.Globalization.CultureInfo.InvariantCulture) + " },"
         + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
 
     private static BattleMap OpenMap() => new BattleMap(100, 60, new List<CoverObject>());
@@ -15,7 +15,7 @@ public class SectionOrderTests
 
     private static BattleState Battle(BattleMap? map = null, double adjacency = 3, double penalty = 0.5, double accuracy = 0.6, ulong seed = 1) =>
         BattleState.SetUp(map ?? OpenMap(), UnitStats.Load(Stats(adjacency, accuracy)),
-            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": " + penalty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}"), seed);
+            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-CMD-03\": " + penalty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}"), seed);
 
     private static Section Player(BattleState b) => b.Find(BattleState.PlayerSectionId)!;
     private static Section Enemy(BattleState b) => b.Find(BattleState.EnemySectionId)!;
@@ -190,8 +190,9 @@ public class SectionOrderTests
     public void CMD_008_a_section_with_a_target_and_no_waypoints_attacks_that_section_even_when_another_is_nearer()
     {
         var b = Battle(); QuietEnemy(b);
-        var decoy = AddSection(b, 3, Side.Enemy, 6, 55); // 25 m north: nearer than the ordered target below
+        var decoy = AddSection(b, 3, Side.Enemy, 6, 50); // 20 m north: nearer than the ordered target below
         decoy.IsHolding = true;
+        decoy.VolleyCooldown = 1000; // it never fires, so DAI-006 attacker preference cannot explain the result
         Enemy(b).MoveTo(new MapPoint(30, 30));          // 24 m east: in range
         Accept(b, new TargetCommand(P, E));
 
@@ -370,6 +371,80 @@ public class SectionOrderTests
         Assert.False(b.ApplyCommand(new StopCommand(P)).IsAccepted);
     }
 
+    [Fact]
+    public void CMD_005_a_section_already_in_a_cover_still_walks_to_a_waypoint_next_to_that_cover()
+    {
+        // Ruin at (30,30) r4. The Section starts inside it at (27,30); the waypoint (36,30) is 2 m past the far edge.
+        var b = Battle(CoverMap()); QuietEnemy(b);
+        Player(b).MoveTo(new MapPoint(27, 30));
+        Accept(b, Move(P, W(36, 30)));
+        Accept(b, new StopCommand(P));
+
+        RunUntil(b, () => Player(b).IsHolding);
+        Steps(b, 20);
+
+        Assert.True(Player(b).Position.X >= 33 && Player(b).Position.X <= 36, "ended at " + Player(b).Position.X);
+        Assert.NotNull(b.Map.CoverAt(Player(b).Position)); // it took the cover next to the waypoint on arrival
+    }
+
+    [Fact]
+    public void CMD_005_cover_is_taken_at_a_waypoint_that_is_not_the_last()
+    {
+        // The first waypoint (25,30) is next to the ruin; the second is far away. The Section must step into the ruin first.
+        var b = Battle(CoverMap()); QuietEnemy(b);
+        Accept(b, Move(P, W(25, 30), W(25, 50)));
+
+        var tookCover = false;
+        for (var i = 0; i < 400 && Player(b).Waypoints.Count > 0 && !(tookCover = b.Map.CoverAt(Player(b).Position) != null); i++) b.Step();
+
+        Assert.True(tookCover);
+        Assert.Equal(2, Player(b).Waypoints.Count); // still on the first waypoint when it got into cover
+        RunUntil(b, () => At(Player(b), 25, 50));
+        Assert.True(At(Player(b), 25, 50)); // and then it carried on to the second
+    }
+
+    [Fact]
+    public void CMD_012_a_move_given_to_a_holding_section_releases_the_hold_and_it_walks_the_new_waypoint()
+    {
+        var b = Battle(); QuietEnemy(b);
+        Accept(b, new StopCommand(P));
+        Assert.True(Player(b).IsHolding);
+        Accept(b, Move(P, W(10, 30)));
+        Assert.False(Player(b).IsHolding);
+        RunUntil(b, () => At(Player(b), 10, 30));
+        Assert.True(At(Player(b), 10, 30));
+        var x = Player(b).Position.X;
+        Steps(b, 30);
+        Assert.True(Player(b).Position.X > x); // back on default behaviour: the hold did not come back
+    }
+
+    [Fact]
+    public void CMD_006_a_move_given_after_a_pending_stop_makes_the_stop_no_longer_final()
+    {
+        var b = Battle(); QuietEnemy(b);
+        Accept(b, Move(P, W(10, 30)));
+        Accept(b, new StopCommand(P));
+        Assert.True(Player(b).StopAtEnd);
+        Accept(b, Move(P, W(10, 40)));
+        Assert.False(Player(b).StopAtEnd);
+        RunUntil(b, () => Player(b).Waypoints.Count == 0);
+        Assert.False(Player(b).IsHolding);
+    }
+
+    [Fact]
+    public void PCH_004_no_command_type_carries_a_unit_index_or_unit_id()
+    {
+        var commandTypes = typeof(IBattleCommand).Assembly.GetTypes().Where(t => typeof(IBattleCommand).IsAssignableFrom(t) && !t.IsInterface);
+        Assert.NotEmpty(commandTypes);
+        foreach (var t in commandTypes)
+        {
+            foreach (var p in t.GetProperties())
+            {
+                Assert.DoesNotContain("Unit", p.Name);
+            }
+        }
+    }
+
     // ---- DLV-013, TEC-008: one apply path, one log, replay ----
 
     private static void Script(BattleState b, int steps)
@@ -453,9 +528,8 @@ public class SectionOrderTests
     [Fact]
     public void DLV_014_the_cover_search_range_is_read_by_its_parameter_id_P_DAI_01()
     {
-        Assert.Equal(25, UnitStats.Load(Stats()).CoverSearchRange);
-        var old = Stats().Replace("\"P-DAI-01\"", "\"coverSearchRange\"");
-        Assert.Throws<DataLoadException>(() => UnitStats.Load(old));
+        Assert.Equal(25, Battle().Parameters.CoverSearchRange);
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5}"));
     }
 
     [Fact]
@@ -470,7 +544,8 @@ public class SectionOrderTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null && !File.Exists(Path.Combine(dir.FullName, "data", "map.json"))) dir = dir.Parent;
         var stats = UnitStats.Load(File.ReadAllText(Path.Combine(dir!.FullName, "data", "stats.json")));
-        Assert.True(stats.CoverSearchRange > 0);
+        var parameters = BattleParameters.Load(File.ReadAllText(Path.Combine(dir.FullName, "data", "parameters.json")));
+        Assert.True(parameters.CoverSearchRange > 0);
         Assert.True(stats.CoverAdjacencyDistance >= 0);
     }
 }

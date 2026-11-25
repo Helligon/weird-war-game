@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace WeirdWar.Spike2.Battle.Core
 {
     /// <summary>
-    /// Tunable values, read from a data file by parameter ID (DLV-014). Format: <c>{"P-CMD-01": 2, "P-CMD-03": 0.5}</c>.
+    /// Tunable values, read from a data file by parameter ID (DLV-014). Format: <c>{"P-CMD-01": 2, "P-CMD-03": 0.5, "P-DAI-01": 25}</c>.
     /// Nothing is built into the code: a missing value is an error.
     /// </summary>
     public sealed class BattleParameters
@@ -14,8 +14,12 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>P-CMD-03: share of accuracy lost while firing on the move, from 0 (none lost) to 1 (cannot hit).</summary>
         public double MovingAccuracyPenalty { get; }
 
-        public BattleParameters(int maxWaypoints, double movingAccuracyPenalty)
+        /// <summary>P-DAI-01 (DAI-001): how far, in metres, "nearby" cover is for a Section with no orders (placeholder 25 m).</summary>
+        public double CoverSearchRange { get; }
+
+        public BattleParameters(int maxWaypoints, double movingAccuracyPenalty, double coverSearchRange)
         {
+            CoverSearchRange = coverSearchRange;
             MaxWaypoints = maxWaypoints;
             MovingAccuracyPenalty = movingAccuracyPenalty;
         }
@@ -34,7 +38,11 @@ namespace WeirdWar.Spike2.Battle.Core
             else if (p is double pd) penalty = pd;
             else throw new CommandFormatException("\"P-CMD-03\" must be a number from 0 to 1.");
             if (penalty < 0 || penalty > 1) throw new CommandFormatException("\"P-CMD-03\" must be a number from 0 to 1.");
-            return new BattleParameters((int)n, penalty);
+            if (!root.TryGetValue("P-DAI-01", out var c) || !(c is long || c is double) || System.Convert.ToDouble(c) <= 0)
+            {
+                throw new CommandFormatException("\"P-DAI-01\" must be a number above 0.");
+            }
+            return new BattleParameters((int)n, penalty, System.Convert.ToDouble(c));
         }
     }
 }

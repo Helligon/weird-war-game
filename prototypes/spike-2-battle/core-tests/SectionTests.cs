@@ -239,9 +239,9 @@ public class SectionTests
     {
         var stats = StatsWith(accuracy: 1.0);
 
-        Assert.Equal(0.9, Battle(stats, new BattleParameters(2, 0.1)).HitChance(true), 9);
-        Assert.Equal(0.1, Battle(stats, new BattleParameters(2, 0.9)).HitChance(true), 9);
-        Assert.Equal(0.5, BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5}").MovingAccuracyPenalty, 9);
+        Assert.Equal(0.9, Battle(stats, new BattleParameters(2, 0.1, 25)).HitChance(true), 9);
+        Assert.Equal(0.1, Battle(stats, new BattleParameters(2, 0.9, 25)).HitChance(true), 9);
+        Assert.Equal(0.5, BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25}").MovingAccuracyPenalty, 9);
     }
 
     [Fact]

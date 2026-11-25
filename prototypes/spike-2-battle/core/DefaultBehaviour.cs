@@ -122,8 +122,9 @@ namespace WeirdWar.Spike2.Battle.Core
             var wp = self.QueuedWaypoints[0];
             var moved = false;
             var cover = wp.SeekCover ? CoverNextTo(state, wp.Point) : null;
-            // In the cover next to the waypoint already: the cover is taken, so the waypoint is done.
-            var inThatCover = cover != null && cover.Contains(self.Position);
+            // Only after reaching the waypoint (TakingCover) does being inside that cover finish it. A Section that starts inside
+            // the cover still walks to a waypoint on the far side of it.
+            var inThatCover = self.TakingCover && cover != null && cover.Contains(self.Position);
             if (!inThatCover)
             {
                 if (!self.TakingCover && Distance(self.Position, wp.Point) > 0)
@@ -192,7 +193,7 @@ namespace WeirdWar.Spike2.Battle.Core
             foreach (var c in state.Map.CoverObjects)
             {
                 var d = Distance(self.Position, c.Position);
-                if (d > state.Stats.CoverSearchRange || Distance(c.Position, enemy) > own) continue;
+                if (d > state.Parameters.CoverSearchRange || Distance(c.Position, enemy) > own) continue;
                 if (d < bestDistance) { best = c; bestDistance = d; }
             }
             return best;

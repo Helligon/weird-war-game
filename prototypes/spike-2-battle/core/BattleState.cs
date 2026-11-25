@@ -51,6 +51,7 @@ namespace WeirdWar.Spike2.Battle.Core
         public IReadOnlyList<Officer> Officers => _officers;
         public BattleMap Map => _map;
         public UnitStats Stats => _stats;
+        public BattleParameters Parameters => _parameters;
 
         private readonly List<LoggedCommand> _commandLog = new List<LoggedCommand>();
 
@@ -111,7 +112,7 @@ namespace WeirdWar.Spike2.Battle.Core
         /// destroyed shooter or target, does nothing and says why. Rolls come only from the battle's own seeded source.
         /// <paramref name="moving"/> says whether the shooter fires on the move (CMD-019); movement itself is a later Story.
         /// </summary>
-        public FireResult Fire(SectionId shooterId, SectionId targetId, bool moving = false)
+        internal FireResult Fire(SectionId shooterId, SectionId targetId, bool moving = false)
         {
             var shooter = Find(shooterId) ?? throw new ArgumentException(shooterId + " does not exist.");
             var target = Find(targetId) ?? throw new ArgumentException(targetId + " does not exist.");
@@ -120,7 +121,7 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>DAI-006 (DEC-096): the same placeholder volley, at an enemy Officer. Officers do not fire back in this spike.</summary>
-        public FireResult FireAtOfficer(SectionId shooterId, Officer target, bool moving = false)
+        internal FireResult FireAtOfficer(SectionId shooterId, Officer target, bool moving = false)
         {
             var shooter = Find(shooterId) ?? throw new ArgumentException(shooterId + " does not exist.");
             if (!_officers.Contains(target)) throw new ArgumentException("That Officer is not in this battle.");

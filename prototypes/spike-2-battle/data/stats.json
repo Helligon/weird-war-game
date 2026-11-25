@@ -7,7 +7,6 @@
     "damage": 1,
     "accuracy": 0.6,
     "volleyInterval": 2,
-    "P-DAI-01": 25,
     "coverAdjacencyDistance": 3
   },
   "officer": {

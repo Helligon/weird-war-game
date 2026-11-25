@@ -32,13 +32,11 @@ namespace WeirdWar.Spike2.Battle.Core
         public double OfficerRifleHitRadius { get; }
         /// <summary>Seconds between one Riflemen volley and the next (stand-in for a rate of fire; DEC-098).</summary>
         public double RiflemenVolleyInterval { get; }
-        /// <summary>P-DAI-01 (DAI-001): how far, in metres, a Section looks for "nearby" cover when it has no orders (placeholder 25 m).</summary>
-        public double CoverSearchRange { get; }
         /// <summary>CMD-005: how close, in metres, a waypoint must be to a cover object's edge to count as "next to cover" (placeholder, no P- ID; DEC-096).</summary>
         public double CoverAdjacencyDistance { get; }
 
         public UnitStats(double riflemenSpeed, int riflemenMaxUnits, int riflemenHealthPerUnit, double riflemenRange,
-            int riflemenDamage, double riflemenAccuracy, int officerHealth, double riflemenVolleyInterval, double coverSearchRange,
+            int riflemenDamage, double riflemenAccuracy, int officerHealth, double riflemenVolleyInterval,
             double officerSpeed, double officerRifleRange, int officerRifleDamage, double officerRifleHitRadius, double coverAdjacencyDistance)
         {
             OfficerSpeed = officerSpeed;
@@ -53,12 +51,11 @@ namespace WeirdWar.Spike2.Battle.Core
             RiflemenAccuracy = riflemenAccuracy;
             OfficerHealth = officerHealth;
             RiflemenVolleyInterval = riflemenVolleyInterval;
-            CoverSearchRange = coverSearchRange;
             CoverAdjacencyDistance = coverAdjacencyDistance;
         }
 
         /// <summary>
-        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy", "volleyInterval", "P-DAI-01", "coverAdjacencyDistance" }, "officer": { "health", "speed", "rifleRange", "rifleDamage", "rifleHitRadius" } }.
+        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy", "volleyInterval", "coverAdjacencyDistance" }, "officer": { "health", "speed", "rifleRange", "rifleDamage", "rifleHitRadius" } }.
         /// </summary>
         public static UnitStats Load(string json)
         {
@@ -78,8 +75,6 @@ namespace WeirdWar.Spike2.Battle.Core
             if (accuracy < 0 || accuracy > 1) throw new DataLoadException("Stats error: riflemen \"accuracy\" must be from 0 to 1.");
             var interval = BattleMapLoader.Number(riflemen, "volleyInterval", "riflemen");
             if (interval <= 0) throw new DataLoadException("Stats error: riflemen \"volleyInterval\" must be above zero.");
-            var coverRange = BattleMapLoader.Number(riflemen, "P-DAI-01", "riflemen");
-            if (coverRange <= 0) throw new DataLoadException("Stats error: riflemen \"P-DAI-01\" must be above zero.");
             var adjacency = BattleMapLoader.Number(riflemen, "coverAdjacencyDistance", "riflemen");
             if (adjacency < 0) throw new DataLoadException("Stats error: riflemen \"coverAdjacencyDistance\" must not be negative.");
             var officerHealth = Whole(officer, "health", "officer");
@@ -90,7 +85,7 @@ namespace WeirdWar.Spike2.Battle.Core
             var rifleDamage = Whole(officer, "rifleDamage", "officer");
             var hitRadius = BattleMapLoader.Number(officer, "rifleHitRadius", "officer");
             if (hitRadius <= 0) throw new DataLoadException("Stats error: officer \"rifleHitRadius\" must be above zero.");
-            return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth, interval, coverRange,
+            return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth, interval,
                 officerSpeed, rifleRange, rifleDamage, hitRadius, adjacency);
         }
 

@@ -67,10 +67,9 @@ namespace WeirdWar.Spike2.Tests
             Assert.Greater(enemy.UnitCount, 0);
             var before = _boot.StateView.SquaresFor(enemy.Id);
 
-            for (var i = 0; i < 20 && enemy.UnitCount == before; i++)
-            {
-                _boot.State.Fire(BattleState.PlayerSectionId, enemy.Id);
-            }
+            // Fire is internal to the core (DLV-013): order the player Section to attack and let the battle run until a Unit falls.
+            _boot.StateView.Give(new TargetCommand(BattleState.PlayerSectionId, enemy.Id));
+            for (var i = 0; i < 600 && enemy.UnitCount == before; i++) { _boot.StateView.Advance(1.0); }
             _boot.StateView.Refresh();
 
             Assert.Less(enemy.UnitCount, before);
