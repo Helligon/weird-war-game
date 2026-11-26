@@ -168,7 +168,7 @@ namespace WeirdWar.Spike2.Battle.Core
         /// </summary>
         public void Step()
         {
-            if (Outcome != BattleOutcome.InProgress) return; // VIC-001: a finished battle no longer steps.
+            if (Outcome != BattleOutcome.InProgress) return; // VIC-001, VIC-006: a finished battle no longer steps.
             Tick(StepSeconds);
             StepCount++;
         }
@@ -232,7 +232,7 @@ namespace WeirdWar.Spike2.Battle.Core
         /// </summary>
         public CommandResult ApplyCommand(IBattleCommand command)
         {
-            if (Outcome != BattleOutcome.InProgress) return CommandResult.Rejected("The battle has ended.");
+            if (Outcome != BattleOutcome.InProgress) return CommandResult.Rejected("The battle has ended (VIC-006).");
             if (command is OfficerCommand oc) return ApplyOfficer(oc);
             if (command is SectionCommand sc) return ApplySection(sc);
             if (command is OfficerControlCommand cc) return ApplyOfficerControl(cc);

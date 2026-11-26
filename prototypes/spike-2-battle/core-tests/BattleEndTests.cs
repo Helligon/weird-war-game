@@ -5,13 +5,13 @@ namespace WeirdWar.Spike2.Battle.Core.Tests;
 public class BattleEndTests
 {
     // TEC-008: fixed stats, parameters and map written here, so tuning the files in data/ cannot break these tests.
-    private const string StatsJson = "{ \"riflemen\": { \"speed\": 1.5, \"P-HIE-01\": 8, \"P-HIE-02\": 3, \"range\": 30, \"damage\": 1, \"accuracy\": 0.6, \"volleyInterval\": 2, \"coverAdjacencyDistance\": 3 },"
+    private const string StatsJson = "{ \"riflemen\": { \"speed\": 1.5, \"P-HIE-01\": 8, \"P-HIE-02\": 3, \"range\": 30, \"damage\": 1, \"accuracy\": 0.6, \"volleyInterval\": 2 },"
         + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
     private const string MapJson = "{ \"width\": 100, \"height\": 60, \"cover\": ["
         + "{ \"id\": \"ruin-west\", \"x\": 30, \"y\": 15, \"radius\": 4 }, { \"id\": \"wall-centre\", \"x\": 50, \"y\": 32, \"radius\": 5 },"
         + "{ \"id\": \"copse-north\", \"x\": 45, \"y\": 50, \"radius\": 4 }, { \"id\": \"crater-east\", \"x\": 72, \"y\": 20, \"radius\": 4 },"
         + "{ \"id\": \"ruin-east\", \"x\": 68, \"y\": 45, \"radius\": 4 } ] }";
-    private const string ParametersJson = "{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25}";
+    private const string ParametersJson = "{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-CMD-04\": 3, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5}";
 
     private static BattleState NewBattle(ulong seed = 1) =>
         BattleState.SetUp(BattleMapLoader.Load(MapJson), UnitStats.Load(StatsJson), BattleParameters.Load(ParametersJson), seed);
@@ -229,6 +229,90 @@ public class BattleEndTests
         Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.2", "5", "0.3")));
         Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.1", "5.5", "0.3")));
         Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.1", "5", "0.4")));
+    }
+
+    // ---- SP2-42 meets SP2-43 ----
+
+    private static void LastUnitIsTheOfficer(BattleState b) { Kill(b.Find(BattleState.PlayerSectionId)!); }
+
+    [Fact]
+    public void VIC_006_PCH_006_when_the_officer_is_the_last_living_unit_and_dies_the_end_screen_wins_over_tactical_view_only()
+    {
+        var b = NewBattle();
+        var view = new TacticalView(b);
+        LastUnitIsTheOfficer(b);
+        Assert.Equal(BattleOutcome.InProgress, b.Outcome);
+        Assert.False(view.CheckOfficerLost()); // the Officer lives, so nothing happens
+
+        b.Officers[0].TakeDamage(b.Officers[0].Health);
+        Assert.Equal(BattleOutcome.EnemyWon, b.Outcome);
+        Assert.False(view.CheckOfficerLost());
+        Assert.False(view.Active);
+        Assert.DoesNotContain("tactical view only", view.Message.ToLowerInvariant());
+    }
+
+    [Fact]
+    public void PCH_006_the_officer_dying_with_a_section_left_still_opens_tactical_view_only()
+    {
+        var b = NewBattle();
+        var view = new TacticalView(b);
+        b.Officers[0].TakeDamage(b.Officers[0].Health);
+        Assert.True(view.CheckOfficerLost());
+        Assert.True(view.Active);
+    }
+
+    [Fact]
+    public void VIC_006_CMD_004_the_tactical_view_copes_with_a_finished_battle_without_errors_or_getting_stuck()
+    {
+        var b = NewBattle();
+        var view = new TacticalView(b);
+        view.Enter();
+        view.SetRunning(true); // the Officer is handed to the AI
+        Assert.True(b.Officers[0].UnderAi);
+        Kill(b.Find(BattleState.EnemySectionId)!);
+        Assert.Equal(BattleOutcome.PlayerWon, b.Outcome);
+        var logged = b.CommandLog.Count;
+
+        Assert.True(view.Exit());   // the hand-back command would be refused; the view must not throw or stay inside
+        Assert.False(view.Active);
+        view.Enter();
+        Assert.True(view.Active);
+        view.SetRunning(false);
+        Assert.True(view.Exit());
+        Assert.False(view.CheckOfficerLost());
+        Assert.Equal(logged, b.CommandLog.Count); // nothing was logged after the end
+        Assert.False(b.ApplyCommand(new OfficerControlCommand(0, false)).IsAccepted);
+    }
+
+    [Fact]
+    public void VIC_001_TEC_005_a_battle_the_officer_ai_ends_mid_step_still_has_the_right_outcome_and_a_complete_log()
+    {
+        BattleState Play()
+        {
+            var b = NewBattle(1);
+            var enemy = b.Find(BattleState.EnemySectionId)!;
+            enemy.TakeDamage(enemy.Health - 1); // one hit from the Officer's rifle finishes it
+            enemy.IsHolding = true; enemy.VolleyCooldown = 1e9;
+            var mine = b.Find(BattleState.PlayerSectionId)!;
+            mine.IsHolding = true; mine.VolleyCooldown = 1e9; // so only the Officer AI can end the battle
+            mine.MoveTo(new MapPoint(40, 30)); // close enough that the Officer, standing beside it, reaches the enemy (rifle range 80 m)
+            Assert.True(b.ApplyCommand(new OfficerControlCommand(0, true)).IsAccepted);
+            for (var i = 0; i < 5000 && b.Outcome == BattleOutcome.InProgress; i++) b.Step();
+            return b;
+        }
+
+        var original = Play();
+        Assert.Equal(BattleOutcome.PlayerWon, original.Outcome);
+        Assert.True(original.StepCount > 0);
+        var steps = original.StepCount;
+        original.Step(); // VIC-006
+        Assert.Equal(steps, original.StepCount);
+
+        var read = CommandLogFile.Read(CommandLogFile.Write(original));
+        Assert.Equal(BattleOutcome.PlayerWon, read.Outcome);
+        Assert.Equal(steps, read.Steps);
+        Assert.Contains(read.Commands, c => c.Command is OfficerControlCommand);
+        Assert.Equal(original.CommandLog[0].Command, read.Commands[0].Command);
     }
 
     [Fact]
