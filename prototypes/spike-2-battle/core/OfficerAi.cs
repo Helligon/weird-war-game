@@ -4,8 +4,10 @@ namespace WeirdWar.Spike2.Battle.Core
 {
     /// <summary>
     /// What the player's Officer does while under AI control (DAI-005, CMD-010): it Protects the nearest friendly Section. It stays
-    /// beside or in front of that Section (the front is at most P-DAI-02 from its centre) and fires at the nearest enemy Section it can reach from where it stands, never walking away from the Section to do so.
-    /// It reads only core state, with no clock and no random numbers, so the same logged commands replay the same battle (TEC-008).
+    /// beside or in front of that Section (the front is at most P-DAI-02 from its centre) and fires at the nearest enemy Section it can reach
+    /// from where it stands, never walking away from the Section to do so.
+    /// It reads only core state: no clock, no view flag. Its one random roll (the hit, P-DAI-04, DEC-102) comes from the battle's own
+    /// seeded source in <see cref="BattleState.FireOfficerRifle"/>, so the same logged commands replay the same battle (TEC-008).
     /// Whether the Officer is under AI is core state, changed only by <see cref="OfficerControlCommand"/>.
     /// </summary>
     internal static class OfficerAi

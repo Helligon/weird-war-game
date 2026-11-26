@@ -13,12 +13,12 @@ public class OfficerAiTests
     private static string Inv(double v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     // The AI hits every time (P-DAI-04 = 1) unless a test says otherwise, so the geometry tests are about where it aims.
-    private static string ParamsJson(double hit = 1.0, double interval = 2) =>
-        "{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": " + Inv(interval) + ", \"P-DAI-04\": " + Inv(hit) + ", \"P-CMD-04\": 3, \"P-CMD-03\": 0.5}";
+    private static string ParamsJson(double hit = 1.0, double interval = 2, double protect = 6) =>
+        "{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-DAI-02\": " + Inv(protect) + ", \"P-DAI-03\": " + Inv(interval) + ", \"P-DAI-04\": " + Inv(hit) + ", \"P-CMD-04\": 3, \"P-CMD-03\": 0.5}";
 
-    private static BattleState Battle(ulong seed = 1, double hit = 1.0, double interval = 2) =>
+    private static BattleState Battle(ulong seed = 1, double hit = 1.0, double interval = 2, double protect = 6) =>
         BattleState.SetUp(new BattleMap(200, 60, new List<CoverObject>()), UnitStats.Load(Stats),
-            BattleParameters.Load(ParamsJson(hit, interval)), seed);
+            BattleParameters.Load(ParamsJson(hit, interval, protect)), seed);
 
     private static Section Mine(BattleState b) => b.Find(BattleState.PlayerSectionId)!;
     private static Section Foe(BattleState b) => b.Find(BattleState.EnemySectionId)!;
@@ -48,6 +48,19 @@ public class OfficerAiTests
         Steps(b, 100);
         Assert.Equal(start, b.Officers[0].Position);
         Assert.False(b.Officers[0].UnderAi);
+    }
+
+    [Fact]
+    public void CMD_010_the_protect_distance_is_the_parameter_P_DAI_02_not_a_built_in_value()
+    {
+        foreach (var protect in new[] { 3.0, 10.0 })
+        {
+            var b = Battle(protect: protect); QuietEnemy(b);
+            Mine(b).IsHolding = true;
+            AiOn(b);
+            Steps(b, 300);
+            Assert.InRange(Dist(b.Officers[0].Position, Mine(b).Position), protect - 0.5, protect + 0.5);
+        }
     }
 
     [Fact]
@@ -278,11 +291,12 @@ public class OfficerAiTests
         v.Enter(); v.SetRunning(true);
         Assert.True(b.Officers[0].UnderAi);
         Assert.False(second.UnderAi);
-        second.UnderAi = true;       // another Officer the AI already controls must not be handed back by the view
+        Accept(b, new OfficerControlCommand(1, true)); // another Officer the AI already controls must not be handed back by the view
         v.Exit();
         Assert.False(b.Officers[0].UnderAi);
         Assert.True(second.UnderAi);
-        Assert.All(b.CommandLog.Select(l => l.Command).OfType<OfficerControlCommand>(), c => Assert.Equal(0, c.Officer));
+        // The only command for Officer 1 is the one the test itself sent: the view sent none.
+        Assert.Single(b.CommandLog.Select(l => l.Command).OfType<OfficerControlCommand>().Where(c => c.Officer == 1));
     }
 
     [Fact]
