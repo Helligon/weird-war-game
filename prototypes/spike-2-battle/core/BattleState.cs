@@ -230,7 +230,10 @@ namespace WeirdWar.Spike2.Battle.Core
                     else section.StopAtEnd = true;                                    // CMD-006: after the last waypoint
                     break;
                 case ClearWaypointsCommand _:
-                    section.ClearWaypoints(); // CMD-007
+                    // CMD-007 (DEC-100): a pending Stop survives, so the Section holds where it is. Otherwise default behaviour resumes.
+                    var holdAfterClear = section.StopAtEnd;
+                    section.ClearWaypoints();
+                    if (holdAfterClear) section.IsHolding = true;
                     break;
                 case TargetCommand t:
                     if (_sections[t.TargetSection.Value].IsDestroyed) return CommandResult.Rejected(t.TargetSection + " is destroyed.");

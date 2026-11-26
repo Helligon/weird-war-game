@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace WeirdWar.Spike2.Battle.Core
 {
     /// <summary>
-    /// Tunable values, read from a data file by parameter ID (DLV-014). Format: <c>{"P-CMD-01": 2, "P-CMD-03": 0.5, "P-DAI-01": 25}</c>.
+    /// Tunable values, read from a data file by parameter ID (DLV-014). Format: <c>{"P-CMD-01": 2, "P-CMD-03": 0.5, "P-DAI-01": 25, "P-CMD-04": 3}</c>.
     /// Nothing is built into the code: a missing value is an error.
     /// </summary>
     public sealed class BattleParameters
@@ -17,8 +17,12 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>P-DAI-01 (DAI-001): how far, in metres, "nearby" cover is for a Section with no orders (placeholder 25 m).</summary>
         public double CoverSearchRange { get; }
 
-        public BattleParameters(int maxWaypoints, double movingAccuracyPenalty, double coverSearchRange)
+        /// <summary>P-CMD-04 (CMD-005): how close, in metres, a waypoint must be to a cover object's edge to count as "next to cover" (placeholder 3 m).</summary>
+        public double CoverAdjacencyDistance { get; }
+
+        public BattleParameters(int maxWaypoints, double movingAccuracyPenalty, double coverSearchRange, double coverAdjacencyDistance)
         {
+            CoverAdjacencyDistance = coverAdjacencyDistance;
             CoverSearchRange = coverSearchRange;
             MaxWaypoints = maxWaypoints;
             MovingAccuracyPenalty = movingAccuracyPenalty;
@@ -42,7 +46,11 @@ namespace WeirdWar.Spike2.Battle.Core
             {
                 throw new CommandFormatException("\"P-DAI-01\" must be a number above 0.");
             }
-            return new BattleParameters((int)n, penalty, System.Convert.ToDouble(c));
+            if (!root.TryGetValue("P-CMD-04", out var a) || !(a is long || a is double) || System.Convert.ToDouble(a) < 0)
+            {
+                throw new CommandFormatException("\"P-CMD-04\" must be a number of 0 or more.");
+            }
+            return new BattleParameters((int)n, penalty, System.Convert.ToDouble(c), System.Convert.ToDouble(a));
         }
     }
 }
