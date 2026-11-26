@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [foundation, tech]
 related: ["[[multiplayer]]", "[[map-editor]]"]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Platform and technology
@@ -28,6 +28,7 @@ The game will be built in **Unity** and published on **itch.io**. Alex is new to
 - **TEC-012** (`decided`): The code MUST be split into a plain C# simulation core and a Unity presentation layer (DLV-012).
 - **TEC-006** (`decided`): The art style SHOULD stay simple-looking (VIS-006), which helps performance, especially for a browser build.
 - **TEC-013** (`decided`): Spike code MUST live in a `prototypes/` folder in this repo and is merged to `main` like any other work. It is throwaway: production code MUST NOT build on it (DEC-087).
+- **TEC-016** (`decided`, DEC-103): Production code MUST live in top-level `src/`: the simulation core in `src/WeirdWar.Core` (netstandard2.1, no Unity references, DLV-012) and its tests in `src/WeirdWar.Core.Tests`, with its own CI job. Nothing in `src/` MAY reference `prototypes/` (TEC-013). Whether Unity loads the core as a DLL or a local package is decided in the first Unity Feature.
 - **TEC-014** (`decided`): The repo MUST use Git LFS for binary assets, using Unity's standard `.gitattributes` setup (DEC-087).
 - **TEC-015** (`decided`, revised by DEC-092): The Unity editor MUST be an LTS (long-term support) release. The project uses **6000.3.29f1** (Unity 6.3 LTS). The exact version is recorded in the project's `ProjectSettings/ProjectVersion.txt`.
 
