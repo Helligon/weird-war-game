@@ -12,6 +12,8 @@ namespace WeirdWar.Spike2.Presentation
     {
         /// <summary>Folder holding the JSON data files, relative to the Unity project folder.</summary>
         public string DataFolder = "../data";
+        /// <summary>Folder the command log is written to when the battle ends (TEC-005), relative to the Unity project folder. Git ignores it.</summary>
+        public string LogFolder = "../logs";
         public string MapFile = "map.json";
         public string StatsFile = "stats.json";
         public string ParametersFile = "parameters.json";

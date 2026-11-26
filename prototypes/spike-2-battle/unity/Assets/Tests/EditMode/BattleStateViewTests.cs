@@ -87,6 +87,50 @@ namespace WeirdWar.Spike2.Tests
             Assert.Greater(player.Position.X, startX);
         }
 
+        [Test]
+        public void TEC_005_ending_the_battle_writes_the_command_log_and_shows_the_result()
+        {
+            var folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ww-log-test-" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                _boot.LogFolder = folder;
+                _boot.StateView.Show(_boot.State, _boot);
+                Assert.IsTrue(_boot.State.ApplyCommand(new OfficerMoveCommand(0, 1, 0)).IsAccepted);
+                _boot.StateView.Frame(1.0);
+                Assert.IsNull(_boot.StateView.LogPath, "no log while the battle is still going");
+                Assert.AreEqual(BattleOutcome.InProgress, _boot.StateView.Outcome);
+
+                // Let the default behaviour fight it out: the Sections walk together and shoot until one side is gone.
+                _boot.StateView.SetRunning(true);
+                for (var i = 0; i < 5000 && _boot.StateView.Outcome == BattleOutcome.InProgress; i++) { _boot.StateView.Frame(1.0); }
+
+                Assert.AreNotEqual(BattleOutcome.InProgress, _boot.StateView.Outcome);
+                Assert.IsNotNull(_boot.StateView.LogPath, _boot.StateView.LogError);
+                Assert.IsTrue(System.IO.File.Exists(_boot.StateView.LogPath));
+                StringAssert.Contains(_boot.StateView.Outcome.ToString(), _boot.StateView.LogPath);
+                var read = CommandLogFile.Read(System.IO.File.ReadAllText(_boot.StateView.LogPath));
+                Assert.AreEqual(_boot.State.CommandLog.Count, read.Commands.Count);
+                Assert.AreEqual(_boot.State.CommandLog[0].Command, read.Commands[0].Command);
+                var path = _boot.StateView.LogPath;
+                _boot.StateView.Frame(0.1);
+                Assert.AreEqual(path, _boot.StateView.LogPath);
+                Assert.AreEqual(1, System.IO.Directory.GetFiles(folder).Length, "written once");
+            }
+            finally
+            {
+                if (System.IO.Directory.Exists(folder)) { System.IO.Directory.Delete(folder, true); }
+            }
+        }
+
+        [Test]
+        public void VIC_001_each_result_has_its_own_message()
+        {
+            StringAssert.Contains("VICTORY", BattleStateView.OutcomeText(BattleOutcome.PlayerWon));
+            StringAssert.Contains("DEFEAT", BattleStateView.OutcomeText(BattleOutcome.EnemyWon));
+            StringAssert.Contains("DRAW", BattleStateView.OutcomeText(BattleOutcome.Draw));
+            Assert.AreEqual("", BattleStateView.OutcomeText(BattleOutcome.InProgress));
+        }
+
         private static double Distance(Section a, Section b)
         {
             var dx = a.Position.X - b.Position.X;
