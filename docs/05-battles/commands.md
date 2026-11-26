@@ -49,8 +49,8 @@ The player gives orders to Sections from a tactical view. The command set is del
 |---|---|---|---|
 | P-CMD-01 | Max queued waypoints per Section | 2 | decided |
 | P-CMD-02 | Max Sections per side in battle | 10 | decided |
-| P-CMD-04 | Next-to-cover distance: a waypoint this close to a cover object's edge counts as next to it (CMD-005, DEC-100) | 3 m (Spike 2 placeholder) | proposed |
 | P-CMD-03 | Accuracy penalty while moving: the share of accuracy lost, so hit chance = accuracy × (1 − P-CMD-03) (DEC-098) | – | open |
+| P-CMD-04 | Next-to-cover distance: a waypoint this close to a cover object's edge counts as next to it (CMD-005, DEC-100) | 3 m (Spike 2 placeholder) | proposed |
 
 ## Open questions
 - Q-CMD-01 (answered → CMD-016): No. Single-Section orders only.

@@ -77,8 +77,8 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-BOM-06 | HQ bombardment range | – | open | [[bombardment]] |
 | P-CMD-01 | Max queued waypoints per Section | 2 | decided | [[commands]] |
 | P-CMD-02 | Max Sections per side in battle | 10 | decided | [[commands]] |
-| P-CMD-04 | Next-to-cover distance: a waypoint this close to a cover object's edge counts as next to it (CMD-005, DEC-100) | 3 m (Spike 2 placeholder) | proposed | [[commands]] |
 | P-CMD-03 | Accuracy penalty while moving: the share of accuracy lost, so hit chance = accuracy × (1 − P-CMD-03) (DEC-098) | – | open | [[commands]] |
+| P-CMD-04 | Next-to-cover distance: a waypoint this close to a cover object's edge counts as next to it (CMD-005, DEC-100) | 3 m (Spike 2 placeholder) | proposed | [[commands]] |
 | P-DAI-01 | Nearby cover distance (DAI-001) | 25 m (Spike 2 placeholder) | proposed | [[default-ai-behaviour]] |
 | P-DEP-01 | Terrain → pattern weights | – | open | [[deployment]] |
 | P-DEP-02 | Max Brigades per side (= 2) | – | decided | [[deployment]] |
