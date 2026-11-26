@@ -66,6 +66,7 @@ namespace WeirdWar.Core.Simulation
             SectionTypes = sectionTypes;
             Supply = new Supply(sectionTypes, parameters);
             MovementRules = new MovementRules(parameters);
+            Territory = new TerritoryRules(parameters);
             _parametersDigest = parameters.Digest();
             var factions = new List<FactionState>();
             var brigades = new List<Brigade>();
@@ -141,6 +142,9 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>The Slow movement cap (P-SUP-10), or null when there is no map. Fixed for a game; not hashed.</summary>
         public MovementRules? MovementRules { get; }
+
+        /// <summary>Territory radii (MAP-016, MAP-027), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameters are in the digest).</summary>
+        public TerritoryRules? Territory { get; }
 
         /// <summary>The Section types in use, or null when there is no map.</summary>
         public SectionTypeTable? SectionTypes { get; }
@@ -241,7 +245,12 @@ namespace WeirdWar.Core.Simulation
                 sb.Append("faction=").Append(f.Id).Append(" reserve=").Append(f.Reserve.ToString(CultureInfo.InvariantCulture))
                   .Append(" cp=").Append(f.Cp.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (var l in Locations)
-                sb.Append("location=").Append(l.Id).Append(" owner=").Append(l.Owner ?? "-").Append('\n');
+            {
+                sb.Append("location=").Append(l.Id).Append(" owner=").Append(l.Owner ?? "-");
+                // Written only while a capture is pending (TRN-009), so a game with none hashes as before.
+                if (l.Capturing != null) sb.Append(" capturing=").Append(l.Capturing);
+                sb.Append('\n');
+            }
             foreach (var b in Brigades)
             {
                 sb.Append("brigade=").Append(b.Id.ToString(CultureInfo.InvariantCulture)).Append(" faction=").Append(b.Faction)
