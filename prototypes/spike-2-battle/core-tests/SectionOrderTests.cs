@@ -260,6 +260,7 @@ public class SectionOrderTests
     public void CMD_008_a_destroyed_target_ends_the_order()
     {
         var b = Battle(); QuietEnemy(b);
+        AddSection(b, 3, Side.Enemy, 95, 55); // a second enemy Section keeps the battle going (VIC-001: it would end with none left)
         Accept(b, new TargetCommand(P, E));
         Enemy(b).TakeDamage(10000);
         Steps(b, 2);

@@ -104,6 +104,8 @@ namespace WeirdWar.Spike2.Battle.Core
         /// </summary>
         public bool CheckOfficerLost()
         {
+            // VIC-001, VIC-006: once the battle has ended the end screen wins, so "tactical view only" is not opened.
+            if (_state.Outcome != BattleOutcome.InProgress) return false;
             if (Active || CanReturnToThirdPerson) return false;
             Enter();
             Message = "Your Officer has fallen. Tactical view only (PCH-006).";
@@ -122,6 +124,8 @@ namespace WeirdWar.Spike2.Battle.Core
             if (_state.Officers.Count == 0) return;
             var o = _state.Officers[ControlledOfficer];
             if (o.Side != Side.Player || o.IsDestroyed || o.UnderAi == wantAi) return;
+            // VIC-006: a finished battle accepts no commands. The hand-over is then skipped: nothing steps any more, so it has no effect.
+            if (_state.Outcome != BattleOutcome.InProgress) return;
             _state.ApplyCommand(new OfficerControlCommand(ControlledOfficer, wantAi));
         }
 

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnityEngine;
 using WeirdWar.Spike2.Battle.Core;
@@ -38,6 +40,14 @@ namespace WeirdWar.Spike2.Presentation
         public bool Running => _bootstrap != null && _bootstrap.Tactical != null && _bootstrap.Tactical.Running;
         /// <summary>The battle speed choice: 1, 5 or 20 battle seconds per real second. It applies to everything the core steps, the Officer too.</summary>
         public int SpeedMultiplier => SpeedChoices[_speedIndex];
+        /// <summary>VIC-001: how the battle stands. Shown on screen when it is over.</summary>
+        public BattleOutcome Outcome => _state == null ? BattleOutcome.InProgress : _state.Outcome;
+        /// <summary>TEC-005: where the command log was written when the battle ended, or null while it is still going (or if writing failed).</summary>
+        public string LogPath { get; private set; }
+        /// <summary>Where the file-name time comes from. Tests replace it; it is never read by the core (TEC-008).</summary>
+        public Func<DateTime> Clock = () => DateTime.Now;
+        /// <summary>Why the log could not be written, or null.</summary>
+        public string LogError { get; private set; }
         public void SetRunning(bool running) { _bootstrap.Tactical.SetRunning(running); }
         public void CycleSpeed() { _speedIndex = (_speedIndex + 1) % SpeedChoices.Length; }
 
@@ -50,6 +60,8 @@ namespace WeirdWar.Spike2.Presentation
             _state = state;
             _bootstrap = bootstrap;
             _carry = 0;
+            LogPath = null;
+            LogError = null;
             if (_root != null) { DestroyImmediate(_root.gameObject); }
             ReleaseShared();
             _unitSquares.Clear();
@@ -96,6 +108,19 @@ namespace WeirdWar.Spike2.Presentation
         public void Frame(double realSeconds)
         {
             if (_state != null && Running) { Advance(realSeconds); }
+            WriteLogIfEnded();
+        }
+
+        /// <summary>TEC-005: once the battle has ended (VIC-001), writes the command log, once. A shot can end the battle too, so this runs every frame.</summary>
+        public void WriteLogIfEnded()
+        {
+            if (_state == null || _state.Outcome == BattleOutcome.InProgress || LogPath != null || LogError != null) { return; }
+            try
+            {
+                var folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", _bootstrap.LogFolder));
+                LogPath = CommandLogWriter.Write(_state, folder, Clock());
+            }
+            catch (Exception e) { LogError = e.Message; }
         }
 
         private void Update() { Frame(Time.deltaTime); }
@@ -176,6 +201,24 @@ namespace WeirdWar.Spike2.Presentation
             if (GUI.Button(new Rect(10, 130, 270, 28), Running ? "Pause battle" : "Run battle (default behaviour)")) { SetRunning(!Running); }
             if (GUI.Button(new Rect(285, 130, 130, 28), "Speed x" + SpeedChoices[_speedIndex])) { CycleSpeed(); }
             if (GUI.Button(new Rect(420, 130, 110, 28), "Reset battle")) { _bootstrap.Load(); return; }
+            if (Outcome != BattleOutcome.InProgress)
+            {
+                var banner = new Rect(Screen.width / 2f - 300, Screen.height / 2f - 70, 600, 140);
+                GUI.Box(banner, GUIContent.none);
+                var style = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true, fontSize = 20 };
+                GUI.Label(banner, OutcomeText(Outcome) + "\n" + (LogPath != null ? "Command log: " + LogPath : "Command log not written: " + LogError), style);
+            }
+        }
+
+        public static string OutcomeText(BattleOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case BattleOutcome.PlayerWon: return "VICTORY: the enemy is destroyed";
+                case BattleOutcome.EnemyWon: return "DEFEAT: every friendly Unit is destroyed";
+                case BattleOutcome.Draw: return "DRAW: both sides destroyed";
+                default: return "";
+            }
         }
 
         private string ViewText()

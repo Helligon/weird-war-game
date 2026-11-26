@@ -166,7 +166,36 @@ namespace WeirdWar.Spike2.Battle.Core
         /// Advances the battle by one <see cref="StepSeconds"/>. This is the only public way time passes (TEC-008): the Officers
         /// walk along their move direction, then every Section runs its default behaviour.
         /// </summary>
-        public void Step() { Tick(StepSeconds); StepCount++; }
+        public void Step()
+        {
+            if (Outcome != BattleOutcome.InProgress) return; // VIC-001, VIC-006: a finished battle no longer steps.
+            Tick(StepSeconds);
+            StepCount++;
+        }
+
+        /// <summary>
+        /// VIC-001 (destroyed case): the side with no living Unit (Section or Officer) has lost. Never depends on time (VIC-004).
+        /// Spike stand-in (assumption): if both sides are destroyed at once the result is a draw.
+        /// </summary>
+        public BattleOutcome Outcome
+        {
+            get
+            {
+                var player = HasLivingUnit(Side.Player);
+                var enemy = HasLivingUnit(Side.Enemy);
+                if (player && enemy) return BattleOutcome.InProgress;
+                if (player) return BattleOutcome.PlayerWon;
+                if (enemy) return BattleOutcome.EnemyWon;
+                return BattleOutcome.Draw;
+            }
+        }
+
+        private bool HasLivingUnit(Side side)
+        {
+            foreach (var s in _sections.Values) { if (s.Side == side && !s.IsDestroyed) return true; }
+            foreach (var o in _officers) { if (o.Side == side && !o.IsDestroyed) return true; }
+            return false;
+        }
 
         /// <summary>
         /// Advances the battle by <paramref name="seconds"/> of battle time: every living Officer walks along its move direction
@@ -203,6 +232,7 @@ namespace WeirdWar.Spike2.Battle.Core
         /// </summary>
         public CommandResult ApplyCommand(IBattleCommand command)
         {
+            if (Outcome != BattleOutcome.InProgress) return CommandResult.Rejected("The battle has ended (VIC-006).");
             if (command is OfficerCommand oc) return ApplyOfficer(oc);
             if (command is SectionCommand sc) return ApplySection(sc);
             if (command is OfficerControlCommand cc) return ApplyOfficerControl(cc);

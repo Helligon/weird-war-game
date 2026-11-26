@@ -50,6 +50,12 @@ namespace WeirdWar.Spike2.Battle.Core
             object? parsed;
             try { parsed = MiniJson.Parse(json); }
             catch (DataLoadException e) { throw new CommandFormatException(e.Message); }
+            return FromParsed(parsed);
+        }
+
+        /// <summary>Builds a command from JSON that is already parsed (used by the command log reader, TEC-008).</summary>
+        internal static IBattleCommand FromParsed(object? parsed)
+        {
             if (!(parsed is Dictionary<string, object?> o))
             {
                 throw new CommandFormatException("A command must be a JSON object.");

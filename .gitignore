@@ -33,3 +33,5 @@ prototypes/spike-1-hex-map/unity/Assets/Plugins/WeirdWarCore.meta
 # Spike 2: same for the battle core DLL
 prototypes/spike-2-battle/unity/Assets/Plugins/WeirdWarBattleCore/
 prototypes/spike-2-battle/unity/Assets/Plugins/WeirdWarBattleCore.meta
+# Spike 2: command logs written when a battle ends (TEC-005)
+prototypes/spike-2-battle/logs/
