@@ -365,7 +365,7 @@ public class GameStateTests
     }
 
     private const string PinnedCanonicalText =
-        "weirdwar.state.v1\nseed=42\nrandom=4354685564936845396\ntally=17\nlog=4\n" +
+        "weirdwar.state.v1\nseed=42\nrandom=4354685564936845396\ntally=17\nmap=none\nsectiontypes=none\nlog=4\n" +
         "digest=1399ad3f82b6ed66680bbd32b287fefe2617d811358121eaa4c9028c6a704336\n";
-    private const string PinnedHash = "85d5fb3f14063befdd3f9e563d99849d8715c8f275c80f7470123549da36273d";
+    private const string PinnedHash = "40788c2ebaf517b15d949265f0856c3e8e8b192779b93b4ceeeadd794969de9d";
 }
