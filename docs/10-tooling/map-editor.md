@@ -23,6 +23,7 @@ A very simple, internal map editor that Alex uses to build the campaign maps. It
   - Save and load to a data file the game reads.
 - **MED-004** (`decided`): The editor MUST be a separate tool for now, and MUST export maps as JSON (or a similarly simple format) that the game imports.
 - **MED-006** (`decided`, DEC-103): Until the editor is designed (MED-003), agents MAY define the map JSON format the core imports. It MUST be minimal and documented next to the code. Passable terrain is a single "open" type with equal movement cost, plus the impassable types the rules name (mountains, sea, river); terrain costs (SUP-011, TRN-025, TRN-026) are added once decided.
+- **MED-007** (`decided`, DEC-104): The map importer MUST reject a location placed on impassable terrain, and MUST reject two locations placed on the same hex.
 - **MED-005** (`decided`): The editor MUST be a map editor only for now. Campaign events are to be added later.
 
 ## Open questions

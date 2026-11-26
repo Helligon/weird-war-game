@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [forces, campaign]
 related: ["[[hierarchy]]", "[[unit-tags]]", "[[officers]]", "[[cards]]", "[[map-and-locations]]"]
-updated: 2026-11-21
+updated: 2026-11-26
 ---
 
 # Brigades
@@ -20,6 +20,7 @@ A Brigade is the army piece on the campaign map. You start with a random Brigade
 - **BRG-003** (`decided`): Re-rolls MUST cost SP or CP. Which currency is to be decided by playtesting (P-BRG-03). Each re-roll MUST cost more than the last; there is no hard limit.
 - **BRG-024** (`decided`): A Card MUST give a number of free re-rolls when forming a Brigade (P-BRG-08).
 - **BRG-004** (`decided`): Cards MAY improve the quality of the starting Brigade.
+- **BRG-036** (`decided`, DEC-104): The starting Brigade MUST start with P-BRG-09 SP. This is separate from the small supply of a newly formed Brigade (BRG-025, P-BRG-07).
 
 ### Forming new Brigades
 - **BRG-005** (`decided`): A new Brigade MAY be formed at an FOB or the HQ by spending SP.
@@ -80,6 +81,7 @@ A Brigade is the army piece on the campaign map. You start with a random Brigade
 | P-BRG-04 | Major bonus threshold | 4 Sections of the same type | decided |
 | P-BRG-05 | Starting Brigade size | 3 Sections | decided |
 | P-BRG-07 | Starting supply of a new Brigade | small | decided (principle), open (value) |
+| P-BRG-09 | Starting SP of each Faction's starting Brigade | 90 | decided |
 | P-BRG-08 | Free re-rolls from the Card | – | open |
 | P-BRG-06 | Bonus Section cap (Card or officer bonus) | +1 | decided |
 
