@@ -24,6 +24,9 @@ namespace WeirdWar.Core.Simulation
         private readonly decimal _wellSuppliedAbove;
         private readonly decimal _lowBelow;
 
+        /// <summary>P-SUP-08: how far from an owned Supply ST or HQ a Brigade can be resupplied, in hexes (SUP-017).</summary>
+        public int ResupplyRange { get; }
+
         /// <summary>Reads P-SUP-01 (Well Supplied threshold) and P-SUP-02 (Low threshold) from the parameter table (DLV-014).</summary>
         public Supply(SectionTypeTable sectionTypes, ParameterTable parameters)
         {
@@ -31,6 +34,8 @@ namespace WeirdWar.Core.Simulation
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
             _wellSuppliedAbove = parameters.GetDecimal("P-SUP-01");
             _lowBelow = parameters.GetDecimal("P-SUP-02");
+            ResupplyRange = parameters.GetInt("P-SUP-08");
+            if (ResupplyRange < 0) throw new ParameterFormatException("P-SUP-08 must not be negative.");
             if (!(_lowBelow >= 0 && _lowBelow < _wellSuppliedAbove))
                 throw new ParameterFormatException("P-SUP-02 must be at least 0 and below P-SUP-01 (SUP-003).");
         }
