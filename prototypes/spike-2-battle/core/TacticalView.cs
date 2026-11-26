@@ -59,6 +59,9 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>Metres from a Section's centre within which a click picks that Section (a stand-in sized to the drawn Unit grid).</summary>
         public const double PickRadius = 5.0;
 
+        /// <summary>The index of the Officer the player controls (stand-in: one Officer in the spike).</summary>
+        public const int ControlledOfficer = 0;
+
         private readonly BattleState _state;
         private readonly List<Waypoint> _pending = new List<Waypoint>();
         private SectionId? _selected;
@@ -75,17 +78,57 @@ namespace WeirdWar.Spike2.Battle.Core
         public bool Running { get; private set; }
 
         /// <summary>CMD-002: entering the tactical view pauses the battle.</summary>
-        public void Enter() { Active = true; Running = false; }
+        public void Enter() { Active = true; Running = false; SyncOfficer(); }
 
-        /// <summary>CMD-002: leaving the tactical view resumes the battle. Unfinished waypoints are dropped.</summary>
-        public void Exit() { Active = false; Running = true; _pending.Clear(); }
+        /// <summary>
+        /// CMD-002: leaving the tactical view resumes the battle. Unfinished waypoints are dropped. CMD-004: the player controls the
+        /// Officer again. PCH-006: refused (and false) when the player has no living Officer: the tactical view is then the only view.
+        /// </summary>
+        public bool Exit()
+        {
+            if (!CanReturnToThirdPerson) return Fail("The Officer is dead and there is no other officer or hero: tactical view only (PCH-006).");
+            Active = false; Running = true; _pending.Clear();
+            SyncOfficer();
+            return true;
+        }
 
         /// <summary>Run or pause the battle (the Run/Pause button). It is allowed inside the tactical view too (CMD-004).</summary>
-        public void SetRunning(bool running) { Running = running; }
+        public void SetRunning(bool running) { Running = running; SyncOfficer(); }
+
+        /// <summary>PCH-006: true while the player has a living Officer to go back to (a stand-in for "an officer or hero").</summary>
+        public bool CanReturnToThirdPerson => _state.HasLivingOfficer(Side.Player);
+
+        /// <summary>
+        /// PCH-006: call after the battle steps. When the player's last Officer has died while the player is in third person, the game
+        /// switches to the tactical view with the battle paused (CMD-002) and this returns true. Otherwise it does nothing.
+        /// </summary>
+        public bool CheckOfficerLost()
+        {
+            if (Active || CanReturnToThirdPerson) return false;
+            Enter();
+            Message = "Your Officer has fallen. Tactical view only (PCH-006).";
+            return true;
+        }
+
+        /// <summary>
+        /// CMD-004, DAI-005: makes the core's Officer AI state match <see cref="OfficerUnderAi"/>. The change is an
+        /// <see cref="OfficerControlCommand"/> applied through the core (DLV-013), so it is logged and replays (TEC-008).
+        /// The AI itself runs inside the core's step and never reads this view.
+        /// </summary>
+        private void SyncOfficer()
+        {
+            var wantAi = OfficerUnderAi;
+            // Only the Officer the player controls is handed over. Spike stand-in: that is Officer 0 (PCH-003 is not built yet).
+            if (_state.Officers.Count == 0) return;
+            var o = _state.Officers[ControlledOfficer];
+            if (o.Side != Side.Player || o.IsDestroyed || o.UnderAi == wantAi) return;
+            _state.ApplyCommand(new OfficerControlCommand(ControlledOfficer, wantAi));
+        }
 
         /// <summary>
         /// CMD-004: true when the battle runs while the player is still in the tactical view. The Officer is then under AI control
-        /// and takes no player input. The AI behaviour itself comes with a later Story (DAI-005); this is the seam it will read.
+        /// and takes no player input. The AI itself (DAI-005) is in the core; this flag only decides when the view hands the Officer
+        /// over, by sending an <see cref="OfficerControlCommand"/>.
         /// </summary>
         public bool OfficerUnderAi => Active && Running;
 

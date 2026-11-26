@@ -156,7 +156,7 @@ namespace WeirdWar.Spike2.Battle.Core
             foreach (var c in state.Map.CoverObjects)
             {
                 var gap = Distance(point, c.Position) - c.Radius;
-                if (gap > state.Stats.CoverAdjacencyDistance) continue;
+                if (gap > state.Parameters.CoverAdjacencyDistance) continue;
                 if (gap < bestDistance) { best = c; bestDistance = gap; }
             }
             return best;

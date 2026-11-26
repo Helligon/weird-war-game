@@ -74,6 +74,55 @@ namespace WeirdWar.Spike2.Tests
             Assert.Greater(_boot.State.StepCount, 0); // the battle runs while the player is still in the view
         }
 
+        // The core's damage method is internal, so the Officer is killed the way it would be in play: it walks at the enemy Section.
+        private void KillOfficer()
+        {
+            _boot.State.ApplyCommand(new OfficerMoveCommand(0, 1, 0));
+            for (var i = 0; i < 5000 && !_boot.State.Officers[0].IsDestroyed; i++) { _boot.State.Step(); }
+            Assert.IsTrue(_boot.State.Officers[0].IsDestroyed);
+        }
+
+        [Test]
+        public void CMD_004_resuming_hands_the_officer_to_the_core_ai_by_a_logged_command_and_leaving_takes_it_back()
+        {
+            _boot.TacticalUi.Toggle();
+            _boot.StateView.SetRunning(true);
+            Assert.IsTrue(_boot.State.Officers[0].UnderAi);
+            Assert.IsTrue(_boot.State.CommandLog.Any(l => l.Command is OfficerControlCommand c && c.UnderAi));
+
+            _boot.TacticalUi.Toggle();
+            Assert.IsFalse(_boot.State.Officers[0].UnderAi);
+            Assert.IsTrue(_boot.Tactical.OfficerAcceptsInput);
+        }
+
+        [Test]
+        public void PCH_006_the_officer_dying_in_third_person_switches_to_the_tactical_view_paused()
+        {
+            Assert.IsFalse(_boot.Tactical.Active);
+            Assert.IsFalse(_boot.TacticalUi.CheckOfficerLost());
+            KillOfficer();
+
+            Assert.IsTrue(_boot.TacticalUi.CheckOfficerLost());
+
+            Assert.IsTrue(_boot.Tactical.Active);
+            Assert.IsFalse(_boot.StateView.Running);
+            Assert.IsTrue(_camGo.GetComponent<Camera>().orthographic);
+            Assert.IsTrue(_go.transform.Find("Tactical overlay").gameObject.activeSelf);
+        }
+
+        [Test]
+        public void PCH_006_with_no_officer_left_the_player_cannot_go_back_to_third_person()
+        {
+            _boot.TacticalUi.Toggle();
+            KillOfficer();
+
+            _boot.TacticalUi.Toggle();
+
+            Assert.IsTrue(_boot.Tactical.Active);
+            Assert.IsTrue(_camGo.GetComponent<Camera>().orthographic);
+            Assert.IsFalse(_boot.Tactical.OfficerAcceptsInput);
+        }
+
         [Test]
         public void CMD_001_the_tactical_camera_is_top_down_and_the_third_person_camera_returns()
         {

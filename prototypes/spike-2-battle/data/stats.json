@@ -6,8 +6,7 @@
     "range": 30,
     "damage": 1,
     "accuracy": 0.6,
-    "volleyInterval": 2,
-    "coverAdjacencyDistance": 3
+    "volleyInterval": 2
   },
   "officer": {
     "health": 10,

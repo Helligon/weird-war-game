@@ -137,7 +137,7 @@ public class DefaultBehaviourTests
         // The Section starts in range and out of cover, so its first volley is fired while it steps toward cover.
         BattleState Run(string penalty)
         {
-            var p = BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": " + penalty + ", \"P-DAI-01\": 25}");
+            var p = BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": " + penalty + ", \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5, \"P-CMD-04\": 3}");
             var b = Battle(MapWithCover(), StatsWithRange(20), p);
             Enemy(b).IsHolding = true;
             Enemy(b).MoveTo(new MapPoint(36, 30));
@@ -260,7 +260,7 @@ public class DefaultBehaviourTests
     public void DLV_014_a_parameter_file_without_P_DAI_01_is_an_error()
     {
         Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5}"));
-        Assert.Equal(25, BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25}").CoverSearchRange);
+        Assert.Equal(25, BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5, \"P-CMD-04\": 3}").CoverSearchRange);
     }
 
     [Fact]

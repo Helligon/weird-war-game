@@ -58,18 +58,36 @@ namespace WeirdWar.Spike2.Presentation
             if (!t.Active)
             {
                 t.Enter();
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-                _camera = TargetCamera != null ? TargetCamera : Camera.main;
-                if (_camera != null) { BattleBootstrap.FitCamera(_camera, _bootstrap.View.WorldBounds); _camera.transform.rotation = Quaternion.identity; }
+                ShowTacticalCamera();
             }
             else
             {
-                t.Exit();
+                // PCH-006: with no Officer left the view refuses to close, and the player stays in it.
+                if (!t.Exit()) { _overlay.gameObject.SetActive(true); return; }
                 if (_bootstrap.Officer != null) { _bootstrap.Officer.UseThirdPersonCamera(); }
                 else if (_camera != null) { BattleBootstrap.FitCamera(_camera, _bootstrap.View.WorldBounds); _camera.transform.rotation = Quaternion.identity; }
             }
             _overlay.gameObject.SetActive(t.Active);
+        }
+
+        private void ShowTacticalCamera()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            _camera = TargetCamera != null ? TargetCamera : Camera.main;
+            if (_camera != null) { BattleBootstrap.FitCamera(_camera, _bootstrap.View.WorldBounds); _camera.transform.rotation = Quaternion.identity; }
+            _overlay.gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// PCH-006: when the Officer has just died while the player was in third person, switches to the tactical view with the
+        /// battle paused. The rule is in the core's <see cref="TacticalView.CheckOfficerLost"/>. True when it switched.
+        /// </summary>
+        public bool CheckOfficerLost()
+        {
+            if (_bootstrap == null || _bootstrap.Tactical == null || !_bootstrap.Tactical.CheckOfficerLost()) { return false; }
+            ShowTacticalCamera();
+            return true;
         }
 
         /// <summary>A left click at a point of the map (metres): selects, targets or places a waypoint, as the core decides.</summary>
@@ -81,6 +99,7 @@ namespace WeirdWar.Spike2.Presentation
         private void Update()
         {
             if (_bootstrap == null || _bootstrap.State == null) { return; }
+            if (CheckOfficerLost()) { return; }
             if (Input.GetKeyDown(ToggleKey)) { Toggle(); return; }
             if (!Active || _camera == null) { return; }
             if (Input.GetMouseButtonDown(0) && !OverPanel(Input.mousePosition))
@@ -206,7 +225,7 @@ namespace WeirdWar.Spike2.Presentation
             var x = Panel.x + 8;
             var w = Panel.width - 16;
             var y = Panel.y + 6;
-            GUI.Label(new Rect(x, y, w, 20), "TACTICAL VIEW  (" + ToggleKey + " to leave)");
+            GUI.Label(new Rect(x, y, w, 20), t.CanReturnToThirdPerson ? "TACTICAL VIEW  (" + ToggleKey + " to leave)" : "TACTICAL VIEW ONLY: Officer lost");
             y += 22;
             string what;
             if (selected.HasValue)

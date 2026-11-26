@@ -36,6 +36,8 @@ namespace WeirdWar.Spike2.Battle.Core
                         + ",\"y\":" + Dbl(om.DirectionY) + "}";
                 case OfficerAimCommand oa:
                     return "{\"type\":\"officerAim\",\"officer\":" + Num(oa.Officer) + ",\"radians\":" + Dbl(oa.Radians) + "}";
+                case OfficerControlCommand ctl:
+                    return "{\"type\":\"officerControl\",\"officer\":" + Num(ctl.Officer) + ",\"underAi\":" + (ctl.UnderAi ? "true" : "false") + "}";
                 case OfficerFireCommand of:
                     return "{\"type\":\"officerFire\",\"officer\":" + Num(of.Officer) + "}";
                 default:
@@ -66,6 +68,9 @@ namespace WeirdWar.Spike2.Battle.Core
             {
                 case "officerMove": return new OfficerMoveCommand(ReadInt(o, "officer"), ReadDouble(o, "x"), ReadDouble(o, "y"));
                 case "officerAim": return new OfficerAimCommand(ReadInt(o, "officer"), ReadDouble(o, "radians"));
+                case "officerControl":
+                    if (!o.TryGetValue("underAi", out var ai) || !(ai is bool underAi)) throw new CommandFormatException("\"underAi\" must be true or false.");
+                    return new OfficerControlCommand(ReadInt(o, "officer"), underAi);
                 case "officerFire": return new OfficerFireCommand(ReadInt(o, "officer"));
             }
             var section = new SectionId(ReadInt(o, "section"));

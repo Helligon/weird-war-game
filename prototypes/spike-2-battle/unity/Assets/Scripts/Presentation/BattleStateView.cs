@@ -89,6 +89,7 @@ namespace WeirdWar.Spike2.Presentation
             for (var i = 0; i < _officerSquares.Count && i < _state.Officers.Count; i++)
             {
                 var o = _state.Officers[i];
+                _officerSquares[i].SetActive(!o.IsDestroyed); // PCH-006: a dead Officer is no longer drawn
                 _officerSquares[i].transform.localPosition = new Vector3((float)o.Position.X, (float)o.Position.Y, 0f);
                 _officerSquares[i].transform.localRotation = Quaternion.Euler(0f, 0f, (float)(o.AimRadians * Mathf.Rad2Deg));
             }

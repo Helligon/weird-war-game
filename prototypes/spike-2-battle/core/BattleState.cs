@@ -208,6 +208,8 @@ namespace WeirdWar.Spike2.Battle.Core
             foreach (var officer in _officers)
             {
                 if (officer.IsDestroyed) continue;
+                // CMD-004, DAI-005: an Officer under AI is steered by the core's AI, from core state only (TEC-008).
+                if (officer.UnderAi) OfficerAi.Run(this, officer, seconds);
                 var dir = officer.MoveDirection;
                 if (dir.X == 0 && dir.Y == 0) continue;
                 var step = _stats.OfficerSpeed * seconds;
@@ -233,6 +235,7 @@ namespace WeirdWar.Spike2.Battle.Core
             if (Outcome != BattleOutcome.InProgress) return CommandResult.Rejected("The battle has ended.");
             if (command is OfficerCommand oc) return ApplyOfficer(oc);
             if (command is SectionCommand sc) return ApplySection(sc);
+            if (command is OfficerControlCommand cc) return ApplyOfficerControl(cc);
             return CommandResult.Rejected("Unknown command type.");
         }
 
@@ -260,7 +263,10 @@ namespace WeirdWar.Spike2.Battle.Core
                     else section.StopAtEnd = true;                                    // CMD-006: after the last waypoint
                     break;
                 case ClearWaypointsCommand _:
-                    section.ClearWaypoints(); // CMD-007
+                    // CMD-007 (DEC-100): a pending Stop survives, so the Section holds where it is. Otherwise default behaviour resumes.
+                    var holdAfterClear = section.StopAtEnd;
+                    section.ClearWaypoints();
+                    if (holdAfterClear) section.IsHolding = true;
                     break;
                 case TargetCommand t:
                     if (_sections[t.TargetSection.Value].IsDestroyed) return CommandResult.Rejected(t.TargetSection + " is destroyed.");
@@ -280,12 +286,48 @@ namespace WeirdWar.Spike2.Battle.Core
             return CommandResult.Accepted();
         }
 
+        /// <summary>
+        /// CMD-004, DAI-005: hands an Officer to the AI or back to the player. A living Officer only. Handing back stops its walk.
+        /// Logged like any command, so a replay hands it over at the same step (TEC-008).
+        /// </summary>
+        private CommandResult ApplyOfficerControl(OfficerControlCommand command)
+        {
+            if (command.Officer < 0 || command.Officer >= _officers.Count) return CommandResult.Rejected("Officer " + command.Officer + " does not exist.");
+            var officer = _officers[command.Officer];
+            if (officer.IsDestroyed) return CommandResult.Rejected("Officer " + command.Officer + " is destroyed and cannot be commanded.");
+            officer.UnderAi = command.UnderAi;
+            if (!command.UnderAi) officer.MoveDirection = new MapPoint(0, 0);
+            Log(command);
+            return CommandResult.Accepted();
+        }
+
+        /// <summary>PCH-006: true while the side still has a living Officer (the stand-in for "an officer or hero"; heroes are not in the spike).</summary>
+        public bool HasLivingOfficer(Side side)
+        {
+            foreach (var o in _officers) { if (o.Side == side && !o.IsDestroyed) return true; }
+            return false;
+        }
+
+        /// <summary>
+        /// DAI-005, DEC-102: the AI Officer's shot. It rolls to hit with the battle's own seeded random source at P-DAI-04 (so a replay
+        /// draws the same numbers). A hit is the same rifle shot as the player's (<see cref="ResolveRifleShot"/>). A miss does no damage.
+        /// </summary>
+        internal void FireOfficerRifle(Officer officer)
+        {
+            officer.AiShots++;
+            if (_random.NextDouble() >= _parameters.AiOfficerHitChance) return;
+            officer.AiHits++;
+            ResolveRifleShot(officer);
+        }
+
         private CommandResult ApplyOfficer(OfficerCommand oc)
         {
             var command = oc;
             if (oc.Officer < 0 || oc.Officer >= _officers.Count) return CommandResult.Rejected("Officer " + oc.Officer + " does not exist.");
             var officer = _officers[oc.Officer];
             if (officer.IsDestroyed) return CommandResult.Rejected("Officer " + oc.Officer + " is destroyed and cannot be commanded.");
+            // CMD-004, TEC-008: the core, not only the view, refuses player input for an Officer the AI controls.
+            if (officer.UnderAi) return CommandResult.Rejected("Officer " + oc.Officer + " is under AI control (CMD-004).");
             switch (oc)
             {
                 case OfficerAimCommand a:

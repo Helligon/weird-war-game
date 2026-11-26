@@ -113,6 +113,13 @@ namespace WeirdWar.Spike2.Battle.Core
         /// It stays until a new move command changes it, and each battle step moves the Officer along it at the Officer's speed (TEC-008).
         /// </summary>
         public MapPoint MoveDirection { get; internal set; }
+        /// <summary>CMD-004, DAI-005: true while the AI controls this Officer. Core state, changed only by <see cref="OfficerControlCommand"/>.</summary>
+        public bool UnderAi { get; internal set; }
+        /// <summary>Seconds until the AI may fire the Officer's rifle again (0 means ready).</summary>
+        internal double FireCooldown { get; set; }
+        /// <summary>DAI-005, DEC-102: shots the AI has taken with this Officer, and how many hit (for tests and the debug view).</summary>
+        public int AiShots { get; internal set; }
+        public int AiHits { get; internal set; }
 
         public Officer(Side side, int health, MapPoint position) { Side = side; Health = health; Position = position; }
 
