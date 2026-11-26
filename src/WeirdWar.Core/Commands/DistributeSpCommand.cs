@@ -37,7 +37,7 @@ namespace WeirdWar.Core.Commands
 
         public string? Validate(GameState state)
         {
-            if (state.Map == null || state.SectionTypes == null || state.Parameters == null)
+            if (state.Map == null || state.Supply == null)
                 return "There is no campaign to resupply in";
             if (Amount <= 0) return "The amount to distribute must be at least 1";
             var brigade = state.Brigades.FirstOrDefault(b => b.Id == BrigadeId);
@@ -45,7 +45,7 @@ namespace WeirdWar.Core.Commands
             if (brigade.Faction != Issuer) return "Brigade " + BrigadeId + " belongs to " + brigade.Faction + ", not " + Issuer;
             var faction = state.Factions.Single(f => f.Id == Issuer);
             if (Amount > faction.Reserve) return "The reserve holds " + faction.Reserve + " SP, not " + Amount;
-            var range = state.Parameters.GetInt("P-SUP-08");
+            var range = state.Supply.ResupplyRange;
             var near = state.Locations.Any(l => l.Owner == Issuer
                 && (l.Type == LocationType.Hq || l.Type == LocationType.Supply)
                 && l.Position.DistanceTo(brigade.Position) <= range);
@@ -62,7 +62,7 @@ namespace WeirdWar.Core.Commands
             brigade.SP += moved;
         }
 
-        private static int Room(GameState state, Brigade brigade) => Supply.CapacityOf(state.SectionTypes!, brigade) - brigade.SP;
+        private static int Room(GameState state, Brigade brigade) => state.Supply!.CapacityOf(brigade) - brigade.SP;
 
         public Dictionary<string, object?> ToJson() => CommandRegistry.WithIssuer(
             new Dictionary<string, object?> { ["brigade"] = (long)BrigadeId, ["amount"] = (long)Amount }, Issuer);

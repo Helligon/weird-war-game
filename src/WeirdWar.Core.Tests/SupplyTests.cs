@@ -86,7 +86,7 @@ public class SupplyTests
     [Fact]
     public void SUP_003_thresholds_are_read_from_P_SUP_01_and_P_SUP_02()
     {
-        var supply = new Supply(SectionTypeTable.Parse(OneTypeJson), ParameterTable.Parse("P-SUP-01 = 0.5\nP-SUP-02 = 0.1\n"));
+        var supply = new Supply(SectionTypeTable.Parse(OneTypeJson), ParameterTable.Parse("P-SUP-01 = 0.5\nP-SUP-02 = 0.1\nP-SUP-08 = 1\n"));
 
         Assert.Equal(SupplyState.WellSupplied, supply.StateOf(Make(51, "x")));
         Assert.Equal(SupplyState.Supplied, supply.StateOf(Make(50, "x")));
@@ -97,7 +97,7 @@ public class SupplyTests
     [Fact]
     public void SUP_003_inconsistent_thresholds_are_rejected()
     {
-        Assert.Throws<ParameterFormatException>(() => new Supply(Types, ParameterTable.Parse("P-SUP-01 = 0.2\nP-SUP-02 = 0.5\n")));
+        Assert.Throws<ParameterFormatException>(() => new Supply(Types, ParameterTable.Parse("P-SUP-01 = 0.2\nP-SUP-02 = 0.5\nP-SUP-08 = 1\n")));
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class SupplyTests
     {
         // 0.70 * 90 is 62.99999999999999 in double; exactly 70% of 90 is 63, which is not above the threshold.
         var types = SectionTypeTable.Parse("{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":90,\"consumptionPerHex\":1}}}");
-        var supply = new Supply(types, ParameterTable.Parse("P-SUP-01 = 0.70\nP-SUP-02 = 0.25\n"));
+        var supply = new Supply(types, ParameterTable.Parse("P-SUP-01 = 0.70\nP-SUP-02 = 0.25\nP-SUP-08 = 1\n"));
 
         Assert.Equal(SupplyState.Supplied, supply.StateOf(Make(63, "x")));
         Assert.Equal(SupplyState.WellSupplied, supply.StateOf(Make(64, "x")));

@@ -24,6 +24,9 @@ namespace WeirdWar.Core.Simulation
         private readonly decimal _wellSuppliedAbove;
         private readonly decimal _lowBelow;
 
+        /// <summary>P-SUP-08: how far from an owned Supply ST or HQ a Brigade can be resupplied, in hexes (SUP-017).</summary>
+        public int ResupplyRange { get; }
+
         /// <summary>Reads P-SUP-01 (Well Supplied threshold) and P-SUP-02 (Low threshold) from the parameter table (DLV-014).</summary>
         public Supply(SectionTypeTable sectionTypes, ParameterTable parameters)
         {
@@ -31,16 +34,15 @@ namespace WeirdWar.Core.Simulation
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
             _wellSuppliedAbove = parameters.GetDecimal("P-SUP-01");
             _lowBelow = parameters.GetDecimal("P-SUP-02");
+            ResupplyRange = parameters.GetInt("P-SUP-08");
+            if (ResupplyRange < 0) throw new ParameterFormatException("P-SUP-08 must not be negative.");
             if (!(_lowBelow >= 0 && _lowBelow < _wellSuppliedAbove))
                 throw new ParameterFormatException("P-SUP-02 must be at least 0 and below P-SUP-01 (SUP-003).");
         }
 
         /// <summary>Maximum SP: the sum of the Sections' capacity contributions (SUP-001, SUP-019, SUP-021, P-SUP-09).</summary>
-        public int CapacityOf(Brigade brigade) => CapacityOf(_types, brigade);
-
-        /// <summary>As <see cref="CapacityOf(Brigade)"/>, without needing the supply thresholds (used by resupply).</summary>
-        internal static int CapacityOf(SectionTypeTable types, Brigade brigade)
-            => Check(brigade).Sections.Sum(s => types.Get(s.TypeId).CapacityContribution);
+        public int CapacityOf(Brigade brigade)
+            => Check(brigade).Sections.Sum(s => _types.Get(s.TypeId).CapacityContribution);
 
         /// <summary>SP cost per hex of movement: the sum of the Sections' consumption (SUP-019, SUP-021, P-SUP-09).</summary>
         public int CostPerHexOf(Brigade brigade)
