@@ -122,6 +122,15 @@ namespace WeirdWar.Core
                 throw new ParameterFormatException($"{id} = '{text}' is not a finite number.");
             return v;
         }
+
+        /// <summary>Exact decimal value (invariant culture), for thresholds compared against integers (TEC-008).</summary>
+        public decimal GetDecimal(string id)
+        {
+            var text = Get(id);
+            if (!decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
+                throw new ParameterFormatException($"{id} = '{text}' is not a finite number.");
+            return v;
+        }
     }
 
     /// <summary>A requested parameter ID has no entry in the data file (DLV-014).</summary>
