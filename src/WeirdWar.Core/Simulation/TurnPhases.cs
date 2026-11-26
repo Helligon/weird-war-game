@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using WeirdWar.Core.Maps;
 
 namespace WeirdWar.Core.Simulation
 {
@@ -28,7 +29,14 @@ namespace WeirdWar.Core.Simulation
     {
         internal static void StartOfTurn(GameState state, string faction)
         {
-            // Hook: captures (CC1-75).
+            // TRN-009, TRN-005: a capture started at the end of this Faction's last turn completes if its Brigade is still
+            // on the ST. It resolves before income (TRN-005), so the new ST pays this turn. Marks are always cleared here.
+            foreach (var l in state.Locations)
+            {
+                if (l.Capturing != faction) continue;
+                l.Capturing = null;
+                if (state.Brigades.Any(b => b.Faction == faction && b.Position.Equals(l.Position))) l.Owner = faction;
+            }
         }
 
         internal static void Income(GameState state, string faction)
@@ -42,7 +50,13 @@ namespace WeirdWar.Core.Simulation
 
         internal static void EndOfTurn(GameState state, string faction)
         {
-            // Hook: none in CC1.
+            // TRN-009: a Brigade that ends its owner's turn on an ST it does not own starts a capture. A capture started
+            // this turn is not resolved this turn: it waits for the start of the Faction's next turn. HQs are not STs.
+            foreach (var l in state.Locations)
+            {
+                if (l.Type == LocationType.Hq || l.Owner == faction) continue;
+                if (state.Brigades.Any(b => b.Faction == faction && b.Position.Equals(l.Position))) l.Capturing = faction;
+            }
         }
 
         /// <summary>Runs the start-of-turn and income phases for <paramref name="faction"/>, then rests in Actions.</summary>

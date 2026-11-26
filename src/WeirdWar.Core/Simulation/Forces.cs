@@ -28,6 +28,12 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>Faction id of the owner, or null when neutral.</summary>
         public string? Owner { get; internal set; }
+
+        /// <summary>
+        /// The Faction with a capture pending here (TRN-009): one of its Brigades ended that Faction's own turn on this ST.
+        /// It is resolved, and cleared, at the start of that Faction's next turn. Null when no capture is pending.
+        /// </summary>
+        public string? Capturing { get; internal set; }
     }
 
     /// <summary>
