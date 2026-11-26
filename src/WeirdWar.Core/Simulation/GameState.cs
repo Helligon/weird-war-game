@@ -47,8 +47,15 @@ namespace WeirdWar.Core.Simulation
         /// ST is neutral (MAP-015) and there are no FOBs. Throws <see cref="MapFormatException"/> when the map has no
         /// Factions or the setup names a Section type that is not in <paramref name="sectionTypes"/>.
         /// </summary>
-        public GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters) : this(seed)
+        public GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters)
+            : this(seed, map, sectionTypes, parameters, null)
         {
+        }
+
+        /// <summary>As the public constructor, with a phase observer attached before the first turn begins (tests only).</summary>
+        internal GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters, Action<TurnPhase, string>? phaseObserver) : this(seed)
+        {
+            PhaseObserver = phaseObserver;
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (sectionTypes == null) throw new ArgumentNullException(nameof(sectionTypes));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
@@ -79,9 +86,40 @@ namespace WeirdWar.Core.Simulation
             Factions = factions;
             Locations = locations;
             Brigades = brigades;
+            // TRN-033: the first player comes from the state's seeded source, so the same seed gives the same one.
+            // Drawn here, as part of making the new game; replay rebuilds the state the same way.
+            ActiveFaction = factions[Random.NextInt(factions.Count)].Id;
+            TurnNumber = 1;
+            TurnPhases.BeginTurn(this, ActiveFaction);
         }
 
         public ulong Seed { get; }
+
+        /// <summary>
+        /// The Faction whose turn it is (TRN-006, TRN-007), or null for a state without a map (no campaign, no turns).
+        /// Only EndTurnCommand changes it.
+        /// </summary>
+        public string? ActiveFaction { get; internal set; }
+
+        /// <summary>Count of Faction turns started, from 1 for the first player's turn. 0 without a campaign.</summary>
+        public int TurnNumber { get; internal set; }
+
+        /// <summary>
+        /// The phase of the active Faction's turn (TRN-005). Between commands it is always Actions: start of turn and
+        /// income run inside the command that begins the turn, because they need no player choice.
+        /// </summary>
+        public TurnPhase Phase { get; internal set; } = TurnPhase.Actions;
+
+        /// <summary>Test seam: called as each phase is entered. Not part of the state and not hashed.</summary>
+        internal Action<TurnPhase, string>? PhaseObserver { get; set; }
+
+        /// <summary>The Faction after <paramref name="faction"/> in turn order (Factions are sorted by id), wrapping round.</summary>
+        internal string NextFaction(string faction)
+        {
+            for (var i = 0; i < Factions.Count; i++)
+                if (Factions[i].Id == faction) return Factions[(i + 1) % Factions.Count].Id;
+            throw new InvalidOperationException("Unknown Faction " + faction);
+        }
 
         /// <summary>The map this game is played on, or null for a state made without one (tests of the core only).</summary>
         public HexMap? Map { get; }
@@ -122,13 +160,29 @@ namespace WeirdWar.Core.Simulation
         public CommandResult ApplyCommand(ICommand command)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
-            var reason = command.Validate(this);
+            var reason = CheckTurn(command) ?? command.Validate(this);
             if (reason != null) return CommandResult.Reject(reason);
             var canonical = Encoding.UTF8.GetBytes(CommandJson.Canonical(command));
             command.Apply(this);
             Log.Append(command);
             LogDigest = Sha256(LogDigest, canonical);
             return CommandResult.Accept();
+        }
+
+        /// <summary>
+        /// TRN-006 and TRN-005: in a campaign only the active Faction may send commands, and a command that names a
+        /// phase is accepted only in that phase. Runs before the command's own Validate. A state without a campaign has no turns.
+        /// </summary>
+        private string? CheckTurn(ICommand command)
+        {
+            // Keyed on the map, not on ActiveFaction: every campaign state has a map, so clearing ActiveFaction later
+            // (e.g. at game over) must not switch the gate off.
+            if (Map == null) return null;
+            if (command.Issuer != ActiveFaction)
+                return "It is not " + (command.Issuer.Length == 0 ? "an unnamed Faction" : command.Issuer) + "'s turn; the active Faction is " + ActiveFaction;
+            if (command.RequiredPhase != null && command.RequiredPhase != Phase)
+                return "This command is only allowed in the " + command.RequiredPhase + " phase; the phase is " + Phase;
+            return null;
         }
 
         /// <summary>
@@ -180,6 +234,9 @@ namespace WeirdWar.Core.Simulation
                 var (bc, br) = b.Position.ToOffset();
                 sb.Append(" at=").Append(bc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(br.ToString(CultureInfo.InvariantCulture)).Append('\n');
             }
+            if (ActiveFaction != null)
+                sb.Append("turn=").Append(TurnNumber.ToString(CultureInfo.InvariantCulture)).Append(" active=").Append(ActiveFaction)
+                  .Append(" phase=").Append(Phase.ToString()).Append('\n');
             sb.Append("log=").Append(Log.Count.ToString(CultureInfo.InvariantCulture)).Append('\n');
             sb.Append("digest=").Append(Hex(LogDigest)).Append('\n');
             return sb.ToString();

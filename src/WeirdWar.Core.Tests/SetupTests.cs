@@ -385,7 +385,7 @@ public class SetupTests
         var game = NewGame();
 
         Assert.Equal(
-            "weirdwar.state.v1\nseed=7\nrandom=7\ntally=0\n" +
+            "weirdwar.state.v1\nseed=7\nrandom=11400714819323198492\ntally=0\n" +
             "map=" + PinnedMapDigest + "\n" +
             "sectiontypes=3682338fa7adc7ba4e6dad930b4292cd2e583523d2e7c16d432aae993ebbcd99\n" +
             "faction=east reserve=5\nfaction=west reserve=6\n" +
@@ -393,18 +393,30 @@ public class SetupTests
             "location=major-1 owner=-\nlocation=supply-1 owner=-\n" +
             "brigade=1 faction=east sp=90 sections=infantry:10,infantry:10,artillery:6 at=5,1\n" +
             "brigade=2 faction=west sp=85 sections=infantry:10,infantry:10,recon:4 at=0,2\n" +
+            "turn=1 active=west phase=Actions\n" +
             "log=0\ndigest=" + new string('0', 64) + "\n",
             game.CanonicalText());
-        Assert.Equal("5a9dcafe020d0f2ccf904d853feab52c528b586690efe83b319b1edb6f4310ab", game.ComputeHash());
+        Assert.Equal("6a867777b116d2fc2da6886d32473a99167139df2972b03ef92cc6372b7086aa", game.ComputeHash());
     }
 
     [Fact]
     public void TEC_008_a_new_game_hash_after_a_command_is_pinned()
     {
         var game = NewGame();
-        game.ApplyCommand(new AddToTallyCommand(5));
+        Assert.True(game.ApplyCommand(new AddToTallyCommand(5, "west")).Accepted);
 
-        Assert.Equal("ad46eb085eeb183c1ee5cf67f381806527603193f9be9daf5804bb6fc0358ea0", game.ComputeHash());
+        Assert.Equal("962642ae27d0e2e7c89b735afa269084531d178f1299505fd9ebd4616f6b3e84", game.ComputeHash());
+    }
+
+    [Fact]
+    public void TRN_007_the_hash_after_the_first_faction_ends_its_turn_is_pinned()
+    {
+        // Pinned value computed independently in Python: seed 7 gives west first; west ends its turn, east is active on turn 2.
+        var game = NewGame();
+        Assert.True(game.ApplyCommand(new EndTurnCommand("west")).Accepted);
+
+        Assert.Contains("turn=2 active=east phase=Actions\n", game.CanonicalText());
+        Assert.Equal("f3effdb487b4380ccd1e521c74b524298c545181bedaeb5edfc4bc9fec64debd", game.ComputeHash());
     }
 
     [Fact]
@@ -437,7 +449,7 @@ public class SetupTests
     {
         var game = NewGame();
         var before = game.CanonicalText().Length;
-        for (var i = 0; i < 50; i++) game.ApplyCommand(new AddToTallyCommand(1));
+        for (var i = 0; i < 50; i++) Assert.True(game.ApplyCommand(new AddToTallyCommand(1, game.ActiveFaction)).Accepted);
 
         Assert.True(game.CanonicalText().Length <= before + 8, "text must not grow with the log");
     }
@@ -446,8 +458,8 @@ public class SetupTests
     public void TEC_008_replay_on_a_map_reproduces_the_hash()
     {
         var game = NewGame();
-        game.ApplyCommand(new AddToTallyCommand(2));
-        game.ApplyCommand(new RollIntoTallyCommand(6));
+        Assert.True(game.ApplyCommand(new AddToTallyCommand(2, game.ActiveFaction)).Accepted);
+        Assert.True(game.ApplyCommand(new RollIntoTallyCommand(6, game.ActiveFaction)).Accepted);
         var map = MapImporter.Parse(MapJson());
 
         var replayed = GameState.Replay(7, game.Log, map, Types(), Params());

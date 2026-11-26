@@ -211,6 +211,8 @@ public class GameStateTests
     private sealed class BadCommand : ICommand
     {
         public string Type => "bad";
+        public string Issuer => "";
+        public TurnPhase? RequiredPhase => null;
         public string? Validate(GameState state) => null;
         public void Apply(GameState state) { }
         public Dictionary<string, object?> ToJson() => new Dictionary<string, object?> { ["type"] = "x" };
