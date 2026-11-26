@@ -33,8 +33,9 @@ namespace WeirdWar.Core.Maps
             var keys = new List<string>(obj.Keys);
             keys.Sort(StringComparer.Ordinal);
             foreach (var key in keys)
-                if (key != "version" && key != "width" && key != "height" && key != "terrain")
-                    throw new MapFormatException("Unknown key \"" + key + "\" (expected version, width, height, terrain)");
+                if (key != "version" && key != "width" && key != "height" && key != "terrain"
+                    && key != "factions" && key != "locations" && key != "setup")
+                    throw new MapFormatException("Unknown key \"" + key + "\" (expected version, width, height, terrain, factions, locations, setup)");
 
             var version = ReadInt(obj, "version", 1, int.MaxValue);
             if (version != CurrentVersion)
@@ -80,7 +81,124 @@ namespace WeirdWar.Core.Maps
                 }
             }
 
-            return new HexMap(width, height, cells);
+            var factions = ReadFactions(obj);
+            var locations = ReadLocations(obj, width, height, factions);
+            var setup = ReadSetup(obj, factions);
+            return new HexMap(width, height, cells, factions, locations, setup);
+        }
+
+        private static List<string> ReadFactions(Dictionary<string, object?> obj)
+        {
+            var result = new List<string>();
+            if (!obj.TryGetValue("factions", out var v)) return result;
+            var list = v as List<object?> ?? throw new MapFormatException("\"factions\" must be a list of Faction ids");
+            foreach (var item in list)
+            {
+                if (!(item is string id) || !MapIds.IsValid(id))
+                    throw new MapFormatException("Each Faction id must be a string of letters, digits, - and _");
+                if (result.Contains(id)) throw new MapFormatException("Faction \"" + id + "\" is listed more than once");
+                result.Add(id);
+            }
+            if (result.Count != 0 && result.Count != 2)
+                throw new MapFormatException("\"factions\" must list exactly two Factions (or be left out for a terrain-only map), got " + result.Count);
+            result.Sort(StringComparer.Ordinal);
+            return result;
+        }
+
+        private static List<Location> ReadLocations(Dictionary<string, object?> obj, int width, int height, List<string> factions)
+        {
+            var result = new List<Location>();
+            var hqCount = new Dictionary<string, int>();
+            foreach (var f in factions) hqCount[f] = 0;
+            if (obj.TryGetValue("locations", out var v))
+            {
+                var list = v as List<object?> ?? throw new MapFormatException("\"locations\" must be a list of location objects");
+                var ids = new HashSet<string>();
+                for (var i = 0; i < list.Count; i++)
+                {
+                    var where = "location " + i;
+                    var o = list[i] as Dictionary<string, object?> ?? throw new MapFormatException("In " + where + ": expected an object");
+                    foreach (var key in o.Keys)
+                        if (key != "id" && key != "type" && key != "at" && key != "faction")
+                            throw new MapFormatException("In " + where + ": unknown key \"" + key + "\" (expected id, type, at, faction)");
+                    if (!(o.TryGetValue("id", out var idv) && idv is string id && MapIds.IsValid(id)))
+                        throw new MapFormatException("In " + where + ": \"id\" must be a string of letters, digits, - and _");
+                    if (!ids.Add(id)) throw new MapFormatException("In " + where + ": id \"" + id + "\" is used more than once");
+                    where = "location \"" + id + "\"";
+                    var typeName = o.TryGetValue("type", out var tv) ? tv as string : null;
+                    LocationType type;
+                    switch (typeName)
+                    {
+                        case "hq": type = LocationType.Hq; break;
+                        case "supply": type = LocationType.Supply; break;
+                        case "command": type = LocationType.Command; break;
+                        case "major": type = LocationType.Major; break;
+                        default: throw new MapFormatException("In " + where + ": unknown location type " + (typeName == null ? "(missing or not text)" : "\"" + typeName + "\"") + " (expected hq, supply, command, major)");
+                    }
+                    if (!(o.TryGetValue("at", out var av) && av is List<object?> pair && pair.Count == 2 && pair[0] is long c && pair[1] is long r))
+                        throw new MapFormatException("In " + where + ": \"at\" must be [column,row] with two whole numbers");
+                    if (c < 0 || c >= width || r < 0 || r >= height)
+                        throw new MapFormatException("In " + where + ": hex [" + c + "," + r + "] is outside the " + width + "x" + height + " grid");
+                    string? faction = null;
+                    if (type == LocationType.Hq)
+                    {
+                        faction = o.TryGetValue("faction", out var fv) ? fv as string : null;
+                        if (faction == null || !hqCount.ContainsKey(faction))
+                            throw new MapFormatException("In " + where + ": an HQ needs \"faction\" naming one of the listed Factions");
+                        hqCount[faction]++;
+                    }
+                    else if (o.ContainsKey("faction"))
+                        throw new MapFormatException("In " + where + ": only an HQ has a faction; every ST starts neutral (MAP-021)");
+                    result.Add(new Location(id, type, HexCoord.FromOffset((int)c, (int)r), faction));
+                }
+            }
+            foreach (var f in factions)
+                if (hqCount[f] != 1)
+                    throw new MapFormatException("Faction \"" + f + "\" must have exactly one HQ, found " + hqCount[f] + " (MAP-003)");
+            result.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+            return result;
+        }
+
+        private static List<FactionSetup> ReadSetup(Dictionary<string, object?> obj, List<string> factions)
+        {
+            var result = new List<FactionSetup>();
+            obj.TryGetValue("setup", out var v);
+            if (factions.Count == 0)
+            {
+                if (v != null) throw new MapFormatException("\"setup\" needs \"factions\"");
+                return result;
+            }
+            var setup = v as Dictionary<string, object?> ?? throw new MapFormatException("\"setup\" must be an object with one entry per Faction");
+            foreach (var key in setup.Keys)
+                if (!factions.Contains(key)) throw new MapFormatException("\"setup\" names \"" + key + "\", which is not a listed Faction");
+            foreach (var f in factions)
+            {
+                var where = "setup \"" + f + "\"";
+                var o = setup.TryGetValue(f, out var fv) ? fv as Dictionary<string, object?> : null;
+                if (o == null) throw new MapFormatException("Missing or bad " + where + ": expected an object with reserve and brigade");
+                foreach (var key in o.Keys)
+                    if (key != "reserve" && key != "brigade")
+                        throw new MapFormatException("In " + where + ": unknown key \"" + key + "\" (expected reserve, brigade)");
+                var reserve = ReadInt(o, "reserve", 0, 1000000);
+                var b = o.TryGetValue("brigade", out var bv) ? bv as Dictionary<string, object?> : null;
+                if (b == null) throw new MapFormatException("In " + where + ": \"brigade\" must be an object with sp and sections");
+                foreach (var key in b.Keys)
+                    if (key != "sp" && key != "sections")
+                        throw new MapFormatException("In " + where + " brigade: unknown key \"" + key + "\" (expected sp, sections)");
+                var sp = ReadInt(b, "sp", 0, 1000000);
+                var sections = b.TryGetValue("sections", out var sv) ? sv as List<object?> : null;
+                if (sections == null || sections.Count == 0 || sections.Count > 100)
+                    throw new MapFormatException("In " + where + " brigade: \"sections\" must be a list of 1 to 100 Section type ids");
+                var ids = new List<string>();
+                foreach (var item in sections)
+                {
+                    if (!(item is string sid) || !MapIds.IsValid(sid))
+                        throw new MapFormatException("In " + where + " brigade: each Section must be a Section type id (letters, digits, - and _)");
+                    ids.Add(sid);
+                }
+                result.Add(new FactionSetup(f, reserve, sp, ids));
+            }
+            return result;
         }
 
         private static int ReadInt(Dictionary<string, object?> obj, string key, int min, int max)

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace WeirdWar.Core.Maps
@@ -27,12 +29,25 @@ namespace WeirdWar.Core.Maps
         public int Width { get; }
         public int Height { get; }
 
-        internal HexMap(int width, int height, TerrainType[] cells)
+        internal HexMap(int width, int height, TerrainType[] cells,
+            IReadOnlyList<string> factions, IReadOnlyList<Location> locations, IReadOnlyList<FactionSetup> setup)
         {
             Width = width;
             Height = height;
             _cells = cells;
+            Factions = factions;
+            Locations = locations;
+            Setup = setup;
         }
+
+        /// <summary>Faction ids sorted ordinally: empty (a terrain-only map) or exactly two (MAP-003).</summary>
+        public IReadOnlyList<string> Factions { get; }
+
+        /// <summary>Every location (HQs and STs) sorted by id (MAP-022).</summary>
+        public IReadOnlyList<Location> Locations { get; }
+
+        /// <summary>Starting setup, one per Faction, sorted by Faction id (MAP-021).</summary>
+        public IReadOnlyList<FactionSetup> Setup { get; }
 
         public bool Contains(int column, int row)
             => column >= 0 && column < Width && row >= 0 && row < Height;
@@ -97,5 +112,46 @@ namespace WeirdWar.Core.Maps
             }
             return sb.ToString();
         }
+
+        /// <summary>
+        /// Everything the game reads from the map, as stable text: terrain, Factions, locations by id and the
+        /// starting setup by Faction (TEC-008). Coordinates are [column,row].
+        /// </summary>
+        public string FullCanonicalText()
+        {
+            var sb = new StringBuilder(CanonicalText());
+            sb.Append("\nfactions=").Append(string.Join(",", Factions));
+            foreach (var l in Locations)
+            {
+                var (c, r) = l.Position.ToOffset();
+                sb.Append("\nlocation=").Append(l.Id).Append(' ').Append(MapIds.LocationTypeName(l.Type))
+                  .Append(' ').Append(l.Faction ?? "-")
+                  .Append(' ').Append(c.ToString(CultureInfo.InvariantCulture)).Append(',').Append(r.ToString(CultureInfo.InvariantCulture));
+            }
+            foreach (var f in Setup)
+                sb.Append("\nsetup=").Append(f.FactionId)
+                  .Append(" reserve=").Append(f.Reserve.ToString(CultureInfo.InvariantCulture))
+                  .Append(" sp=").Append(f.BrigadeSp.ToString(CultureInfo.InvariantCulture))
+                  .Append(" sections=").Append(string.Join(",", f.SectionTypeIds));
+            return sb.ToString();
+        }
+
+        /// <summary>SHA-256 of <see cref="FullCanonicalText"/> (UTF-8) as lowercase hex. The map is immutable, so it is computed once.</summary>
+        public string Digest()
+        {
+            if (_digest == null)
+            {
+                using (var sha = SHA256.Create())
+                {
+                    var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(FullCanonicalText()));
+                    var sb = new StringBuilder(bytes.Length * 2);
+                    foreach (var b in bytes) sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
+                    _digest = sb.ToString();
+                }
+            }
+            return _digest;
+        }
+
+        private string? _digest;
     }
 }

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "status": "placeholder (open): P-SUP-09 supply profile and P-FOW-01 sight per Section type have no decided values",
+  "sectionTypes": {
+    "infantry": { "health": 10, "sight": 1, "capacityContribution": 2, "consumptionPerHex": 1 },
+    "artillery": { "health": 6, "sight": 1, "capacityContribution": 1, "consumptionPerHex": 2 },
+    "recon": { "health": 4, "sight": 3, "capacityContribution": 1, "consumptionPerHex": 1 }
+  }
+}
