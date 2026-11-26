@@ -4,8 +4,7 @@ namespace WeirdWar.Spike2.Battle.Core
 {
     /// <summary>
     /// What the player's Officer does while under AI control (DAI-005, CMD-010): it Protects the nearest friendly Section. It stays
-    /// beside or in front of that Section (the front is at most the officer "protectDistance" from its centre, a placeholder in the
-    /// stats file) and fires at the nearest enemy Section it can reach from where it stands, never walking away from the Section to do so.
+    /// beside or in front of that Section (the front is at most P-DAI-02 from its centre) and fires at the nearest enemy Section it can reach from where it stands, never walking away from the Section to do so.
     /// It reads only core state, with no clock and no random numbers, so the same logged commands replay the same battle (TEC-008).
     /// Whether the Officer is under AI is core state, changed only by <see cref="OfficerControlCommand"/>.
     /// </summary>
@@ -27,7 +26,7 @@ namespace WeirdWar.Spike2.Battle.Core
                 var d = Distance(guard.Position, threat.Position);
                 if (d > 0)
                 {
-                    var lead = Math.Min(state.Stats.OfficerProtectDistance, d);
+                    var lead = Math.Min(state.Parameters.OfficerProtectDistance, d);
                     station = new MapPoint(guard.Position.X + (threat.Position.X - guard.Position.X) / d * lead,
                         guard.Position.Y + (threat.Position.Y - guard.Position.Y) / d * lead);
                 }
@@ -40,7 +39,7 @@ namespace WeirdWar.Spike2.Battle.Core
             self.AimRadians = Math.Atan2(target.Position.Y - self.Position.Y, target.Position.X - self.Position.X);
             if (self.FireCooldown > 0) return;
             state.FireOfficerRifle(self);
-            self.FireCooldown = state.Stats.OfficerFireInterval;
+            self.FireCooldown = state.Parameters.OfficerFireInterval;
         }
 
         private static void Walk(BattleState state, Officer self, MapPoint to, double seconds)

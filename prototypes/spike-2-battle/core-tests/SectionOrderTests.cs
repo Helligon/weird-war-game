@@ -8,14 +8,14 @@ public class SectionOrderTests
     private static string Stats(double accuracy = 0.6) =>
         "{ \"riflemen\": { \"speed\": 2, \"P-HIE-01\": 8, \"P-HIE-02\": 30, \"range\": 30, \"damage\": 1, \"accuracy\": " + accuracy.ToString(System.Globalization.CultureInfo.InvariantCulture)
         + ", \"volleyInterval\": 2 },"
-        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3, \"protectDistance\": 6, \"fireInterval\": 2 } }";
+        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
 
     private static BattleMap OpenMap() => new BattleMap(100, 60, new List<CoverObject>());
     private static BattleMap CoverMap() => new BattleMap(100, 60, new List<CoverObject> { new CoverObject("ruin", new MapPoint(30, 30), 4) });
 
     private static BattleState Battle(BattleMap? map = null, double adjacency = 3, double penalty = 0.5, double accuracy = 0.6, ulong seed = 1) =>
         BattleState.SetUp(map ?? OpenMap(), UnitStats.Load(Stats(accuracy)),
-            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-CMD-04\": " + adjacency.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", \"P-CMD-03\": " + penalty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}"), seed);
+            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5, \"P-CMD-04\": " + adjacency.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", \"P-CMD-03\": " + penalty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}"), seed);
 
     private static Section Player(BattleState b) => b.Find(BattleState.PlayerSectionId)!;
     private static Section Enemy(BattleState b) => b.Find(BattleState.EnemySectionId)!;
@@ -565,8 +565,8 @@ public class SectionOrderTests
     {
         Assert.Equal(3, Battle().Parameters.CoverAdjacencyDistance);
         Assert.Equal(7, Battle(adjacency: 7).Parameters.CoverAdjacencyDistance);
-        Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25}"));
-        Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25, \"P-CMD-04\": -1}"));
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5}"));
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5, \"P-CMD-04\": -1}"));
     }
 
     [Fact]

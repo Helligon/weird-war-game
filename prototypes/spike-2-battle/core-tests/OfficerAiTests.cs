@@ -7,12 +7,18 @@ public class OfficerAiTests
 {
     private const string Stats =
         "{ \"riflemen\": { \"speed\": 2, \"P-HIE-01\": 8, \"P-HIE-02\": 30, \"range\": 30, \"damage\": 1, \"accuracy\": 0.6, \"volleyInterval\": 2 },"
-        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3, \"protectDistance\": 6, \"fireInterval\": 2 } }";
+        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
     private const double ProtectDistance = 6;
 
-    private static BattleState Battle(ulong seed = 1, string? stats = null) =>
-        BattleState.SetUp(new BattleMap(200, 60, new List<CoverObject>()), UnitStats.Load(stats ?? Stats),
-            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-CMD-04\": 3, \"P-CMD-03\": 0.5}"), seed);
+    private static string Inv(double v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    // The AI hits every time (P-DAI-04 = 1) unless a test says otherwise, so the geometry tests are about where it aims.
+    private static string ParamsJson(double hit = 1.0, double interval = 2) =>
+        "{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": " + Inv(interval) + ", \"P-DAI-04\": " + Inv(hit) + ", \"P-CMD-04\": 3, \"P-CMD-03\": 0.5}";
+
+    private static BattleState Battle(ulong seed = 1, double hit = 1.0, double interval = 2) =>
+        BattleState.SetUp(new BattleMap(200, 60, new List<CoverObject>()), UnitStats.Load(Stats),
+            BattleParameters.Load(ParamsJson(hit, interval)), seed);
 
     private static Section Mine(BattleState b) => b.Find(BattleState.PlayerSectionId)!;
     private static Section Foe(BattleState b) => b.Find(BattleState.EnemySectionId)!;
@@ -117,11 +123,11 @@ public class OfficerAiTests
         Assert.Equal(aim, b.Officers[0].AimRadians);
     }
 
-    // ---- DAI-005, DLV-014: the AI's rate of fire is the data value fireInterval ----
+    // ---- DAI-005, DLV-014: the AI's rate of fire is the parameter P-DAI-03 ----
 
-    private static int DamageInTenSeconds(string stats)
+    private static int DamageInTenSeconds(double interval, double hit = 1.0, ulong seed = 1)
     {
-        var b = Battle(stats: stats); QuietEnemy(b);
+        var b = Battle(seed, hit, interval); QuietEnemy(b);
         Mine(b).IsHolding = true;
         Foe(b).Position2(new MapPoint(Mine(b).Position.X + 60, Mine(b).Position.Y));
         var before = Foe(b).Health;
@@ -135,9 +141,57 @@ public class OfficerAiTests
     {
         var rifleDamage = UnitStats.Load(Stats).OfficerRifleDamage;
         // 10 s of battle time: shots at 0.1 s, then every interval. Interval 2 s -> 5 shots, 1 s -> 10 shots, 5 s -> 2 shots.
-        Assert.Equal(5 * rifleDamage, DamageInTenSeconds(Stats));
-        Assert.Equal(10 * rifleDamage, DamageInTenSeconds(Stats.Replace("\"fireInterval\": 2", "\"fireInterval\": 1")));
-        Assert.Equal(2 * rifleDamage, DamageInTenSeconds(Stats.Replace("\"fireInterval\": 2", "\"fireInterval\": 5")));
+        Assert.Equal(5 * rifleDamage, DamageInTenSeconds(2));
+        Assert.Equal(10 * rifleDamage, DamageInTenSeconds(1));
+        Assert.Equal(2 * rifleDamage, DamageInTenSeconds(5));
+    }
+
+    // ---- DAI-005, DEC-102: the AI's shot rolls to hit with the battle's seeded random, at P-DAI-04 ----
+
+    [Fact]
+    public void DAI_005_with_the_ai_hit_chance_at_1_every_shot_hits()
+    {
+        var b = Battle(seed: 1, hit: 1.0); QuietEnemy(b);
+        Mine(b).IsHolding = true;
+        Foe(b).Position2(new MapPoint(Mine(b).Position.X + 60, Mine(b).Position.Y));
+        AiOn(b);
+        Steps(b, 400);
+        Assert.True(b.Officers[0].AiShots >= 10);
+        Assert.Equal(b.Officers[0].AiShots, b.Officers[0].AiHits);
+    }
+
+    [Fact]
+    public void DAI_005_with_a_fixed_seed_and_the_ai_hit_chance_at_half_some_shots_miss_and_a_miss_does_no_damage()
+    {
+        var rifleDamage = UnitStats.Load(Stats).OfficerRifleDamage;
+        foreach (var seed in new ulong[] { 1, 2, 3, 4, 5 })
+        {
+            var b = Battle(seed, hit: 0.5); QuietEnemy(b);
+            Mine(b).IsHolding = true;
+            Foe(b).Position2(new MapPoint(Mine(b).Position.X + 60, Mine(b).Position.Y));
+            var before = Foe(b).Health;
+            AiOn(b);
+            Steps(b, 400);
+            var o = b.Officers[0];
+            Assert.Equal(before - o.AiHits * rifleDamage, Foe(b).Health);   // damage comes from hits only
+            Assert.InRange(o.AiHits, 1, o.AiShots - 1);                      // some hit, some miss, whatever the seed
+        }
+    }
+
+    [Fact]
+    public void DAI_005_the_ai_hit_roll_is_repeatable_for_the_same_seed_and_differs_between_seeds()
+    {
+        int Hits(ulong seed)
+        {
+            var b = Battle(seed, hit: 0.5); QuietEnemy(b);
+            Mine(b).IsHolding = true;
+            Foe(b).Position2(new MapPoint(Mine(b).Position.X + 60, Mine(b).Position.Y));
+            AiOn(b);
+            Steps(b, 400);
+            return b.Officers[0].AiHits;
+        }
+        Assert.Equal(Hits(3), Hits(3));
+        Assert.Contains(new ulong[] { 1, 2, 4, 5, 6, 7 }, s => Hits(s) != Hits(3));
     }
 
     [Fact]
@@ -246,7 +300,7 @@ public class OfficerAiTests
     {
         var parts = new List<string> { "step " + b.StepCount };
         foreach (var s in b.Sections) parts.Add(s.Id + " " + s.Health + " " + s.Position.X.ToString("R") + "," + s.Position.Y.ToString("R"));
-        foreach (var o in b.Officers) parts.Add("officer " + o.Health + " " + o.Position.X.ToString("R") + "," + o.Position.Y.ToString("R")
+        foreach (var o in b.Officers) parts.Add("officer shots " + o.AiShots + "/" + o.AiHits + " " + o.Health + " " + o.Position.X.ToString("R") + "," + o.Position.Y.ToString("R")
             + " aim " + o.AimRadians.ToString("R") + " ai " + o.UnderAi);
         return string.Join("|", parts);
     }
@@ -254,7 +308,7 @@ public class OfficerAiTests
     // The same starting layout every time (the enemy 50 m ahead), as a replay needs.
     private static BattleState Close(ulong seed)
     {
-        var b = Battle(seed);
+        var b = Battle(seed, hit: 0.5);
         Foe(b).Position2(new MapPoint(Mine(b).Position.X + 50, 30));
         return b;
     }
@@ -276,6 +330,8 @@ public class OfficerAiTests
         var steps = original.StepCount;
 
         Assert.Contains(original.CommandLog, l => l.Command is OfficerControlCommand c && c.UnderAi);
+        // The AI both hit and missed during the logged stretch (DEC-102), so the replay has to draw the same random numbers.
+        Assert.InRange(original.Officers[0].AiHits, 1, original.Officers[0].AiShots - 1);
         Assert.NotEqual(Snapshot(Close(9)), Snapshot(original));
         Assert.True(Foe(original).Health < Foe(original).MaxUnits * Foe(original).HealthPerUnit
             || Mine(original).Health < Mine(original).MaxUnits * Mine(original).HealthPerUnit, "the battle did something");
@@ -431,12 +487,33 @@ public class OfficerAiTests
     // ---- DLV-014: data ----
 
     [Fact]
-    public void DLV_014_the_protect_distances_come_from_the_stats_file_and_are_checked()
+    public void DLV_014_the_ai_officer_values_are_read_by_parameter_id_and_a_missing_or_bad_value_is_an_error()
     {
-        Assert.Equal(6, UnitStats.Load(Stats).OfficerProtectDistance);
-        Assert.Equal(2, UnitStats.Load(Stats).OfficerFireInterval);
-        Assert.Throws<DataLoadException>(() => UnitStats.Load(Stats.Replace("\"protectDistance\"", "\"x\"")));
-        Assert.Throws<DataLoadException>(() => UnitStats.Load(Stats.Replace("\"fireInterval\": 2", "\"fireInterval\": 0")));
+        var p = BattleParameters.Load(ParamsJson());
+        Assert.Equal(6, p.OfficerProtectDistance);   // P-DAI-02
+        Assert.Equal(2, p.OfficerFireInterval);      // P-DAI-03
+        Assert.Equal(1, p.AiOfficerHitChance);       // P-DAI-04
+        foreach (var id in new[] { "P-DAI-02", "P-DAI-03", "P-DAI-04" })
+        {
+            Assert.Throws<CommandFormatException>(() => BattleParameters.Load(ParamsJson().Replace("\"" + id + "\"", "\"x\"")));
+        }
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load(ParamsJson(hit: 1.5)));
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load(ParamsJson(hit: -0.1)));
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load(ParamsJson(interval: 0)));
+    }
+
+    [Fact]
+    public void DLV_014_the_live_data_files_carry_the_three_ids_and_stats_json_no_longer_has_them()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "data", "map.json"))) dir = dir.Parent;
+        var p = BattleParameters.Load(File.ReadAllText(Path.Combine(dir!.FullName, "data", "parameters.json")));
+        Assert.Equal(6, p.OfficerProtectDistance);
+        Assert.Equal(2, p.OfficerFireInterval);
+        Assert.Equal(0.5, p.AiOfficerHitChance);
+        var stats = File.ReadAllText(Path.Combine(dir.FullName, "data", "stats.json"));
+        Assert.DoesNotContain("protectDistance", stats);
+        Assert.DoesNotContain("fireInterval", stats);
     }
 }
 

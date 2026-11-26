@@ -7,11 +7,11 @@ public class TacticalViewTests
 {
     private const string Stats =
         "{ \"riflemen\": { \"speed\": 2, \"P-HIE-01\": 8, \"P-HIE-02\": 30, \"range\": 30, \"damage\": 1, \"accuracy\": 0.6, \"volleyInterval\": 2 },"
-        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3, \"protectDistance\": 6, \"fireInterval\": 2 } }";
+        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
 
     private static BattleState Battle() =>
         BattleState.SetUp(new BattleMap(100, 60, new List<CoverObject>()), UnitStats.Load(Stats),
-            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-CMD-04\": 3, \"P-CMD-03\": 0.5}"), 1);
+            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5, \"P-CMD-04\": 3, \"P-CMD-03\": 0.5}"), 1);
 
     private static SectionId P => BattleState.PlayerSectionId;
     private static SectionId E => BattleState.EnemySectionId;

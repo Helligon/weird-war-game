@@ -117,6 +117,9 @@ namespace WeirdWar.Spike2.Battle.Core
         public bool UnderAi { get; internal set; }
         /// <summary>Seconds until the AI may fire the Officer's rifle again (0 means ready).</summary>
         internal double FireCooldown { get; set; }
+        /// <summary>DAI-005, DEC-102: shots the AI has taken with this Officer, and how many hit (for tests and the debug view).</summary>
+        public int AiShots { get; internal set; }
+        public int AiHits { get; internal set; }
 
         public Officer(Side side, int health, MapPoint position) { Side = side; Health = health; Position = position; }
 

@@ -278,8 +278,17 @@ namespace WeirdWar.Spike2.Battle.Core
             return false;
         }
 
-        /// <summary>DAI-005: the AI Officer's shot. The same rifle as the player's, resolved by <see cref="ResolveRifleShot"/>.</summary>
-        internal void FireOfficerRifle(Officer officer) { ResolveRifleShot(officer); }
+        /// <summary>
+        /// DAI-005, DEC-102: the AI Officer's shot. It rolls to hit with the battle's own seeded random source at P-DAI-04 (so a replay
+        /// draws the same numbers). A hit is the same rifle shot as the player's (<see cref="ResolveRifleShot"/>). A miss does no damage.
+        /// </summary>
+        internal void FireOfficerRifle(Officer officer)
+        {
+            officer.AiShots++;
+            if (_random.NextDouble() >= _parameters.AiOfficerHitChance) return;
+            officer.AiHits++;
+            ResolveRifleShot(officer);
+        }
 
         private CommandResult ApplyOfficer(OfficerCommand oc)
         {

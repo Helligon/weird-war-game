@@ -30,20 +30,13 @@ namespace WeirdWar.Spike2.Battle.Core
         public int OfficerRifleDamage { get; }
         /// <summary>How close, in metres, a shot must pass to an enemy Section's centre to hit it (placeholder; open).</summary>
         public double OfficerRifleHitRadius { get; }
-        /// <summary>CMD-010, DAI-005: how far in front of its Section, in metres, the AI Officer stands (placeholder; no rule value yet).</summary>
-        public double OfficerProtectDistance { get; }
-        /// <summary>DAI-005: seconds between the AI Officer's rifle shots (placeholder; no rule value yet).</summary>
-        public double OfficerFireInterval { get; }
         /// <summary>Seconds between one Riflemen volley and the next (stand-in for a rate of fire; DEC-098).</summary>
         public double RiflemenVolleyInterval { get; }
 
         public UnitStats(double riflemenSpeed, int riflemenMaxUnits, int riflemenHealthPerUnit, double riflemenRange,
             int riflemenDamage, double riflemenAccuracy, int officerHealth, double riflemenVolleyInterval,
-            double officerSpeed, double officerRifleRange, int officerRifleDamage, double officerRifleHitRadius,
-            double officerProtectDistance, double officerFireInterval)
+            double officerSpeed, double officerRifleRange, int officerRifleDamage, double officerRifleHitRadius)
         {
-            OfficerProtectDistance = officerProtectDistance;
-            OfficerFireInterval = officerFireInterval;
             OfficerSpeed = officerSpeed;
             OfficerRifleRange = officerRifleRange;
             OfficerRifleDamage = officerRifleDamage;
@@ -59,7 +52,7 @@ namespace WeirdWar.Spike2.Battle.Core
         }
 
         /// <summary>
-        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy", "volleyInterval" }, "officer": { "health", "speed", "rifleRange", "rifleDamage", "rifleHitRadius", "protectDistance", "fireInterval" } }.
+        /// Format: { "riflemen": { "speed", "P-HIE-01", "P-HIE-02", "range", "damage", "accuracy", "volleyInterval" }, "officer": { "health", "speed", "rifleRange", "rifleDamage", "rifleHitRadius" } }.
         /// </summary>
         public static UnitStats Load(string json)
         {
@@ -87,12 +80,8 @@ namespace WeirdWar.Spike2.Battle.Core
             var rifleDamage = Whole(officer, "rifleDamage", "officer");
             var hitRadius = BattleMapLoader.Number(officer, "rifleHitRadius", "officer");
             if (hitRadius <= 0) throw new DataLoadException("Stats error: officer \"rifleHitRadius\" must be above zero.");
-            var protect = BattleMapLoader.Number(officer, "protectDistance", "officer");
-            if (protect < 0) throw new DataLoadException("Stats error: officer \"protectDistance\" must not be negative.");
-            var fireInterval = BattleMapLoader.Number(officer, "fireInterval", "officer");
-            if (fireInterval <= 0) throw new DataLoadException("Stats error: officer \"fireInterval\" must be above zero.");
             return new UnitStats(speed, maxUnits, healthPerUnit, range, damage, accuracy, officerHealth, interval,
-                officerSpeed, rifleRange, rifleDamage, hitRadius, protect, fireInterval);
+                officerSpeed, rifleRange, rifleDamage, hitRadius);
         }
 
         private static Dictionary<string, object?> Obj(Dictionary<string, object?> root, string key)

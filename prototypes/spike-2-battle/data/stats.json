@@ -13,8 +13,6 @@
     "speed": 4,
     "rifleRange": 80,
     "rifleDamage": 3,
-    "rifleHitRadius": 3,
-    "protectDistance": 6,
-    "fireInterval": 2
+    "rifleHitRadius": 3
   }
 }
