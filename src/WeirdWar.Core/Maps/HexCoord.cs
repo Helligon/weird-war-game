@@ -45,6 +45,8 @@ namespace WeirdWar.Core.Maps
         }
 
         public bool Equals(HexCoord other) => Q == other.Q && R == other.R;
+        public static bool operator ==(HexCoord a, HexCoord b) => a.Equals(b);
+        public static bool operator !=(HexCoord a, HexCoord b) => !a.Equals(b);
         public override bool Equals(object? obj) => obj is HexCoord h && Equals(h);
         public override int GetHashCode() => unchecked(Q * 397 ^ R);
         public override string ToString() => "(" + Q + "," + R + ")";

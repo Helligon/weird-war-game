@@ -154,7 +154,12 @@ public class MapTests
         { Map("{\"sea\":[[6,0]]}"), "outside the 6x4 grid" },
         { Map("{\"sea\":[[0,4]]}"), "outside the 6x4 grid" },
         { Map("{\"sea\":[[-1,0]]}"), "outside the 6x4 grid" },
+        { Map("{\"sea\":[[0,-1]]}"), "outside the 6x4 grid" },
         { Map("{\"sea\":[[1,1]],\"river\":[[1,1]]}"), "more than once" },
+        { Map("{\"sea\":[[1,1],[1,1]]}"), "more than once" },
+        { Map("{\"sea\":[[1,2,3]]}"), "[column,row]" },
+        { Map("{\"sea\":[[1,1]],\"sea\":[[2,2]]}"), "Duplicate key" },
+        { "{\"version\":1.0,\"width\":4,\"height\":4}", "\"version\" must be a whole number" },
         { Map("{\"sea\":[[1]]}"), "[column,row]" },
         { Map("{\"sea\":[[1.5,0]]}"), "[column,row]" },
         { Map("{\"sea\":[\"a\"]}"), "[column,row]" },
@@ -232,7 +237,7 @@ public class MapTests
         foreach (var (c, r) in new[] { (4, 1), (0, 0), (9, 3) })
         {
             Assert.False(map.IsPassable(At(c, r)));
-            Assert.Null(map.MovementCost(At(c, r)));
+            Assert.Null(map.TerrainCostFactor(At(c, r)));
         }
 
         var openCosts = new HashSet<int?>();
@@ -243,7 +248,7 @@ public class MapTests
                 {
                     openCount++;
                     Assert.True(map.IsPassable(At(c, r)));
-                    openCosts.Add(map.MovementCost(At(c, r)));
+                    openCosts.Add(map.TerrainCostFactor(At(c, r)));
                 }
         Assert.True(openCount > 0);
         Assert.Single(openCosts);
@@ -256,7 +261,7 @@ public class MapTests
 
         Assert.False(map.IsPassable(At(-1, 0)));
         Assert.False(map.IsPassable(At(6, 0)));
-        Assert.Null(map.MovementCost(At(0, 4)));
+        Assert.Null(map.TerrainCostFactor(At(0, 4)));
     }
 
     [Fact]
@@ -265,5 +270,52 @@ public class MapTests
         var map = MapImporter.Parse(Map("{\"open\":[[0,0]]}", 2, 1));
 
         Assert.Equal("2x1\n..", map.CanonicalText());
+    }
+
+    [Fact]
+    public void MED_006_the_example_in_the_format_doc_imports()
+    {
+        var doc = File.ReadAllText(DocPath());
+        var start = doc.IndexOf("```json\n", StringComparison.Ordinal) + "```json\n".Length;
+        var example = doc.Substring(start, doc.IndexOf("```", start, StringComparison.Ordinal) - start);
+
+        var map = MapImporter.Parse(example);
+
+        Assert.Equal((6, 4), (map.Width, map.Height));
+        Assert.Equal(TerrainType.Mountain, map.TerrainAt(2, 1));
+        Assert.Equal(TerrainType.River, map.TerrainAt(4, 3));
+    }
+
+    [Fact]
+    public void MAP_017_hex_coord_equality_operators()
+    {
+        Assert.True(At(2, 3) == HexCoord.FromOffset(2, 3));
+        Assert.True(At(2, 3) != At(3, 3));
+    }
+
+    [Fact]
+    public void TEC_008_canonical_text_refuses_an_unknown_terrain_value()
+    {
+        var map = new HexMap(1, 1, new[] { (TerrainType)99 });
+
+        Assert.Throws<InvalidOperationException>(() => map.CanonicalText());
+    }
+
+    [Fact]
+    public void TRN_024_terrain_lookup_outside_the_map_throws()
+    {
+        var map = MapImporter.Parse(Map("{}"));
+
+        Assert.Equal("column", Assert.Throws<ArgumentOutOfRangeException>(() => map.TerrainAt(6, 0)).ParamName);
+        Assert.Equal("row", Assert.Throws<ArgumentOutOfRangeException>(() => map.TerrainAt(0, 4)).ParamName);
+    }
+
+    private static string DocPath()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "WeirdWar.Core", "Maps", "MapFormat.md")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        return Path.Combine(dir!.FullName, "WeirdWar.Core", "Maps", "MapFormat.md");
     }
 }

@@ -45,7 +45,7 @@ namespace WeirdWar.Core.Maps
 
         public TerrainType TerrainAt(int column, int row)
         {
-            if (!Contains(column, row)) throw new ArgumentOutOfRangeException(nameof(column), "Hex is outside the map");
+            if (!Contains(column, row)) throw new ArgumentOutOfRangeException(column < 0 || column >= Width ? nameof(column) : nameof(row), "Hex is outside the map");
             return _cells[row * Width + column];
         }
 
@@ -64,14 +64,18 @@ namespace WeirdWar.Core.Maps
             return result;
         }
 
-        /// <summary>True when ground Brigades can enter the hex: on the map and open (TRN-024).</summary>
+        /// <summary>
+        /// True when the terrain lets ground Brigades enter the hex: on the map and open (TRN-024).
+        /// Terrain only: enemy occupation (TRN-023) and bridges are not included and are checked elsewhere.
+        /// </summary>
         public bool IsPassable(HexCoord hex) => Contains(hex) && TerrainAt(hex) == TerrainType.Open;
 
         /// <summary>
-        /// Movement cost of entering the hex, in whole steps: 1 for every open hex, null when impassable
-        /// (MED-006: all open hexes cost the same).
+        /// Terrain factor for entering the hex: 1 on every open hex, null when impassable (MED-006: all open
+        /// hexes are equal). This is a multiplier, not an SP amount: the SP per hex comes from the Brigade
+        /// (SUP-021).
         /// </summary>
-        public int? MovementCost(HexCoord hex) => IsPassable(hex) ? 1 : (int?)null;
+        public int? TerrainCostFactor(HexCoord hex) => IsPassable(hex) ? 1 : (int?)null;
 
         /// <summary>Stable text form (one letter per hex, row by row) for hashing and tests (TEC-008).</summary>
         public string CanonicalText()
@@ -87,7 +91,8 @@ namespace WeirdWar.Core.Maps
                         TerrainType.Open => '.',
                         TerrainType.Mountain => 'M',
                         TerrainType.Sea => 'S',
-                        _ => 'R',
+                        TerrainType.River => 'R',
+                        var other => throw new InvalidOperationException("No canonical letter for terrain " + other),
                     });
             }
             return sb.ToString();
