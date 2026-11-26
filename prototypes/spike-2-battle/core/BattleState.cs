@@ -179,6 +179,8 @@ namespace WeirdWar.Spike2.Battle.Core
             foreach (var officer in _officers)
             {
                 if (officer.IsDestroyed) continue;
+                // CMD-004, DAI-005: an Officer under AI is steered by the core's AI, from core state only (TEC-008).
+                if (officer.UnderAi) OfficerAi.Run(this, officer, seconds);
                 var dir = officer.MoveDirection;
                 if (dir.X == 0 && dir.Y == 0) continue;
                 var step = _stats.OfficerSpeed * seconds;
@@ -203,6 +205,7 @@ namespace WeirdWar.Spike2.Battle.Core
         {
             if (command is OfficerCommand oc) return ApplyOfficer(oc);
             if (command is SectionCommand sc) return ApplySection(sc);
+            if (command is OfficerControlCommand cc) return ApplyOfficerControl(cc);
             return CommandResult.Rejected("Unknown command type.");
         }
 
@@ -252,6 +255,31 @@ namespace WeirdWar.Spike2.Battle.Core
             Log(command);
             return CommandResult.Accepted();
         }
+
+        /// <summary>
+        /// CMD-004, DAI-005: hands an Officer to the AI or back to the player. A living Officer only. Handing back stops its walk.
+        /// Logged like any command, so a replay hands it over at the same step (TEC-008).
+        /// </summary>
+        private CommandResult ApplyOfficerControl(OfficerControlCommand command)
+        {
+            if (command.Officer < 0 || command.Officer >= _officers.Count) return CommandResult.Rejected("Officer " + command.Officer + " does not exist.");
+            var officer = _officers[command.Officer];
+            if (officer.IsDestroyed) return CommandResult.Rejected("Officer " + command.Officer + " is destroyed and cannot be commanded.");
+            officer.UnderAi = command.UnderAi;
+            if (!command.UnderAi) officer.MoveDirection = new MapPoint(0, 0);
+            Log(command);
+            return CommandResult.Accepted();
+        }
+
+        /// <summary>PCH-006: true while the side still has a living Officer (the stand-in for "an officer or hero"; heroes are not in the spike).</summary>
+        public bool HasLivingOfficer(Side side)
+        {
+            foreach (var o in _officers) { if (o.Side == side && !o.IsDestroyed) return true; }
+            return false;
+        }
+
+        /// <summary>DAI-005: the AI Officer's shot. The same rifle as the player's, resolved by <see cref="ResolveRifleShot"/>.</summary>
+        internal void FireOfficerRifle(Officer officer) { ResolveRifleShot(officer); }
 
         private CommandResult ApplyOfficer(OfficerCommand oc)
         {

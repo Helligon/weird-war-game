@@ -8,7 +8,7 @@ public class SectionOrderTests
     private static string Stats(double accuracy = 0.6) =>
         "{ \"riflemen\": { \"speed\": 2, \"P-HIE-01\": 8, \"P-HIE-02\": 30, \"range\": 30, \"damage\": 1, \"accuracy\": " + accuracy.ToString(System.Globalization.CultureInfo.InvariantCulture)
         + ", \"volleyInterval\": 2 },"
-        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
+        + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3, \"protectDistance\": 6, \"fireInterval\": 2 } }";
 
     private static BattleMap OpenMap() => new BattleMap(100, 60, new List<CoverObject>());
     private static BattleMap CoverMap() => new BattleMap(100, 60, new List<CoverObject> { new CoverObject("ruin", new MapPoint(30, 30), 4) });
