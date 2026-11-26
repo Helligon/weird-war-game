@@ -1,0 +1,7 @@
+# Tunable parameters, one per line: P-XXX-NN = value   (DLV-014)
+# Format is documented in ParameterTable.cs. IDs come from docs/registers/parameters.md.
+# A value for an open or proposed parameter MUST carry the marker "# placeholder (open)"
+# or "# placeholder (proposed)". Remove the marker only once the parameter is decided.
+
+P-SUP-01 = 0.75   # Well Supplied threshold, fraction of capacity (decided)
+P-RES-01 = 5      # placeholder (open): base SP income per turn

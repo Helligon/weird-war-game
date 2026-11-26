@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="Data/parameters.txt" CopyToOutputDirectory="PreserveNewest" />
     <InternalsVisibleTo Include="WeirdWar.Core.Tests" />
   </ItemGroup>
 
