@@ -9,7 +9,12 @@ namespace WeirdWar.Core.Simulation
     {
         internal FactionState(string id, int reserve) { Id = id; Reserve = reserve; }
         public string Id { get; }
+
+        /// <summary>The central SP reserve (RES-001). Sections hold no SP.</summary>
         public int Reserve { get; internal set; }
+
+        /// <summary>Command Points held by the player (RES-005). Spending them on Cards is a later Feature.</summary>
+        public int Cp { get; internal set; }
     }
 
     /// <summary>A location in a running game with its current owner (MAP-021: only HQs start owned).</summary>

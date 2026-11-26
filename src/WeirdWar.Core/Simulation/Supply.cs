@@ -40,11 +40,8 @@ namespace WeirdWar.Core.Simulation
             => Check(brigade).Sections.Sum(s => _types.Get(s.TypeId).CapacityContribution);
 
         /// <summary>SP cost per hex of movement: the sum of the Sections' consumption (SUP-019, SUP-021, P-SUP-09).</summary>
-        public int CostPerHexOf(Brigade brigade) => CostPerHex(_types, Check(brigade));
-
-        /// <summary>The same sum without a Supply (the move command has the Section types and the Brigade, not the supply thresholds).</summary>
-        internal static int CostPerHex(SectionTypeTable types, Brigade brigade)
-            => brigade.Sections.Sum(s => types.Get(s.TypeId).ConsumptionPerHex);
+        public int CostPerHexOf(Brigade brigade)
+            => Check(brigade).Sections.Sum(s => _types.Get(s.TypeId).ConsumptionPerHex);
 
         /// <summary>
         /// SUP-003, measured against the Brigade's own capacity (SUP-002). Overextended: SP below 0.

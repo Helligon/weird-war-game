@@ -89,7 +89,9 @@ namespace WeirdWar.Core.Simulation
                 var slow = false;
                 if (o.TryGetValue("slow", out var slowValue))
                     slow = slowValue as bool? ?? throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": \"slow\" must be true or false (TAG-010)");
-                types[kv.Key] = new SectionType(kv.Key, health, sight, Num(o, kv.Key, "capacityContribution"), Num(o, kv.Key, "consumptionPerHex"), slow);
+                var consumption = Num(o, kv.Key, "consumptionPerHex");
+                if (consumption < 1) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": consumptionPerHex must be at least 1, because a Brigade MUST spend SP to move (SUP-005, RES-004)");
+                types[kv.Key] = new SectionType(kv.Key, health, sight, Num(o, kv.Key, "capacityContribution"), consumption, slow);
             }
             return new SectionTypeTable(types);
         }

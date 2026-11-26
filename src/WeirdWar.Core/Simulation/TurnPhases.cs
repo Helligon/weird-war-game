@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace WeirdWar.Core.Simulation
 {
@@ -32,7 +33,11 @@ namespace WeirdWar.Core.Simulation
 
         internal static void Income(GameState state, string faction)
         {
-            // Hook: income (CC1-70).
+            // TRN-001, TRN-005: only the active Faction is paid. SP to the reserve, CP to the player.
+            var income = state.IncomeRules!.Calculate(state, faction);
+            var f = state.Factions.Single(x => x.Id == faction);
+            f.Reserve += income.Sp;
+            f.Cp += income.Cp;
         }
 
         internal static void EndOfTurn(GameState state, string faction)

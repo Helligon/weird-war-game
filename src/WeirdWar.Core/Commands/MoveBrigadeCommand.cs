@@ -15,9 +15,8 @@ namespace WeirdWar.Core.Commands
     /// Rules: SP is the limit (SUP-005); the SP comes only from the Brigade, never the reserve (SUP-015), and a move
     /// that would take it below 0 is rejected (SUP-006; the battle exception is CC1-73). A Brigade with a Slow Section
     /// may move at most P-SUP-10 hexes per turn in total (TAG-010, SUP-024, SUP-025). A hex that is impassable terrain,
-    /// off the map or held by an enemy cannot be entered (TRN-023, TRN-024). A hex held by any other Brigade cannot be
-    /// entered at all, so no two Brigades share a hex (TRN-020). That is stricter than the acceptance criterion, which
-    /// only names the last hex, because the pass-through exception exists only for retreats (TRN-021).
+    /// off the map or held by an enemy cannot be entered (TRN-023, TRN-024). No Brigade may end its move on an occupied
+    /// hex, friendly or enemy (TRN-020); a path may pass through a friendly Brigade (TRN-023 lists only enemies as blocking).
     /// A move may be split over the Actions phase (TRN-030) and a Brigade can move the turn it appears (TRN-032).
     /// </summary>
     public sealed class MoveBrigadeCommand : ICommand, IEquatable<MoveBrigadeCommand>
@@ -30,7 +29,7 @@ namespace WeirdWar.Core.Commands
         {
             Issuer = faction ?? "";
             BrigadeId = brigadeId;
-            _path = path == null ? new HexCoord[0] : path.ToArray(); // no path is an empty one, which Validate rejects
+            _path = path == null ? new HexCoord[0] : path.ToArray(); // null becomes an empty path (Validate rejects it): the reflection test GameStateTests.TEC_008_every_command_type... builds every command from null arguments
         }
 
         public int BrigadeId { get; }
@@ -42,57 +41,85 @@ namespace WeirdWar.Core.Commands
         public string Issuer { get; }
         public TurnPhase? RequiredPhase => TurnPhase.Actions;
 
-        public string? Validate(GameState state)
+        /// <summary>One hex entered and what entering it costs.</summary>
+        private readonly struct Step
         {
-            if (state.Map == null || state.SectionTypes == null || state.Parameters == null) return "There is no campaign to move in";
-            var brigade = state.Brigades.FirstOrDefault(b => b.Id == BrigadeId);
-            if (brigade == null) return "There is no Brigade " + BrigadeId;
-            if (brigade.Faction != Issuer) return "Brigade " + BrigadeId + " belongs to " + brigade.Faction + ", not " + Issuer;
+            public Step(HexCoord hex, int cost) { Hex = hex; Cost = cost; }
+            public HexCoord Hex { get; }
+            public int Cost { get; }
+        }
+
+        /// <summary>
+        /// The single walk along the path, used by both Validate and Apply so they cannot drift apart (CC1-73 will stop
+        /// it at contact here). Returns the steps, or a reason the path cannot be walked. It reads the state and never changes it.
+        /// </summary>
+        private string? Walk(GameState state, out Brigade? brigade, out List<Step> steps)
+        {
+            steps = new List<Step>();
+            brigade = null;
+            if (state.Map == null || state.Supply == null || state.MovementRules == null) return "There is no campaign to move in";
+            var mover = state.Brigades.FirstOrDefault(b => b.Id == BrigadeId);
+            if (mover == null) return "There is no Brigade " + BrigadeId;
+            brigade = mover;
+            if (mover.Faction != Issuer) return "Brigade " + BrigadeId + " belongs to " + mover.Faction + ", not " + Issuer;
             if (_path.Length == 0) return "A move must enter at least one hex";
 
             var map = state.Map;
-            var perHex = Supply.CostPerHex(state.SectionTypes, brigade);
-            long cost = 0;
-            var from = brigade.Position;
-            foreach (var hex in _path)
+            var perHex = state.Supply.CostPerHexOf(mover);
+            var from = mover.Position;
+            for (var i = 0; i < _path.Length; i++)
             {
+                var hex = _path[i];
                 if (from.DistanceTo(hex) != 1) return "Hex " + hex + " is not next to " + from;
                 if (!map.Contains(hex)) return "Hex " + hex + " is beyond the map edge (TRN-023)";
                 var factor = map.TerrainCostFactor(hex);
                 if (factor == null) return "Hex " + hex + " is impassable " + map.TerrainAt(hex).ToString().ToLowerInvariant() + " (TRN-023, TRN-024)";
-                var holder = state.Brigades.FirstOrDefault(b => b.Id != brigade.Id && b.Position == hex);
+                var holder = state.Brigades.FirstOrDefault(b => b.Id != mover.Id && b.Position == hex);
                 if (holder != null)
-                    return holder.Faction != brigade.Faction
-                        ? "Hex " + hex + " is held by an enemy Brigade (TRN-023)"
-                        : "Hex " + hex + " is held by Brigade " + holder.Id + "; two Brigades cannot share a hex (TRN-020)";
-                cost += (long)perHex * factor.Value;
+                {
+                    // TRN-023: an enemy hex is impassable anywhere on the path. TRN-020: no Brigade may end on an occupied hex;
+                    // passing through a friendly one is allowed (TRN-023 lists only enemy Brigades as blocking).
+                    if (holder.Faction != mover.Faction) return "Hex " + hex + " is held by an enemy Brigade (TRN-023)";
+                    if (i == _path.Length - 1) return "Hex " + hex + " is held by Brigade " + holder.Id + "; two Brigades cannot share a hex (TRN-020)";
+                }
+                steps.Add(new Step(hex, perHex * factor.Value));
                 from = hex;
             }
+            return null;
+        }
 
-            if (brigade.Sections.Any(s => state.SectionTypes.Get(s.TypeId).Slow))
+        public string? Validate(GameState state)
+        {
+            var reason = Walk(state, out var brigade, out var steps);
+            if (reason != null) return reason;
+            var b = brigade!;
+
+            if (b.Sections.Any(s => state.SectionTypes!.Get(s.TypeId).Slow))
             {
-                var cap = state.Parameters.GetInt("P-SUP-10");
-                var moved = brigade.HexesMovedIn(state.TurnNumber);
-                if (moved + _path.Length > cap)
-                    return "A Slow Brigade may move " + cap + " hexes a turn (P-SUP-10); it has moved " + moved + " and this move adds " + _path.Length;
+                var cap = state.MovementRules!.SlowCap;
+                var moved = b.HexesMovedIn(state.TurnNumber);
+                if (moved + steps.Count > cap)
+                    return "A Slow Brigade may move " + cap + " hexes a turn (P-SUP-10); it has moved " + moved + " and this move adds " + steps.Count;
             }
 
-            if (brigade.SP - cost < 0)
-                return "Moving " + _path.Length + " hexes costs " + cost + " SP and the Brigade has " + brigade.SP + "; SP may not go below 0 (SUP-006, SUP-015)";
+            long cost = steps.Sum(s => (long)s.Cost);
+            if (b.SP - cost < 0)
+                return "Moving " + steps.Count + " hexes costs " + cost + " SP and the Brigade has " + b.SP + "; SP may not go below 0 (SUP-006, SUP-015)";
             return null;
         }
 
         public void Apply(GameState state)
         {
-            var brigade = state.Brigades.First(b => b.Id == BrigadeId);
-            var perHex = Supply.CostPerHex(state.SectionTypes!, brigade);
-            if (brigade.MovedTurn != state.TurnNumber) { brigade.MovedTurn = state.TurnNumber; brigade.MovedHexes = 0; }
-            foreach (var hex in _path)
+            Walk(state, out var brigade, out var steps);
+            var b = brigade!;
+            // A new turn starts the count afresh (SUP-024).
+            if (b.MovedTurn != state.TurnNumber) { b.MovedTurn = state.TurnNumber; b.MovedHexes = 0; }
+            foreach (var step in steps)
             {
                 // TRN-029: SP is taken as each hex is entered.
-                brigade.SP -= perHex * state.Map!.TerrainCostFactor(hex)!.Value;
-                brigade.Position = hex;
-                brigade.MovedHexes++;
+                b.SP -= step.Cost;
+                b.Position = step.Hex;
+                b.MovedHexes++;
             }
         }
 

@@ -24,7 +24,7 @@ public class MovementTests
         "\"east\":{\"reserve\":50,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
         "\"west\":{\"reserve\":50,\"brigade\":{\"sp\":90,\"sections\":[" + westSections + "]}}}}";
 
-    private const string Params = "P-BRG-05 = 3\nP-SUP-10 = 2";
+    private const string Params = "P-BRG-05 = 3\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-10 = 2";
 
     private static GameState NewGame(string westSections = "infantry,infantry,infantry", string parameters = Params)
     {
@@ -270,6 +270,24 @@ public class MovementTests
     }
 
     [Fact]
+    public void SUP_024_split_moves_in_a_later_turn_are_counted_from_zero_and_capped_in_total()
+    {
+        // Turn 1 uses the whole allowance; turn 3 (west's second turn) must start from 0 and then add up across two moves.
+        var game = NewGame("thrall,thrall,thrall");
+        Assert.True(Move(game, 2).Accepted);
+        EndBothTurns(game);
+        Assert.Equal(3, game.TurnNumber);
+
+        Assert.True(Move(game, 1, 2).Accepted);
+        Assert.Equal(1, West(game).HexesMovedIn(3));
+        Assert.True(Move(game, 1, 3).Accepted);
+        Assert.Equal(2, West(game).HexesMovedIn(3));
+        Assert.False(Move(game, 1, 4).Accepted);
+        Assert.Equal(2, West(game).HexesMovedIn(3));
+        Assert.Equal(0, West(game).HexesMovedIn(1 + 1)); // not the other Faction's turn number
+    }
+
+    [Fact]
     public void SUP_024_a_rejected_move_does_not_use_up_the_slow_allowance()
     {
         var game = NewGame("thrall,thrall,thrall");
@@ -316,12 +334,16 @@ public class MovementTests
     }
 
     [Fact]
-    public void TRN_020_a_brigade_cannot_pass_through_a_friendly_brigade_because_only_retreats_may_TRN_021()
+    public void TRN_023_a_brigade_may_pass_through_a_friendly_brigade_but_not_end_on_it()
     {
+        // TRN-023 lists only enemy Brigades as blocking; TRN-020 only forbids sharing a hex, i.e. ending on one.
         var game = NewGame();
         ((List<Brigade>)game.Brigades).Add(new Brigade(3, "west", 40, At(0, 2), new List<Section> { new Section("infantry", 10) }));
 
-        Assert.False(Move(game, 4).Accepted);
+        Assert.False(Move(game, 2).Accepted); // ends on the friendly Brigade
+        Assert.True(Move(game, 4).Accepted);  // passes through it
+        Assert.Equal(At(0, 4), West(game).Position);
+        Assert.Equal(At(0, 2), game.Brigades.Single(b => b.Id == 3).Position);
     }
 
     [Fact]
@@ -330,10 +352,12 @@ public class MovementTests
         var game = NewGame();
         PutEastAt(game, At(0, 2));
 
+        var hash = game.ComputeHash();
         var result = Move(game, 4);
 
         Assert.False(result.Accepted);
         Assert.Contains("enemy", result.Reason);
+        Assert.Equal(hash, game.ComputeHash());
         Assert.False(Move(game, 2).Accepted);
         Assert.True(Move(game, 1).Accepted); // the hex before the enemy is fine
     }
@@ -429,6 +453,34 @@ public class MovementTests
         Assert.False(state.ApplyCommand(new MoveBrigadeCommand("", 1, Down(1))).Accepted);
     }
 
+    [Fact]
+    public void TRN_002_every_kind_of_rejected_move_leaves_the_hash_unchanged()
+    {
+        var game = NewGame();
+        PutEastAt(game, At(0, 4));
+        var hash = game.ComputeHash();
+        var west = West(game).Id;
+        var rejected = new ICommand[]
+        {
+            new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(0, 2), At(0, 4) }),             // not adjacent, part-way along
+            new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(0, 2), At(0, 3), At(0, 4) }),   // enemy at the end
+            new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(1, 0) }),                       // not adjacent to (0,1)
+            new MoveBrigadeCommand("west", west, new[] { At(0, 1), new HexCoord(5, 5) }),             // off the map after a good hex
+            new MoveBrigadeCommand("west", west, new[] { At(1, 0) }),                                  // mountain
+            new MoveBrigadeCommand("west", 99, new[] { At(0, 1) }),                                    // unknown Brigade
+            new MoveBrigadeCommand("west", East(game).Id, new[] { At(3, 8) }),                         // not theirs
+            new MoveBrigadeCommand("west", west, new HexCoord[0]),                                     // empty
+            new MoveBrigadeCommand("east", East(game).Id, new[] { At(0, 5) }),                         // not the active Faction
+        };
+
+        foreach (var command in rejected)
+        {
+            var result = game.ApplyCommand(command);
+            Assert.False(result.Accepted, command.ToString());
+            Assert.Equal(hash, game.ComputeHash());
+        }
+    }
+
     // ---- TAG-010 data
 
     [Fact]
@@ -459,9 +511,44 @@ public class MovementTests
         Assert.True(shipped.IsPlaceholder("P-SUP-10"));
         Assert.True(shipped.GetInt("P-SUP-10") > 0);
 
-        var game = NewGame("thrall,thrall,thrall", "P-BRG-05 = 3\nP-SUP-10 = 4");
+        var game = NewGame("thrall,thrall,thrall", Params.Replace("P-SUP-10 = 2", "P-SUP-10 = 4"));
         Assert.True(Move(game, 4).Accepted);
         Assert.False(Move(game, 1, 4).Accepted);
+    }
+
+    [Fact]
+    public void P_SUP_10_a_missing_value_fails_when_the_game_starts_not_during_a_move()
+    {
+        var withoutCap = Params.Replace("\nP-SUP-10 = 2", "");
+
+        Assert.Throws<MissingParameterException>(() => NewGame("thrall,thrall,thrall", withoutCap));
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-3")]
+    [InlineData("many")]
+    public void P_SUP_10_a_cap_below_one_or_not_a_number_fails_when_the_game_starts(string value)
+    {
+        Assert.Throws<ParameterFormatException>(() => NewGame("infantry,infantry,infantry", Params.Replace("P-SUP-10 = 2", "P-SUP-10 = " + value)));
+    }
+
+    [Fact]
+    public void P_SUP_10_the_game_exposes_its_supply_and_movement_rules_built_at_start()
+    {
+        var game = NewGame();
+
+        Assert.Equal(2, game.MovementRules!.SlowCap);
+        Assert.Equal(3, game.Supply!.CostPerHexOf(West(game)));
+    }
+
+    [Fact]
+    public void SUP_005_a_section_type_that_costs_no_sp_to_move_is_rejected_by_the_data_loader()
+    {
+        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":0}}}";
+
+        var e = Assert.Throws<SectionTypeFormatException>(() => SectionTypeTable.Parse(json));
+        Assert.Contains("SUP-005", e.Message);
     }
 
     // ---- TEC-008
@@ -522,12 +609,24 @@ public class MovementTests
     }
 
     [Fact]
+    public void TEC_008_the_parameter_values_are_part_of_the_hash_but_comments_and_order_are_not()
+    {
+        var baseline = NewGame().ComputeHash();
+        var otherCap = NewGame("infantry,infantry,infantry", Params.Replace("P-SUP-10 = 2", "P-SUP-10 = 3")).ComputeHash();
+        var reordered = string.Join("\n", Params.Split('\n').Reverse()) + " # a comment";
+
+        Assert.NotEqual(baseline, otherCap);
+        Assert.Equal(baseline, NewGame("infantry,infantry,infantry", reordered).ComputeHash());
+        Assert.Contains("parameters=", NewGame().CanonicalText());
+    }
+
+    [Fact]
     public void TEC_008_the_hash_after_a_two_hex_move_is_pinned()
     {
         // Pinned value computed independently in Python from the canonical text format, not from this code.
         var game = NewGame();
         Assert.True(Move(game, 2).Accepted);
 
-        Assert.Equal("f3fe68d4ee8bc76961ef2de790d644f2f2de024d88934e293781e724bedd35e9", game.ComputeHash());
+        Assert.Equal("31e51de2139d7162bf555f5cc4ae456d32bfb35058cd84cc028055a3dca66768", game.ComputeHash());
     }
 }
