@@ -8,4 +8,8 @@
     <RootNamespace>WeirdWar.Core</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="WeirdWar.Core.Tests" />
+  </ItemGroup>
+
 </Project>

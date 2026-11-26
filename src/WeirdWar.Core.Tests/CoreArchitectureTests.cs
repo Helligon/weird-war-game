@@ -96,17 +96,69 @@ public class CoreArchitectureTests
         Assert.Empty(spike);
     }
 
+    private static readonly string[] CompilerNamespaces = { "Microsoft.CodeAnalysis", "System.Runtime.CompilerServices" };
+
+    /// <summary>
+    /// True for types the compiler adds to an assembly (embedded nullable attributes, the
+    /// private-implementation-details holder for array initialisers). Narrow on purpose: the outermost type
+    /// must carry CompilerGenerated or Microsoft.CodeAnalysis.EmbeddedAttribute (matched by full name) AND live in
+    /// one of the compiler namespaces or be named &lt;PrivateImplementationDetails&gt;. Nested types follow
+    /// their outermost type. Our own types in WeirdWar.Core.* are never skipped.
+    /// </summary>
+    internal static bool IsCompilerSupportType(Type type)
+    {
+        var top = type;
+        while (top.DeclaringType != null) top = top.DeclaringType;
+
+        var marked = top.GetCustomAttributes(false).Any(a =>
+            a.GetType().FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute"
+            || a.GetType().FullName == "Microsoft.CodeAnalysis.EmbeddedAttribute");
+        if (!marked) return false;
+
+        return top.Name == "<PrivateImplementationDetails>"
+            || (top.Namespace != null && CompilerNamespaces.Contains(top.Namespace));
+    }
+
     [Fact]
     public void TEC_013_core_types_all_live_in_the_core_namespace()
     {
-        var outside = Core.GetTypes()
+        var checkedTypes = Core.GetTypes().Where(t => !IsCompilerSupportType(t)).ToList();
+
+        var outside = checkedTypes
             .Where(t => !t.Name.StartsWith("<") && t.Namespace != "WeirdWar.Core"
                         && !(t.Namespace ?? "").StartsWith("WeirdWar.Core."))
             .Select(t => t.FullName)
             .ToList();
 
         Assert.Empty(outside);
+        Assert.Contains(checkedTypes, t => t == typeof(CoreAssembly)); // our own types are still checked
     }
+
+    [Fact]
+    public void TEC_013_guard_skips_real_compiler_types_but_never_our_own()
+    {
+        var skipped = Core.GetTypes().Where(IsCompilerSupportType).ToList();
+
+        Assert.Contains(skipped, t => t.FullName == "Microsoft.CodeAnalysis.EmbeddedAttribute");
+        Assert.All(skipped, t => Assert.DoesNotContain("WeirdWar.Core", t.Namespace ?? ""));
+        Assert.False(IsCompilerSupportType(typeof(CoreAssembly)));
+    }
+
+    [Fact]
+    public void TEC_013_guard_is_not_fooled_by_look_alike_attributes_or_namespaces()
+    {
+        // Home-made EmbeddedAttribute in another namespace, on a type in a compiler namespace.
+        Assert.False(IsCompilerSupportType(typeof(Microsoft.CodeAnalysis.FakeMarkedType)));
+        // Real CompilerGenerated, but the type is not in a compiler namespace.
+        Assert.False(IsCompilerSupportType(typeof(GeneratedLookingTypeInOurNamespace)));
+        // Right namespace, no marker at all.
+        Assert.False(IsCompilerSupportType(typeof(Microsoft.CodeAnalysis.UnmarkedType)));
+        // A nested type inside a look-alike is not skipped either.
+        Assert.False(IsCompilerSupportType(typeof(Microsoft.CodeAnalysis.FakeMarkedType.Nested)));
+    }
+
+    [System.Runtime.CompilerServices.CompilerGenerated]
+    private sealed class GeneratedLookingTypeInOurNamespace { }
 
     [Fact]
     public void TEC_013_guard_finds_the_project_files_it_scans()
