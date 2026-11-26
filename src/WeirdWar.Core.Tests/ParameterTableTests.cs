@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using WeirdWar.Core;
 
@@ -40,6 +41,11 @@ public class ParameterTableTests
     [InlineData("SUP-01 = 3")]
     [InlineData("p-sup-01 = 3")]
     [InlineData("P-SUP-1 = 3")]
+    [InlineData("P-SUP-011 = 3")]
+    [InlineData("XP-SUP-01 = 3")]
+    [InlineData("P-SUP-01 = 3 # Placeholder (open)")]
+    [InlineData("P-SUP-01 = 3 # open placeholder")]
+    [InlineData("P-SUP-01 = 3 # not a placeholder (open)")]
     public void DLV_014_malformed_lines_are_rejected(string line)
     {
         Assert.Throws<ParameterFormatException>(() => ParameterTable.Parse(line));
@@ -53,12 +59,52 @@ public class ParameterTableTests
     }
 
     [Fact]
-    public void DLV_014_comments_and_blank_lines_are_ignored_and_values_parse_invariantly()
+    public void DLV_014_comments_and_blank_lines_are_ignored()
     {
         var table = ParameterTable.Parse("# note\n\r\n  P-SUP-01 = 0.75  # decided\r\n");
 
         Assert.Equal(0.75, table.GetDouble("P-SUP-01"));
         Assert.False(table.IsPlaceholder("P-SUP-01"));
+    }
+
+    [Fact]
+    public void TEC_008_values_parse_the_same_under_a_comma_decimal_culture()
+    {
+        var oldCulture = CultureInfo.CurrentCulture;
+        var oldUi = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+            CultureInfo.CurrentUICulture = new CultureInfo("de-DE");
+            var table = ParameterTable.Parse("P-SUP-01 = 0.75\n");
+
+            Assert.Equal(0.75, table.GetDouble("P-SUP-01"));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = oldCulture;
+            CultureInfo.CurrentUICulture = oldUi;
+        }
+    }
+
+    [Fact]
+    public void DLV_014_GetInt_rejects_a_non_integer_value()
+    {
+        var table = ParameterTable.Parse("P-SUP-01 = 0.75\n");
+
+        Assert.Throws<ParameterFormatException>(() => table.GetInt("P-SUP-01"));
+    }
+
+    [Theory]
+    [InlineData("1,000")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    [InlineData("-Infinity")]
+    public void DLV_014_GetDouble_rejects_thousands_separators_and_non_finite_values(string value)
+    {
+        var table = ParameterTable.Parse($"P-SUP-01 = {value}\n");
+
+        Assert.Throws<ParameterFormatException>(() => table.GetDouble("P-SUP-01"));
     }
 
     [Fact]
@@ -96,7 +142,6 @@ public class ParameterTableTests
 
         Assert.Equal(0.75, table.GetDouble("P-SUP-01"));
         Assert.False(table.IsPlaceholder("P-SUP-01"));
-        Assert.True(table.Contains("P-RES-01"));
         Assert.True(table.IsPlaceholder("P-RES-01"));
     }
 }

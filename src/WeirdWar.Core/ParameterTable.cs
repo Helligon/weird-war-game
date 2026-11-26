@@ -16,6 +16,7 @@ namespace WeirdWar.Core
     ///   - Anything after the first '#' on an entry line is a comment.
     ///   - A comment that starts with "placeholder (open)" or "placeholder (proposed)" marks the
     ///     value as a placeholder for a parameter that is not decided yet (see <see cref="IsPlaceholder"/>).
+    ///   - Any other comment that mentions "placeholder" is a format error, so a mistyped marker is never read as "decided".
     ///   - Each ID may appear once. Malformed lines and duplicate IDs throw <see cref="ParameterFormatException"/>.
     /// Shipped file: Data/parameters.txt (copied to the output directory next to the assembly).
     /// </summary>
@@ -69,17 +70,28 @@ namespace WeirdWar.Core
 
                 values[id] = value;
                 if (PlaceholderPattern.IsMatch(comment)) placeholders.Add(id);
+                else if (comment.IndexOf("placeholder", StringComparison.OrdinalIgnoreCase) >= 0)
+                    throw new ParameterFormatException(
+                        $"Line {lineNo}: {id} has a comment mentioning 'placeholder' that is not exactly '# placeholder (open)' or '# placeholder (proposed)'.");
             }
             return new ParameterTable(values, placeholders);
         }
 
         public static ParameterTable Load(string path) => Parse(File.ReadAllText(path));
 
-        /// <summary>Loads Data/parameters.txt shipped next to the Core assembly.</summary>
-        public static ParameterTable LoadShipped() =>
-            Load(Path.Combine(Path.GetDirectoryName(typeof(ParameterTable).Assembly.Location)!, "Data", "parameters.txt"));
-
-        public bool Contains(string id) => _values.ContainsKey(id);
+        /// <summary>
+        /// Loads Data/parameters.txt shipped next to the Core assembly (works for dotnet and the tests).
+        /// Hosts where Assembly.Location is empty (for example Unity IL2CPP) should call <see cref="Parse"/> or
+        /// <see cref="Load"/> instead. How Unity ships this file is decided in the first Unity Feature (TEC-016).
+        /// </summary>
+        public static ParameterTable LoadShipped()
+        {
+            var location = typeof(ParameterTable).Assembly.Location;
+            if (string.IsNullOrEmpty(location))
+                throw new InvalidOperationException(
+                    "Cannot locate the shipped parameter file: Assembly.Location is empty. Use ParameterTable.Parse or Load.");
+            return Load(Path.Combine(Path.GetDirectoryName(location)!, "Data", "parameters.txt"));
+        }
 
         public bool IsPlaceholder(string id)
         {
@@ -105,8 +117,9 @@ namespace WeirdWar.Core
         public double GetDouble(string id)
         {
             var text = Get(id);
-            if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
-                throw new ParameterFormatException($"{id} = '{text}' is not a number.");
+            if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v)
+                || double.IsNaN(v) || double.IsInfinity(v))
+                throw new ParameterFormatException($"{id} = '{text}' is not a finite number.");
             return v;
         }
     }
