@@ -25,8 +25,8 @@ bin/
 !prototypes/*/core/*.csproj
 !prototypes/*/core-tests/*.csproj
 # Production core projects and solution are hand-written too (TEC-016)
-!src/*/*.csproj
-!src/*.slnx
+!src/**/WeirdWar.*.csproj
+!src/**/WeirdWar.*.slnx
 # Python
 __pycache__/
 docs/.obsidian/

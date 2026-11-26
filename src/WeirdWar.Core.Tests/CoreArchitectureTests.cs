@@ -51,10 +51,11 @@ public class CoreArchitectureTests
     [Fact]
     public void TEC_012_core_project_file_has_no_unity_reference_or_package()
     {
-        var csproj = Path.Combine(SrcDirectory(), "WeirdWar.Core", "WeirdWar.Core.csproj");
-        var doc = XDocument.Load(csproj);
+        var msbuildFiles = ProjectAndSourceFiles()
+            .Where(f => f.EndsWith(".csproj") || f.EndsWith(".props") || f.EndsWith(".targets"));
 
-        var references = doc.Descendants()
+        var references = msbuildFiles
+            .SelectMany(f => XDocument.Load(f).Descendants())
             .Where(e => e.Name.LocalName is "Reference" or "PackageReference" or "ProjectReference" or "HintPath")
             .Select(e => (string?)e.Attribute("Include") ?? e.Value)
             .ToList();
@@ -66,11 +67,45 @@ public class CoreArchitectureTests
     public void TEC_013_nothing_under_src_references_prototypes()
     {
         var offenders = ProjectAndSourceFiles()
-            .Where(f => !f.EndsWith("CoreArchitectureTests.cs")) // this guard names the folder on purpose
+            .Where(f => Path.GetFileName(f) != "CoreArchitectureTests.cs") // this guard names the folder on purpose
             .Where(f => File.ReadAllText(f).Contains("prototypes", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         Assert.Empty(offenders);
+    }
+
+    [Fact]
+    public void TEC_013_core_assembly_contains_no_spike_types()
+    {
+        var spikeTypes = Core.GetTypes()
+            .Where(t => (t.Namespace ?? "").StartsWith("WeirdWar.Spike", StringComparison.Ordinal))
+            .Select(t => t.FullName)
+            .ToList();
+
+        Assert.Empty(spikeTypes);
+    }
+
+    [Fact]
+    public void TEC_013_core_assembly_references_no_spike_assembly()
+    {
+        var spike = Core.GetReferencedAssemblies()
+            .Where(a => a.Name != null && a.Name.StartsWith("WeirdWar.Spike", StringComparison.Ordinal))
+            .Select(a => a.Name)
+            .ToList();
+
+        Assert.Empty(spike);
+    }
+
+    [Fact]
+    public void TEC_013_core_types_all_live_in_the_core_namespace()
+    {
+        var outside = Core.GetTypes()
+            .Where(t => !t.Name.StartsWith("<") && t.Namespace != "WeirdWar.Core"
+                        && !(t.Namespace ?? "").StartsWith("WeirdWar.Core."))
+            .Select(t => t.FullName)
+            .ToList();
+
+        Assert.Empty(outside);
     }
 
     [Fact]
