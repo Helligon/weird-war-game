@@ -64,6 +64,9 @@ namespace WeirdWar.Core.Simulation
             IncomeRules = new IncomeRules(parameters);
             Map = map;
             SectionTypes = sectionTypes;
+            Supply = new Supply(sectionTypes, parameters);
+            MovementRules = new MovementRules(parameters);
+            _parametersDigest = parameters.Digest();
             var factions = new List<FactionState>();
             var brigades = new List<Brigade>();
             foreach (var setup in map.Setup)
@@ -93,6 +96,8 @@ namespace WeirdWar.Core.Simulation
             TurnNumber = 1;
             TurnPhases.BeginTurn(this, ActiveFaction);
         }
+
+        private readonly string _parametersDigest = "none";
 
         public ulong Seed { get; }
 
@@ -127,6 +132,15 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>How income is worked out (RES-002, RES-005), or null when there is no map. Fixed for a game; not hashed.</summary>
         public IncomeRules? IncomeRules { get; }
+
+        /// <summary>
+        /// Capacity, cost per hex, supply state and the Slow cap, built once at game start from the Section types and
+        /// parameters (DLV-014), or null when there is no map. Fixed for a game; its parameters are hashed as a digest.
+        /// </summary>
+        public Supply? Supply { get; }
+
+        /// <summary>The Slow movement cap (P-SUP-10), or null when there is no map. Fixed for a game; not hashed.</summary>
+        public MovementRules? MovementRules { get; }
 
         /// <summary>The Section types in use, or null when there is no map.</summary>
         public SectionTypeTable? SectionTypes { get; }
@@ -221,6 +235,7 @@ namespace WeirdWar.Core.Simulation
             sb.Append("tally=").Append(Tally.ToString(CultureInfo.InvariantCulture)).Append('\n');
             // The map and Section types are fixed for a game, so they enter as one digest each (the text stays short).
             sb.Append("map=").Append(Map == null ? "none" : Map.Digest()).Append('\n');
+            if (Map != null) sb.Append("parameters=").Append(_parametersDigest).Append('\n');
             sb.Append("sectiontypes=").Append(SectionTypes == null ? "none" : Hex(Sha256(Encoding.UTF8.GetBytes(SectionTypes.CanonicalText())))).Append('\n');
             foreach (var f in Factions)
                 sb.Append("faction=").Append(f.Id).Append(" reserve=").Append(f.Reserve.ToString(CultureInfo.InvariantCulture))
@@ -237,7 +252,11 @@ namespace WeirdWar.Core.Simulation
                     sb.Append(b.Sections[i].TypeId).Append(':').Append(b.Sections[i].Health.ToString(CultureInfo.InvariantCulture));
                 }
                 var (bc, br) = b.Position.ToOffset();
-                sb.Append(" at=").Append(bc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(br.ToString(CultureInfo.InvariantCulture)).Append('\n');
+                sb.Append(" at=").Append(bc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(br.ToString(CultureInfo.InvariantCulture));
+                // Written only once the Brigade has moved, so a game with no moves hashes as before (SUP-024 Slow cap).
+                if (b.MovedHexes > 0)
+                    sb.Append(" moved=").Append(b.MovedTurn.ToString(CultureInfo.InvariantCulture)).Append(':').Append(b.MovedHexes.ToString(CultureInfo.InvariantCulture));
+                sb.Append('\n');
             }
             if (ActiveFaction != null)
                 sb.Append("turn=").Append(TurnNumber.ToString(CultureInfo.InvariantCulture)).Append(" active=").Append(ActiveFaction)

@@ -24,6 +24,7 @@ namespace WeirdWar.Core.Commands
             r.Register(AddToTallyCommand.TypeName, AddToTallyCommand.FromJson);
             r.Register(RollIntoTallyCommand.TypeName, RollIntoTallyCommand.FromJson);
             r.Register(EndTurnCommand.TypeName, EndTurnCommand.FromJson);
+            r.Register(MoveBrigadeCommand.TypeName, MoveBrigadeCommand.FromJson);
             return r;
         }
 

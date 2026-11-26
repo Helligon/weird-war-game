@@ -37,6 +37,25 @@ namespace WeirdWar.Core
 
         public IEnumerable<string> Ids => _values.Keys;
 
+        /// <summary>
+        /// SHA-256 (lowercase hex) of the table as text, one "ID=value" line per parameter sorted by ID (TEC-008).
+        /// Comments and placeholder markers are not part of it, so the digest changes only when a value does.
+        /// </summary>
+        public string Digest()
+        {
+            var ids = new List<string>(_values.Keys);
+            ids.Sort(StringComparer.Ordinal);
+            var sb = new System.Text.StringBuilder();
+            foreach (var id in ids) sb.Append(id).Append('=').Append(_values[id]).Append('\n');
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(sb.ToString()));
+                var hex = new System.Text.StringBuilder();
+                foreach (var b in bytes) hex.Append(b.ToString("x2", CultureInfo.InvariantCulture));
+                return hex.ToString();
+            }
+        }
+
         public static ParameterTable Parse(string text)
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
