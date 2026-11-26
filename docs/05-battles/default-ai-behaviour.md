@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [battle, ai]
 related: ["[[commands]]", "[[ai-opponents]]"]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Default Section behaviour
@@ -25,6 +25,9 @@ With no orders, Sections behave very simply, so that players are encouraged to g
 | ID | Name | Value | Status |
 |---|---|---|---|
 | P-DAI-01 | Nearby cover distance (DAI-001) | 25 m (Spike 2 placeholder) | proposed |
+| P-DAI-02 | Protect distance: how far in front of the protected Section an uncontrolled officer stands (DAI-005, DEC-102) | 6 m (Spike 2 placeholder) | proposed |
+| P-DAI-03 | Time between an uncontrolled officer's shots (DAI-005, DEC-102) | 2 s (Spike 2 placeholder) | proposed |
+| P-DAI-04 | Hit chance of an uncontrolled officer's shot, rolled on the battle's seeded random source (DAI-005, DEC-102) | 0.5 (Spike 2 placeholder) | proposed |
 
 ## Open questions
 - Q-DAI-01 (answered → DAI-006): Nearest in range, preferring attackers.
