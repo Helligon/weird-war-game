@@ -2,7 +2,7 @@ namespace WeirdWar.Spike2.Battle.Core
 {
     /// <summary>
     /// Hands the player's Officer to the AI, or hands it back (CMD-004, DAI-005). It is a battle-control command, not an Officer
-    /// ability, so it is not an <see cref="OfficerCommand"/> (PCH-008 allows the player only move, aim and fire). The state it changes
+    /// ability, so it is not an <see cref="OfficerCommand"/> (PCH-009 lists the third-person actions: move, aim and fire; PCH-008 allows no active abilities). The state it changes
     /// lives in the core and the command is logged with its step, so <see cref="BattleState.Replay"/> reproduces a battle in which
     /// the Officer was AI-controlled for some steps (TEC-008). Plain data, no Unity types (DLV-013).
     /// </summary>

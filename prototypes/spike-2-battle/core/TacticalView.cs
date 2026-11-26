@@ -59,6 +59,9 @@ namespace WeirdWar.Spike2.Battle.Core
         /// <summary>Metres from a Section's centre within which a click picks that Section (a stand-in sized to the drawn Unit grid).</summary>
         public const double PickRadius = 5.0;
 
+        /// <summary>The index of the Officer the player controls (stand-in: one Officer in the spike).</summary>
+        public const int ControlledOfficer = 0;
+
         private readonly BattleState _state;
         private readonly List<Waypoint> _pending = new List<Waypoint>();
         private SectionId? _selected;
@@ -115,12 +118,11 @@ namespace WeirdWar.Spike2.Battle.Core
         private void SyncOfficer()
         {
             var wantAi = OfficerUnderAi;
-            for (var i = 0; i < _state.Officers.Count; i++)
-            {
-                var o = _state.Officers[i];
-                if (o.Side != Side.Player || o.IsDestroyed || o.UnderAi == wantAi) continue;
-                _state.ApplyCommand(new OfficerControlCommand(i, wantAi));
-            }
+            // Only the Officer the player controls is handed over. Spike stand-in: that is Officer 0 (PCH-003 is not built yet).
+            if (_state.Officers.Count == 0) return;
+            var o = _state.Officers[ControlledOfficer];
+            if (o.Side != Side.Player || o.IsDestroyed || o.UnderAi == wantAi) return;
+            _state.ApplyCommand(new OfficerControlCommand(ControlledOfficer, wantAi));
         }
 
         /// <summary>

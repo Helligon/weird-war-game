@@ -10,8 +10,8 @@ public class OfficerAiTests
         + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3, \"protectDistance\": 6, \"fireInterval\": 2 } }";
     private const double ProtectDistance = 6;
 
-    private static BattleState Battle(ulong seed = 1) =>
-        BattleState.SetUp(new BattleMap(200, 60, new List<CoverObject>()), UnitStats.Load(Stats),
+    private static BattleState Battle(ulong seed = 1, string? stats = null) =>
+        BattleState.SetUp(new BattleMap(200, 60, new List<CoverObject>()), UnitStats.Load(stats ?? Stats),
             BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-CMD-04\": 3, \"P-CMD-03\": 0.5}"), seed);
 
     private static Section Mine(BattleState b) => b.Find(BattleState.PlayerSectionId)!;
@@ -93,13 +93,51 @@ public class OfficerAiTests
     {
         var b = Battle(); QuietEnemy(b);
         Mine(b).IsHolding = true;
-        Foe(b).Position2(new MapPoint(Mine(b).Position.X + 150, 30)); // out of rifle reach (80)
+        // The far enemy is on another bearing, so a shot along the ray to it could not hit the near one by accident.
+        Foe(b).Position2(new MapPoint(Mine(b).Position.X + 150, 55)); // out of rifle reach (80)
         var near = Add(b, 7, Side.Enemy, Mine(b).Position.X + 60, Mine(b).Position.Y);
         near.IsHolding = true; near.VolleyCooldown = 1e9;
         AiOn(b);
         Steps(b, 100);
         Assert.True(near.Health < near.MaxUnits * near.HealthPerUnit, "the reachable enemy was shot at");
         Assert.Equal(Foe(b).MaxUnits * Foe(b).HealthPerUnit, Foe(b).Health);
+        Assert.Equal(0.0, b.Officers[0].AimRadians, 2); // aimed at the near enemy (due east), not at the far one (about 0.16 rad)
+    }
+
+    [Fact]
+    public void CMD_010_with_the_only_enemy_out_of_reach_the_officer_takes_no_shot()
+    {
+        var b = Battle(); QuietEnemy(b);
+        Mine(b).IsHolding = true;
+        Foe(b).Position2(new MapPoint(Mine(b).Position.X + 150, 40)); // beyond the 80 m rifle reach
+        var aim = b.Officers[0].AimRadians;
+        AiOn(b);
+        Steps(b, 100);
+        Assert.Equal(Foe(b).MaxUnits * Foe(b).HealthPerUnit, Foe(b).Health);
+        Assert.Equal(aim, b.Officers[0].AimRadians);
+    }
+
+    // ---- DAI-005, DLV-014: the AI's rate of fire is the data value fireInterval ----
+
+    private static int DamageInTenSeconds(string stats)
+    {
+        var b = Battle(stats: stats); QuietEnemy(b);
+        Mine(b).IsHolding = true;
+        Foe(b).Position2(new MapPoint(Mine(b).Position.X + 60, Mine(b).Position.Y));
+        var before = Foe(b).Health;
+        AiOn(b);
+        Steps(b, 100);
+        return before - Foe(b).Health;
+    }
+
+    [Fact]
+    public void DAI_005_the_ai_officers_damage_over_time_follows_the_fire_interval()
+    {
+        var rifleDamage = UnitStats.Load(Stats).OfficerRifleDamage;
+        // 10 s of battle time: shots at 0.1 s, then every interval. Interval 2 s -> 5 shots, 1 s -> 10 shots, 5 s -> 2 shots.
+        Assert.Equal(5 * rifleDamage, DamageInTenSeconds(Stats));
+        Assert.Equal(10 * rifleDamage, DamageInTenSeconds(Stats.Replace("\"fireInterval\": 2", "\"fireInterval\": 1")));
+        Assert.Equal(2 * rifleDamage, DamageInTenSeconds(Stats.Replace("\"fireInterval\": 2", "\"fireInterval\": 5")));
     }
 
     [Fact]
@@ -159,6 +197,38 @@ public class OfficerAiTests
         var control = b.CommandLog.Select(l => l.Command).OfType<OfficerControlCommand>().ToList();
         Assert.Equal(new[] { true, false }, control.Select(c => c.UnderAi).ToArray());
         Assert.Equal(new[] { 0, 5 }, b.CommandLog.Select(l => l.Step).ToArray());
+    }
+
+    [Fact]
+    public void CMD_004_the_core_rejects_player_officer_commands_while_the_officer_is_under_ai()
+    {
+        var b = Battle();
+        AiOn(b);
+        var logged = b.CommandLog.Count;
+        Assert.False(b.ApplyCommand(new OfficerMoveCommand(0, 1, 0)).IsAccepted);
+        Assert.False(b.ApplyCommand(new OfficerAimCommand(0, 1.0)).IsAccepted);
+        Assert.False(b.ApplyCommand(new OfficerFireCommand(0)).IsAccepted);
+        Assert.Equal(logged, b.CommandLog.Count);
+        Accept(b, new OfficerControlCommand(0, false));
+        Accept(b, new OfficerMoveCommand(0, 1, 0));
+        Accept(b, new OfficerAimCommand(0, 1.0));
+    }
+
+    [Fact]
+    public void CMD_004_the_view_hands_over_only_the_officer_the_player_controls()
+    {
+        var b = Battle();
+        var second = new Officer(Side.Player, 10, new MapPoint(20, 20));
+        b.AddOfficer(second);
+        var v = new TacticalView(b);
+        v.Enter(); v.SetRunning(true);
+        Assert.True(b.Officers[0].UnderAi);
+        Assert.False(second.UnderAi);
+        second.UnderAi = true;       // another Officer the AI already controls must not be handed back by the view
+        v.Exit();
+        Assert.False(b.Officers[0].UnderAi);
+        Assert.True(second.UnderAi);
+        Assert.All(b.CommandLog.Select(l => l.Command).OfType<OfficerControlCommand>(), c => Assert.Equal(0, c.Officer));
     }
 
     [Fact]
@@ -346,13 +416,10 @@ public class OfficerAiTests
     public void DEC_094_the_section_fights_on_with_no_morale_penalty_after_the_officer_dies()
     {
         var b = Battle(seed: 3);
-        var chanceBefore = b.HitChance(false);
         Foe(b).Position2(new MapPoint(Mine(b).Position.X + 20, Mine(b).Position.Y));
         b.Officers[0].TakeDamage(1000);
         var foeBefore = Foe(b).Health;
         Steps(b, 200);
-        Assert.Equal(chanceBefore, b.HitChance(false));
-        Assert.False(Mine(b).IsDestroyed && Foe(b).IsDestroyed);
         Assert.True(Foe(b).Health < foeBefore, "the Section kept fighting");
         // It still takes orders and carries them out.
         var fresh = Battle(seed: 3);

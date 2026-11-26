@@ -287,6 +287,8 @@ namespace WeirdWar.Spike2.Battle.Core
             if (oc.Officer < 0 || oc.Officer >= _officers.Count) return CommandResult.Rejected("Officer " + oc.Officer + " does not exist.");
             var officer = _officers[oc.Officer];
             if (officer.IsDestroyed) return CommandResult.Rejected("Officer " + oc.Officer + " is destroyed and cannot be commanded.");
+            // CMD-004, TEC-008: the core, not only the view, refuses player input for an Officer the AI controls.
+            if (officer.UnderAi) return CommandResult.Rejected("Officer " + oc.Officer + " is under AI control (CMD-004).");
             switch (oc)
             {
                 case OfficerAimCommand a:
