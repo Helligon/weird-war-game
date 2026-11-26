@@ -100,6 +100,8 @@ public class CoreArchitectureTests
     public void TEC_013_core_types_all_live_in_the_core_namespace()
     {
         var outside = Core.GetTypes()
+            // Skip compiler-embedded helper types (nullable attributes on netstandard2.1).
+            .Where(t => !t.GetCustomAttributes(false).Any(a => a.GetType().FullName == "Microsoft.CodeAnalysis.EmbeddedAttribute"))
             .Where(t => !t.Name.StartsWith("<") && t.Namespace != "WeirdWar.Core"
                         && !(t.Namespace ?? "").StartsWith("WeirdWar.Core."))
             .Select(t => t.FullName)
