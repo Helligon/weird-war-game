@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using WeirdWar.Core.Commands;
-using WeirdWar.Core.Serialization;
 
 namespace WeirdWar.Core.Simulation
 {
@@ -41,8 +40,17 @@ namespace WeirdWar.Core.Simulation
 
         public ulong Seed { get; }
 
-        /// <summary>The one random source. All random draws in the simulation MUST come from here (TEC-012).</summary>
-        public SeededRandom Random { get; }
+        /// <summary>
+        /// The one random source. All random draws in the simulation MUST come from here (TEC-012).
+        /// Internal, so only commands can draw (DLV-013).
+        /// </summary>
+        internal SeededRandom Random { get; }
+
+        /// <summary>
+        /// Running SHA-256 over the accepted commands: each entry folds into the previous digest, so
+        /// hashing the state costs the same however long the log is (TEC-008). Starts as 32 zero bytes.
+        /// </summary>
+        internal byte[] LogDigest { get; private set; } = new byte[32];
 
         public CommandLog Log { get; } = new CommandLog();
 
@@ -58,8 +66,10 @@ namespace WeirdWar.Core.Simulation
             if (command == null) throw new ArgumentNullException(nameof(command));
             var reason = command.Validate(this);
             if (reason != null) return CommandResult.Reject(reason);
+            var canonical = Encoding.UTF8.GetBytes(CommandJson.Canonical(command));
             command.Apply(this);
             Log.Append(command);
+            LogDigest = Sha256(LogDigest, canonical);
             return CommandResult.Accept();
         }
 
@@ -83,8 +93,8 @@ namespace WeirdWar.Core.Simulation
         }
 
         /// <summary>
-        /// Canonical text of the state: fixed field order, invariant formatting, commands as canonical JSON.
-        /// No dictionary order, object identity or per-process hash codes.
+        /// Canonical text of the state content: fixed field order, invariant formatting, and the chained log
+        /// digest standing in for the log. No dictionary order, object identity or per-process hash codes.
         /// </summary>
         public string CanonicalText()
         {
@@ -94,25 +104,32 @@ namespace WeirdWar.Core.Simulation
             sb.Append("random=").Append(Random.Position.ToString(CultureInfo.InvariantCulture)).Append('\n');
             sb.Append("tally=").Append(Tally.ToString(CultureInfo.InvariantCulture)).Append('\n');
             sb.Append("log=").Append(Log.Count.ToString(CultureInfo.InvariantCulture)).Append('\n');
-            foreach (var e in Log.Entries)
-            {
-                var fields = e.Command.ToJson();
-                fields["type"] = e.Command.Type;
-                sb.Append(e.Step.ToString(CultureInfo.InvariantCulture)).Append(':').Append(Json.Write(fields)).Append('\n');
-            }
+            sb.Append("digest=").Append(Hex(LogDigest)).Append('\n');
             return sb.ToString();
         }
 
         /// <summary>SHA-256 of <see cref="CanonicalText"/> (UTF-8), as lowercase hex.</summary>
         public string ComputeHash()
         {
+            return Hex(Sha256(Encoding.UTF8.GetBytes(CanonicalText())));
+        }
+
+        private static byte[] Sha256(byte[] first, byte[]? second = null)
+        {
             using (var sha = SHA256.Create())
             {
-                var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(CanonicalText()));
-                var sb = new StringBuilder(bytes.Length * 2);
-                foreach (var b in bytes) sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
-                return sb.ToString();
+                var data = new byte[first.Length + (second?.Length ?? 0)];
+                Buffer.BlockCopy(first, 0, data, 0, first.Length);
+                if (second != null) Buffer.BlockCopy(second, 0, data, first.Length, second.Length);
+                return sha.ComputeHash(data);
             }
+        }
+
+        private static string Hex(byte[] bytes)
+        {
+            var sb = new StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes) sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
+            return sb.ToString();
         }
     }
 }

@@ -17,7 +17,11 @@ namespace WeirdWar.Core.Commands
         /// <summary>Returns null if the command is legal in this state, otherwise the reason it is not. MUST NOT change the state.</summary>
         string? Validate(GameState state);
 
-        /// <summary>Changes the state. Only called after <see cref="Validate"/> returned null.</summary>
+        /// <summary>
+        /// Changes the state. Only called after <see cref="Validate"/> returned null. MUST NOT throw once
+        /// Validate has passed: a throw part-way would leave the state half-changed and the command unlogged.
+        /// Do every check in Validate.
+        /// </summary>
         void Apply(GameState state);
 
         /// <summary>The command's fields as JSON values (see Json). The "type" key is added by the serialiser.</summary>

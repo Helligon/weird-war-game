@@ -68,4 +68,107 @@ public class JsonTests
         Assert.Throws<JsonException>(() => Json.Write(double.NaN));
         Assert.Throws<JsonException>(() => Json.Write(new object()));
     }
+
+    [Fact]
+    public void TEC_008_json_float_text_is_pinned_and_culture_independent()
+    {
+        var odd = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture.Clone();
+        odd.NumberFormat.NegativeSign = "\u2212";
+        odd.NumberFormat.NumberDecimalSeparator = ",";
+        odd.NumberFormat.NumberGroupSeparator = " ";
+        var original = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = odd;
+
+            Assert.Equal("0.30000000000000004", Json.Write(0.1 + 0.2));
+            Assert.Equal("-0.0", Json.Write(-0.0));
+            Assert.Equal("1E+21", Json.Write(1e21));
+            Assert.Equal("5E-324", Json.Write(double.Epsilon));
+            Assert.Equal("1.7976931348623157E+308", Json.Write(double.MaxValue));
+            Assert.Equal("-1.5", Json.Write(-1.5));
+            Assert.Equal("2.0", Json.Write(2.0));
+            Assert.Equal("-1234567", Json.Write(-1234567L));
+            Assert.Equal("-12", Json.Write(-12));
+            Assert.Equal("18446744073709551615", Json.Write(ulong.MaxValue));
+            Assert.Equal(-1234567L, Json.Parse("-1234567"));
+            Assert.Equal(-1.5, Json.Parse("-1.5"));
+        }
+        finally { System.Globalization.CultureInfo.CurrentCulture = original; }
+    }
+
+    [Fact]
+    public void TEC_008_json_floats_round_trip_exactly()
+    {
+        foreach (var d in new[] { 0.1 + 0.2, 1e21, double.Epsilon, double.MaxValue, -1.5, 1.0 / 3.0 })
+            Assert.Equal(d, Json.Parse(Json.Write(d)));
+    }
+
+    [Theory]
+    [InlineData("9223372036854775808")]
+    [InlineData("-9223372036854775809")]
+    [InlineData("123456789012345678901234567890")]
+    public void TEC_008_json_integers_beyond_long_are_an_error(string text)
+    {
+        var ex = Assert.Throws<JsonException>(() => Json.Parse(text));
+        Assert.Contains("Integer out of range", ex.Message);
+    }
+
+    [Fact]
+    public void TEC_008_json_long_extremes_read_exactly()
+    {
+        Assert.Equal(long.MinValue, Json.Parse("-9223372036854775808"));
+        Assert.Equal(long.MaxValue, Json.Parse("9223372036854775807"));
+    }
+
+    [Theory]
+    [InlineData("1e400")]
+    [InlineData("-1e400")]
+    public void TEC_008_json_rejects_non_finite_numbers_on_read(string text)
+    {
+        Assert.Throws<JsonException>(() => Json.Parse(text));
+    }
+
+    [Fact]
+    public void TEC_008_json_nesting_limit_is_a_clear_error_not_a_crash()
+    {
+        string Nest(int n) => new string('[', n) + new string(']', n);
+
+        Assert.NotNull(Json.Parse(Nest(Json.MaxDepth)));
+        var ex = Assert.Throws<JsonException>(() => Json.Parse(Nest(Json.MaxDepth + 1)));
+        Assert.Contains("Nesting deeper than", ex.Message);
+        Assert.Throws<JsonException>(() => Json.Parse(new string('[', 100000)));
+    }
+
+    [Fact]
+    public void TEC_008_json_accepts_a_utf8_bom()
+    {
+        Assert.Equal(1L, Json.Parse("\uFEFF1"));
+        Assert.Equal(1L, ((List<object?>)Json.Parse("\uFEFF [1]")!)[0]);
+    }
+
+    [Fact]
+    public void TEC_008_json_errors_report_line_and_column()
+    {
+        var ex = Assert.Throws<JsonException>(() => Json.Parse("{\n  \"a\": 1,\n  \"b\": ?\n}"));
+
+        Assert.Contains("line 3, column 8", ex.Message);
+        Assert.Contains("line 1, column 1", Assert.Throws<JsonException>(() => Json.Parse("x")).Message);
+    }
+
+    [Fact]
+    public void TEC_008_json_writes_ulong_and_typed_lists()
+    {
+        Assert.Equal("[1,2,3]", Json.Write(new List<long> { 1, 2, 3 }));
+        Assert.Equal("[1,2]", Json.Write(new[] { 1, 2 }));
+        Assert.Equal("[\"a\",null]", Json.Write(new List<string?> { "a", null }));
+        Assert.Equal("{\"x\":[true]}", Json.Write(new Dictionary<string, object?> { ["x"] = new List<bool> { true } }));
+        Assert.Equal("18446744073709551615", Json.Write(ulong.MaxValue));
+    }
+
+    [Fact]
+    public void TEC_008_json_writer_rejects_lists_holding_unsupported_values()
+    {
+        Assert.Throws<JsonException>(() => Json.Write(new List<object> { new object() }));
+    }
 }

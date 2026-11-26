@@ -12,13 +12,18 @@ namespace WeirdWar.Core.Serialization
     }
 
     /// <summary>
-    /// Small JSON reader and writer (no external package, TEC-016). Values are plain objects:
+    /// Small JSON reader and writer (no external package, TEC-016). The reader returns plain objects:
     /// null, bool, long, double, string, List&lt;object?&gt; and Dictionary&lt;string, object?&gt;.
+    /// The writer also takes int, ulong and any IEnumerable of supported values (e.g. List&lt;long&gt;).
+    /// Whole numbers beyond long are an error on read; write 64-bit seeds as decimal strings.
     /// The writer is canonical: object keys are sorted ordinally, no whitespace, so output is
     /// identical on every machine (TEC-008).
     /// </summary>
     public static class Json
     {
+        /// <summary>Maximum nesting of arrays and objects the reader accepts.</summary>
+        public const int MaxDepth = 64;
+
         public static string Write(object? value)
         {
             var sb = new StringBuilder();
@@ -30,6 +35,7 @@ namespace WeirdWar.Core.Serialization
         {
             if (text == null) throw new ArgumentNullException(nameof(text));
             var p = new Parser(text);
+            p.SkipBom();
             p.SkipWs();
             var v = p.ReadValue();
             p.SkipWs();
@@ -45,12 +51,13 @@ namespace WeirdWar.Core.Serialization
                 case bool b: sb.Append(b ? "true" : "false"); break;
                 case int i: sb.Append(i.ToString(CultureInfo.InvariantCulture)); break;
                 case long l: sb.Append(l.ToString(CultureInfo.InvariantCulture)); break;
+                case ulong ul: sb.Append(ul.ToString(CultureInfo.InvariantCulture)); break;
                 case double d:
                     if (double.IsNaN(d) || double.IsInfinity(d)) throw new JsonException("NaN and Infinity cannot be written");
                     var s = d.ToString("R", CultureInfo.InvariantCulture);
                     sb.Append(s);
                     // Keep doubles distinguishable from integers so they read back as doubles.
-                    if (s.IndexOf('.') < 0 && s.IndexOf('E') < 0 && s.IndexOf('e') < 0) sb.Append(".0");
+                    if (s.IndexOfAny(new[] { '.', 'E', 'e' }) < 0) sb.Append(".0");
                     break;
                 case string str: WriteString(sb, str); break;
                 case IReadOnlyDictionary<string, object?> dict:
@@ -66,7 +73,7 @@ namespace WeirdWar.Core.Serialization
                     }
                     sb.Append('}');
                     break;
-                case IEnumerable<object?> list:
+                case System.Collections.IEnumerable list:
                     sb.Append('[');
                     bool first = true;
                     foreach (var item in list)
@@ -108,10 +115,24 @@ namespace WeirdWar.Core.Serialization
         {
             private readonly string _t;
             private int _p;
+            private int _depth;
             public Parser(string t) { _t = t; }
             public bool AtEnd => _p >= _t.Length;
 
-            public JsonException Error(string msg) => new JsonException(msg + " at position " + _p);
+            public JsonException Error(string msg)
+            {
+                int line = 1, col = 1;
+                for (int i = 0; i < _p && i < _t.Length; i++)
+                {
+                    if (_t[i] == '\n') { line++; col = 1; } else col++;
+                }
+                return new JsonException(msg + " at line " + line + ", column " + col);
+            }
+
+            public void SkipBom()
+            {
+                if (_t.Length > 0 && _t[0] == '\uFEFF') _p = 1;
+            }
 
             public void SkipWs()
             {
@@ -122,8 +143,13 @@ namespace WeirdWar.Core.Serialization
             {
                 if (AtEnd) throw Error("Unexpected end of input");
                 char c = _t[_p];
-                if (c == '{') return ReadObject();
-                if (c == '[') return ReadArray();
+                if (c == '{' || c == '[')
+                {
+                    if (++_depth > MaxDepth) throw Error("Nesting deeper than " + MaxDepth);
+                    object result = c == '{' ? (object)ReadObject() : ReadArray();
+                    _depth--;
+                    return result;
+                }
                 if (c == '"') return ReadString();
                 if (c == '-' || (c >= '0' && c <= '9')) return ReadNumber();
                 if (Match("true")) return true;
@@ -244,8 +270,19 @@ namespace WeirdWar.Core.Serialization
                     if (_p == x) throw Error("Bad number");
                 }
                 var text = _t.Substring(start, _p - start);
-                if (!isFloat && long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var l)) return l;
-                return double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture);
+                if (!isFloat)
+                {
+                    if (long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var l)) return l;
+                    _p = start;
+                    throw Error("Integer out of range");
+                }
+                var d = double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture);
+                if (double.IsInfinity(d) || double.IsNaN(d))
+                {
+                    _p = start;
+                    throw Error("Number out of range");
+                }
+                return d;
             }
         }
     }

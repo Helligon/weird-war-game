@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using WeirdWar.Core.Serialization;
 using WeirdWar.Core.Simulation;
 
@@ -11,6 +12,9 @@ namespace WeirdWar.Core.Commands
     /// </summary>
     public sealed class CommandRegistry
     {
+        /// <summary>Format tag written into every log. Bump it when the log layout changes.</summary>
+        public const string LogFormat = "weirdwar.log.v1";
+
         private readonly Dictionary<string, Func<IReadOnlyDictionary<string, object?>, ICommand>> _readers =
             new Dictionary<string, Func<IReadOnlyDictionary<string, object?>, ICommand>>(StringComparer.Ordinal);
 
@@ -28,38 +32,47 @@ namespace WeirdWar.Core.Commands
             _readers[type] = reader;
         }
 
-        public string WriteCommand(ICommand command) => Json.Write(ToValue(command));
+        public bool IsRegistered(string type) => _readers.ContainsKey(type);
+
+        public string WriteCommand(ICommand command) => CommandJson.Canonical(command);
 
         public ICommand ReadCommand(string json) => FromValue(Json.Parse(json));
 
-        public string WriteLog(CommandLog log)
+        /// <summary>
+        /// Writes a run as {"format","seed","entries"}. The seed is a decimal string, because a 64-bit
+        /// number does not survive every JSON reader.
+        /// </summary>
+        public string WriteLog(ulong seed, CommandLog log)
         {
-            var list = new List<object?>();
+            var entries = new List<object?>();
             foreach (var e in log.Entries)
-                list.Add(new Dictionary<string, object?> { ["step"] = (long)e.Step, ["command"] = ToValue(e.Command) });
-            return Json.Write(list);
+                entries.Add(new Dictionary<string, object?> { ["step"] = (long)e.Step, ["command"] = CommandJson.ToValue(e.Command) });
+            return Json.Write(new Dictionary<string, object?>
+            {
+                ["format"] = LogFormat,
+                ["seed"] = seed.ToString(CultureInfo.InvariantCulture),
+                ["entries"] = entries,
+            });
         }
 
-        public CommandLog ReadLog(string json)
+        public LoggedRun ReadLog(string json)
         {
-            if (!(Json.Parse(json) is List<object?> list)) throw new JsonException("A command log must be a JSON array");
+            if (!(Json.Parse(json) is Dictionary<string, object?> d)) throw new JsonException("A command log must be a JSON object");
+            if (!(Require(d, "format") is string format) || format != LogFormat)
+                throw new JsonException("Unsupported log format (expected '" + LogFormat + "')");
+            if (!(Require(d, "seed") is string seedText)
+                || !ulong.TryParse(seedText, NumberStyles.None, CultureInfo.InvariantCulture, out var seed))
+                throw new JsonException("Field 'seed' must be a decimal string");
+            if (!(Require(d, "entries") is List<object?> list)) throw new JsonException("Field 'entries' must be an array");
             var entries = new List<LogEntry>();
             foreach (var item in list)
             {
-                if (!(item is Dictionary<string, object?> d)) throw new JsonException("A log entry must be a JSON object");
-                var step = RequireLong(d, "step");
+                if (!(item is Dictionary<string, object?> e)) throw new JsonException("A log entry must be a JSON object");
+                var step = RequireLong(e, "step");
                 if (step < 0 || step > int.MaxValue) throw new JsonException("Field 'step' out of range");
-                entries.Add(new LogEntry((int)step, FromValue(Require(d, "command"))));
+                entries.Add(new LogEntry((int)step, FromValue(Require(e, "command"))));
             }
-            return CommandLog.FromEntries(entries);
-        }
-
-        private static Dictionary<string, object?> ToValue(ICommand command)
-        {
-            var d = command.ToJson();
-            if (d.ContainsKey("type")) throw new InvalidOperationException("'type' is reserved by the serialiser");
-            d["type"] = command.Type;
-            return d;
+            return new LoggedRun(seed, CommandLog.FromEntries(entries));
         }
 
         private ICommand FromValue(object? value)
@@ -82,5 +95,18 @@ namespace WeirdWar.Core.Commands
             if (Require(json, key) is long l) return l;
             throw new JsonException("Field '" + key + "' must be a whole number");
         }
+    }
+
+    /// <summary>A seed and the log of accepted commands that, replayed, rebuild a state.</summary>
+    public sealed class LoggedRun
+    {
+        public LoggedRun(ulong seed, CommandLog log)
+        {
+            Seed = seed;
+            Log = log;
+        }
+
+        public ulong Seed { get; }
+        public CommandLog Log { get; }
     }
 }
