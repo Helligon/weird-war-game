@@ -15,6 +15,18 @@ The file is read with the core's own JSON reader (`WeirdWar.Core.Serialization.J
     "mountain": [[1, 1], [2, 1]],
     "sea": [[0, 0]],
     "river": [[4, 0], [4, 1], [4, 2], [4, 3]]
+  },
+  "factions": ["east", "west"],
+  "locations": [
+    {"id": "hq-east", "type": "hq", "at": [5, 2], "faction": "east"},
+    {"id": "hq-west", "type": "hq", "at": [0, 2], "faction": "west"},
+    {"id": "supply-1", "type": "supply", "at": [2, 0]},
+    {"id": "command-1", "type": "command", "at": [3, 3]},
+    {"id": "major-1", "type": "major", "at": [3, 2]}
+  ],
+  "setup": {
+    "east": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "artillery"]}},
+    "west": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "recon"]}}
   }
 }
 ```
@@ -27,10 +39,13 @@ The file is read with the core's own JSON reader (`WeirdWar.Core.Serialization.J
 | `width` | whole number | yes | Hexes across (columns), 1 to 1000. |
 | `height` | whole number | yes | Hexes down (rows), 1 to 1000. |
 | `terrain` | object | no | Terrain type name to a list of `[column, row]` hexes. |
+| `factions` | list of text | no | Exactly two Faction ids, or leave out for a terrain-only map (no game can start on it). |
+| `locations` | list of objects | no | HQs and STs, see below. |
+| `setup` | object | with `factions` | Starting reserve and Brigade per Faction, see below. |
 
-Any other top-level key is an error (it is never silently ignored). The next Story (CC1-68) adds
-locations and the starting setup as new keys. The format stays on `version: 1` and is extended in place
-until a map is handed to the design owner to edit; after that, incompatible changes bump the version.
+Any other top-level key is an error (it is never silently ignored). The format stays on `version: 1` and
+is extended in place until a map is handed to the design owner to edit; after that, incompatible changes
+bump the version. Ids (Factions, locations, Section types) use letters, digits, `-` and `_` only.
 
 The JSON is strict: no comments, no trailing commas, each key appears once (so a terrain type cannot be
 split over two lists), and sizes and coordinates are whole numbers (`1.0` is rejected).
@@ -54,6 +69,28 @@ Every hex not listed is `open`.
 `open` may also be listed explicitly. Terrain costs for other types (SUP-011, TRN-025, TRN-026) are not
 decided and are not part of this format.
 
+## Locations (MAP-003, MAP-015, MAP-022)
+
+Each entry in `locations` has `id` (unique), `type`, `at` (`[column, row]`, on the grid) and, for an HQ only,
+`faction`. Any other key is an error.
+
+| Type | Meaning |
+|---|---|
+| `hq` | A Faction's HQ. Needs `faction`. Each Faction has exactly one HQ: zero or two is an error. |
+| `supply` | Supply ST. There is no separate "supply depot" type. |
+| `command` | Command ST. |
+| `major` | Major ST. |
+
+Any other type name is an error. An ST must not have a `faction`: every ST starts neutral and nothing
+else is owned at the start but the HQs (MAP-021). FOBs are built in play and are never in a map file.
+
+## Starting setup (MAP-021)
+
+`setup` has one entry per Faction, with `reserve` (starting SP reserve) and `brigade` (`sp` and
+`sections`, a list of 1 to 5 Section type ids, BRG-021). The Sections are named, not rolled. The reserve and the Brigade's
+SP are placeholder values with no decided number or parameter ID yet. Section type ids are checked against
+the Section type data (`Data/section-types.json`) when a game starts, not at import. The list must then have exactly P-BRG-05 entries (3), and the Brigade starts on its Faction's HQ hex.
+
 ## Coordinates
 
 Hexes are `[column, row]`, both counted from 0, column 0 and row 0 at the top left. The layout is
@@ -76,7 +113,9 @@ touches `[6,5]` `[6,6]` `[5,6]` `[4,6]` `[4,5]` `[5,4]`.
 Import throws `MapFormatException` with a message naming the problem, and returns no map. Cases:
 invalid JSON (with line and column), top level not an object, unknown key, missing or non-numeric
 `version`/`width`/`height`, unsupported version, size out of range, unknown terrain type, a bad hex
-entry, a hex outside the grid, a hex listed twice.
+entry, a hex outside the grid, a hex listed twice, a Faction count other than two, a Faction without
+exactly one HQ, an unknown location type, a duplicate location id, a location outside the grid, an ST with
+a faction, and a missing or unknown entry in `setup`.
 
 ## Determinism
 

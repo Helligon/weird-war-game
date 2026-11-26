@@ -4,4 +4,5 @@
 # or "# placeholder (proposed)". Remove the marker only once the parameter is decided.
 
 P-SUP-01 = 0.75   # Well Supplied threshold, fraction of capacity (decided)
+P-BRG-05 = 3   # Starting Brigade size, Sections (decided)
 P-RES-01 = 5      # placeholder (open): base SP income per turn

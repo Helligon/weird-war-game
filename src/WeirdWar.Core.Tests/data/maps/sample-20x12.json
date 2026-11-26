@@ -6,5 +6,18 @@
     "mountain": [[3, 9], [4, 1], [4, 2], [4, 9], [5, 1], [14, 8], [14, 9], [15, 8]],
     "sea": [[0, 0], [0, 1], [1, 0], [18, 11], [19, 10], [19, 11]],
     "river": [[9, 0], [9, 1], [9, 2], [9, 3], [9, 4], [9, 5], [9, 6], [9, 7], [9, 8], [9, 9]]
+  },
+  "factions": ["east", "west"],
+  "locations": [
+    {"id": "hq-east", "type": "hq", "at": [17, 5], "faction": "east"},
+    {"id": "hq-west", "type": "hq", "at": [2, 5], "faction": "west"},
+    {"id": "supply-1", "type": "supply", "at": [5, 3]},
+    {"id": "supply-2", "type": "supply", "at": [13, 3]},
+    {"id": "command-1", "type": "command", "at": [9, 10]},
+    {"id": "major-1", "type": "major", "at": [10, 6]}
+  ],
+  "setup": {
+    "east": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "artillery"]}},
+    "west": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "recon"]}}
   }
 }

@@ -190,15 +190,15 @@ public class MapTests
         Assert.Contains("line 3", e.Message);
     }
 
-    // ---- MED-006: versioned, unknown keys are errors (room for CC1-68)
+    // ---- MED-006: versioned, unknown keys are errors
 
     [Fact]
     public void MED_006_unknown_top_level_key_is_a_clear_error()
     {
         var e = Assert.Throws<MapFormatException>(() =>
-            MapImporter.Parse("{\"version\":1,\"width\":2,\"height\":2,\"locations\":[]}"));
+            MapImporter.Parse("{\"version\":1,\"width\":2,\"height\":2,\"fobs\":[]}"));
 
-        Assert.Contains("Unknown key \"locations\"", e.Message);
+        Assert.Contains("Unknown key \"fobs\"", e.Message);
     }
 
     [Fact]
@@ -296,7 +296,7 @@ public class MapTests
     [Fact]
     public void TEC_008_canonical_text_refuses_an_unknown_terrain_value()
     {
-        var map = new HexMap(1, 1, new[] { (TerrainType)99 });
+        var map = new HexMap(1, 1, new[] { (TerrainType)99 }, new string[0], new Location[0], new FactionSetup[0]);
 
         Assert.Throws<InvalidOperationException>(() => map.CanonicalText());
     }
