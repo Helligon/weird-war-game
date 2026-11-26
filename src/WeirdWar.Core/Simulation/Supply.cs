@@ -36,8 +36,11 @@ namespace WeirdWar.Core.Simulation
         }
 
         /// <summary>Maximum SP: the sum of the Sections' capacity contributions (SUP-001, SUP-019, SUP-021, P-SUP-09).</summary>
-        public int CapacityOf(Brigade brigade)
-            => Check(brigade).Sections.Sum(s => _types.Get(s.TypeId).CapacityContribution);
+        public int CapacityOf(Brigade brigade) => CapacityOf(_types, brigade);
+
+        /// <summary>As <see cref="CapacityOf(Brigade)"/>, without needing the supply thresholds (used by resupply).</summary>
+        internal static int CapacityOf(SectionTypeTable types, Brigade brigade)
+            => Check(brigade).Sections.Sum(s => types.Get(s.TypeId).CapacityContribution);
 
         /// <summary>SP cost per hex of movement: the sum of the Sections' consumption (SUP-019, SUP-021, P-SUP-09).</summary>
         public int CostPerHexOf(Brigade brigade)

@@ -62,6 +62,7 @@ namespace WeirdWar.Core.Simulation
             var startingSize = parameters.GetInt("P-BRG-05");
             if (map.Factions.Count == 0) throw new MapFormatException("The map has no Factions, so a game cannot start on it");
             IncomeRules = new IncomeRules(parameters);
+            Parameters = parameters;
             Map = map;
             SectionTypes = sectionTypes;
             var factions = new List<FactionState>();
@@ -127,6 +128,9 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>How income is worked out (RES-002, RES-005), or null when there is no map. Fixed for a game; not hashed.</summary>
         public IncomeRules? IncomeRules { get; }
+
+        /// <summary>The parameter table the game was started with, or null when there is no map. Fixed for a game; not hashed.</summary>
+        internal ParameterTable? Parameters { get; }
 
         /// <summary>The Section types in use, or null when there is no map.</summary>
         public SectionTypeTable? SectionTypes { get; }
