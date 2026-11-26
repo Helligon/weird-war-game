@@ -20,13 +20,14 @@ namespace WeirdWar.Core.Simulation
     /// </summary>
     public sealed class SectionType
     {
-        internal SectionType(string id, int health, int sight, int capacityContribution, int consumptionPerHex)
+        internal SectionType(string id, int health, int sight, int capacityContribution, int consumptionPerHex, bool slow = false)
         {
             Id = id;
             Health = health;
             Sight = sight;
             CapacityContribution = capacityContribution;
             ConsumptionPerHex = consumptionPerHex;
+            Slow = slow;
         }
 
         public string Id { get; }
@@ -34,6 +35,9 @@ namespace WeirdWar.Core.Simulation
         public int Sight { get; }
         public int CapacityContribution { get; }
         public int ConsumptionPerHex { get; }
+
+        /// <summary>The Slow tag (TAG-010): a Section with it caps its Brigade's hexes per turn (SUP-024, P-SUP-10). Optional in the data, false when absent.</summary>
+        public bool Slow { get; }
     }
 
     /// <summary>
@@ -76,13 +80,16 @@ namespace WeirdWar.Core.Simulation
                 if (!MapIds.IsValid(kv.Key)) throw new SectionTypeFormatException("Section type id \"" + kv.Key + "\" may only use letters, digits, - and _");
                 var o = kv.Value as Dictionary<string, object?> ?? throw new SectionTypeFormatException("Section type \"" + kv.Key + "\" must be an object");
                 foreach (var key in o.Keys)
-                    if (key != "health" && key != "sight" && key != "capacityContribution" && key != "consumptionPerHex")
+                    if (key != "health" && key != "sight" && key != "capacityContribution" && key != "consumptionPerHex" && key != "slow")
                         throw new SectionTypeFormatException("Unknown key \"" + key + "\" in section type \"" + kv.Key + "\"");
                 var sight = Num(o, kv.Key, "sight");
                 if (sight < 1 || sight > 3) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": sight must be 1 to 3 (FOW-004, P-FOW-01)");
                 var health = Num(o, kv.Key, "health");
                 if (health < 1) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": health must be at least 1");
-                types[kv.Key] = new SectionType(kv.Key, health, sight, Num(o, kv.Key, "capacityContribution"), Num(o, kv.Key, "consumptionPerHex"));
+                var slow = false;
+                if (o.TryGetValue("slow", out var slowValue))
+                    slow = slowValue as bool? ?? throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": \"slow\" must be true or false (TAG-010)");
+                types[kv.Key] = new SectionType(kv.Key, health, sight, Num(o, kv.Key, "capacityContribution"), Num(o, kv.Key, "consumptionPerHex"), slow);
             }
             return new SectionTypeTable(types);
         }
@@ -114,7 +121,9 @@ namespace WeirdWar.Core.Simulation
                   .Append(" health=").Append(t.Health.ToString(CultureInfo.InvariantCulture))
                   .Append(" sight=").Append(t.Sight.ToString(CultureInfo.InvariantCulture))
                   .Append(" capacity=").Append(t.CapacityContribution.ToString(CultureInfo.InvariantCulture))
-                  .Append(" consumption=").Append(t.ConsumptionPerHex.ToString(CultureInfo.InvariantCulture)).Append('\n');
+                  .Append(" consumption=").Append(t.ConsumptionPerHex.ToString(CultureInfo.InvariantCulture))
+                  // Only written when set, so the digest of data without the Slow tag is unchanged.
+                  .Append(t.Slow ? " slow=1" : "").Append('\n');
             return sb.ToString();
         }
     }
