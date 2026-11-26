@@ -100,6 +100,9 @@ public class CoreArchitectureTests
     public void TEC_013_core_types_all_live_in_the_core_namespace()
     {
         var outside = Core.GetTypes()
+            // The compiler embeds its own nullable-annotation attribute types (marked EmbeddedAttribute)
+            // into netstandard2.1 assemblies. They are not our types.
+            .Where(t => !t.GetCustomAttributes(false).Any(a => a.GetType().Name == "EmbeddedAttribute"))
             .Where(t => !t.Name.StartsWith("<") && t.Namespace != "WeirdWar.Core"
                         && !(t.Namespace ?? "").StartsWith("WeirdWar.Core."))
             .Select(t => t.FullName)
