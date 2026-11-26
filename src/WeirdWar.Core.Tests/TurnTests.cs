@@ -160,12 +160,12 @@ public class TurnTests
     [Fact]
     public void TRN_002_only_the_core_framework_commands_exist_in_cc1()
     {
-        // No form-Brigade or play-Card command exists yet; the distribute (CC1-74) and move (CC1-72) Stories add theirs.
+        // No form-Brigade or play-Card command exists yet; the distribute Story (CC1-74) adds its own; the move command (CC1-72) is here.
         var names = typeof(ICommand).Assembly.GetTypes()
             .Where(t => typeof(ICommand).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
             .Select(t => t.Name).OrderBy(n => n).ToArray();
 
-        Assert.Equal(new[] { "AddToTallyCommand", "EndTurnCommand", "RollIntoTallyCommand" }, names);
+        Assert.Equal(new[] { "AddToTallyCommand", "EndTurnCommand", "MoveBrigadeCommand", "RollIntoTallyCommand" }, names);
     }
 
     [Fact]

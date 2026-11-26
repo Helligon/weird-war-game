@@ -63,6 +63,7 @@ namespace WeirdWar.Core.Simulation
             if (map.Factions.Count == 0) throw new MapFormatException("The map has no Factions, so a game cannot start on it");
             Map = map;
             SectionTypes = sectionTypes;
+            Parameters = parameters;
             var factions = new List<FactionState>();
             var brigades = new List<Brigade>();
             foreach (var setup in map.Setup)
@@ -123,6 +124,9 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>The map this game is played on, or null for a state made without one (tests of the core only).</summary>
         public HexMap? Map { get; }
+
+        /// <summary>The parameters the game was started with (DLV-014), or null when there is no map. Fixed for a game, so not hashed.</summary>
+        internal ParameterTable? Parameters { get; }
 
         /// <summary>The Section types in use, or null when there is no map.</summary>
         public SectionTypeTable? SectionTypes { get; }
@@ -232,7 +236,11 @@ namespace WeirdWar.Core.Simulation
                     sb.Append(b.Sections[i].TypeId).Append(':').Append(b.Sections[i].Health.ToString(CultureInfo.InvariantCulture));
                 }
                 var (bc, br) = b.Position.ToOffset();
-                sb.Append(" at=").Append(bc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(br.ToString(CultureInfo.InvariantCulture)).Append('\n');
+                sb.Append(" at=").Append(bc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(br.ToString(CultureInfo.InvariantCulture));
+                // Written only once the Brigade has moved, so a game with no moves hashes as before (SUP-024 Slow cap).
+                if (b.MovedHexes > 0)
+                    sb.Append(" moved=").Append(b.MovedTurn.ToString(CultureInfo.InvariantCulture)).Append(':').Append(b.MovedHexes.ToString(CultureInfo.InvariantCulture));
+                sb.Append('\n');
             }
             if (ActiveFaction != null)
                 sb.Append("turn=").Append(TurnNumber.ToString(CultureInfo.InvariantCulture)).Append(" active=").Append(ActiveFaction)
