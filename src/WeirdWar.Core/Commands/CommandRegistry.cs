@@ -23,6 +23,7 @@ namespace WeirdWar.Core.Commands
             var r = new CommandRegistry();
             r.Register(AddToTallyCommand.TypeName, AddToTallyCommand.FromJson);
             r.Register(RollIntoTallyCommand.TypeName, RollIntoTallyCommand.FromJson);
+            r.Register(EndTurnCommand.TypeName, EndTurnCommand.FromJson);
             return r;
         }
 
@@ -87,6 +88,21 @@ namespace WeirdWar.Core.Commands
         {
             if (!json.TryGetValue(key, out var v)) throw new JsonException("Missing field '" + key + "'");
             return v;
+        }
+
+        /// <summary>Adds the "faction" field (the issuer) unless it is empty. For use by command writers.</summary>
+        public static Dictionary<string, object?> WithIssuer(Dictionary<string, object?> json, string issuer)
+        {
+            if (issuer.Length > 0) json["faction"] = issuer;
+            return json;
+        }
+
+        /// <summary>Reads the "faction" field, or "" when absent. For use by command readers.</summary>
+        public static string OptionalIssuer(IReadOnlyDictionary<string, object?> json)
+        {
+            if (!json.TryGetValue("faction", out var v)) return "";
+            if (v is string s) return s;
+            throw new JsonException("Field 'faction' must be a string");
         }
 
         /// <summary>Reads a required whole-number field. For use by command readers.</summary>

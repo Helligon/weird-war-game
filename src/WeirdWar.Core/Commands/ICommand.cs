@@ -14,6 +14,19 @@ namespace WeirdWar.Core.Commands
         /// <summary>Stable name used in the serialised form. Never rename once saved data exists.</summary>
         string Type { get; }
 
+        /// <summary>
+        /// Id of the Faction that issues the command (TRN-006). "" means no Faction: only a state without a campaign
+        /// (no map, so no turns) accepts such a command.
+        /// </summary>
+        string Issuer { get; }
+
+        /// <summary>
+        /// The turn phase the command may be sent in (TRN-005), or null for any phase. Action commands (TRN-002)
+        /// return <see cref="TurnPhase.Actions"/>. <see cref="GameState.ApplyCommand"/> checks this and the issuer
+        /// before <see cref="Validate"/>, so a command cannot forget to.
+        /// </summary>
+        TurnPhase? RequiredPhase { get; }
+
         /// <summary>Returns null if the command is legal in this state, otherwise the reason it is not. MUST NOT change the state.</summary>
         string? Validate(GameState state);
 
