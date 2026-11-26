@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [battle, controls]
 related: ["[[default-ai-behaviour]]", "[[player-character]]", "[[hierarchy]]"]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Commands and tactical view
@@ -21,9 +21,9 @@ The player gives orders to Sections from a tactical view. The command set is del
 - **CMD-004** (`decided`): While the player is in the tactical view, their character MUST keep fighting under AI control (see [[player-character]]).
 
 ### Commands
-- **CMD-005** (`decided`) **Move:** the player selects a Section and gives it 1 or more waypoints, up to P-CMD-01. A Move with no waypoints MUST be rejected (DEC-097). A waypoint next to cover MUST make the Section take that cover on arrival.
+- **CMD-005** (`decided`) **Move:** the player selects a Section and gives it 1 or more waypoints, up to P-CMD-01. A Move with no waypoints MUST be rejected (DEC-097). A waypoint next to cover (within P-CMD-04) MUST make the Section take that cover on arrival.
 - **CMD-006** (`decided`) **Stop:** a queued final order meaning "hold this ground". The Section MUST carry out its waypoints first, then hold its final position. With no waypoints, it MUST stop on the spot.
-- **CMD-007** (`decided`) **Clear waypoints:** the player MUST be able to clear a Section's waypoints explicitly. This is the only way to cancel queued movement.
+- **CMD-007** (`decided`) **Clear waypoints:** the player MUST be able to clear a Section's waypoints explicitly. This is the only way to cancel queued movement. The Section does not go on to the cleared waypoints and returns to default behaviour, unless a Stop is pending, in which case it holds where it is (CMD-006, DEC-100).
 - **CMD-008** (`decided`) **Target:** the player selects an enemy Section for a Section to attack. Moving to waypoints and stopping MUST take priority over targeting.
 - **CMD-009** (`decided`) **Target ground:** Target MUST also accept an area of ground, for artillery and mortars.
 - **CMD-010** (`decided`) **Protect:** the player selects an allied Section to guard. The protecting Section MUST stay with it (surround it or move in front) and engage the nearest enemy it can reach without leaving its side.
@@ -50,6 +50,7 @@ The player gives orders to Sections from a tactical view. The command set is del
 | P-CMD-01 | Max queued waypoints per Section | 2 | decided |
 | P-CMD-02 | Max Sections per side in battle | 10 | decided |
 | P-CMD-03 | Accuracy penalty while moving: the share of accuracy lost, so hit chance = accuracy × (1 − P-CMD-03) (DEC-098) | – | open |
+| P-CMD-04 | Next-to-cover distance: a waypoint this close to a cover object's edge counts as next to it (CMD-005, DEC-100) | 3 m (Spike 2 placeholder) | proposed |
 
 ## Open questions
 - Q-CMD-01 (answered → CMD-016): No. Single-Section orders only.
