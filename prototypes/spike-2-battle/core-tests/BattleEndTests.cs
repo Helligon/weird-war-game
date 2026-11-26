@@ -141,11 +141,20 @@ public class BattleEndTests
         Assert.Contains(read.Commands, c => c.Command is OfficerFireCommand);
         Assert.Contains(read.Commands, c => c.Command is MoveCommand);
         Assert.Contains(read.Commands, c => c.Command is TargetCommand);
-        Assert.Contains("\"step\":30,\"time\":3,", text);
-        Assert.DoesNotContain("0000000", text); // times read cleanly, no 0.30000000000000004 // step 30 is applied at 3 s of battle time
+        Assert.Contains("\"step\":30,\"time\":3,", text); // step 30 is applied at 3 s of battle time
         Assert.Equal(b.StepCount, read.Steps);
         Assert.Equal(BattleState.StepSeconds, read.StepSeconds);
         Assert.Equal(b.Outcome, read.Outcome);
+    }
+
+    [Fact]
+    public void TEC_005_log_times_are_rounded_so_they_read_cleanly()
+    {
+        // 3 * 0.1 is 0.30000000000000004 in floating point; the log must say 0.3.
+        var b = NewBattle();
+        Steps(b, 3);
+        Assert.True(b.ApplyCommand(new OfficerAimCommand(0, 0.5)).IsAccepted);
+        Assert.Contains("\"step\":3,\"time\":0.3,", CommandLogFile.Write(b));
     }
 
     [Fact]
@@ -226,7 +235,8 @@ public class BattleEndTests
         string Log(string stepSeconds, string steps, string time) => "{\"stepSeconds\":" + stepSeconds + ",\"steps\":" + steps
             + ",\"outcome\":\"PlayerWon\",\"commands\":[{\"step\":3,\"time\":" + time + ",\"command\":" + cmd + "}]}";
         Assert.Single(CommandLogFile.Read(Log("0.1", "5", "0.3")).Commands);
-        Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.2", "5", "0.3")));
+        // No entries, so only the step-length check can refuse this log.
+        Assert.Throws<CommandFormatException>(() => CommandLogFile.Read("{\"stepSeconds\":0.2,\"steps\":5,\"outcome\":\"PlayerWon\",\"commands\":[]}"));
         Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.1", "5.5", "0.3")));
         Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.1", "5", "0.4")));
     }
