@@ -44,6 +44,8 @@ namespace WeirdWar.Spike2.Presentation
         public BattleOutcome Outcome => _state == null ? BattleOutcome.InProgress : _state.Outcome;
         /// <summary>TEC-005: where the command log was written when the battle ended, or null while it is still going (or if writing failed).</summary>
         public string LogPath { get; private set; }
+        /// <summary>Where the file-name time comes from. Tests replace it; it is never read by the core (TEC-008).</summary>
+        public Func<DateTime> Clock = () => DateTime.Now;
         /// <summary>Why the log could not be written, or null.</summary>
         public string LogError { get; private set; }
         public void SetRunning(bool running) { _bootstrap.Tactical.SetRunning(running); }
@@ -115,7 +117,7 @@ namespace WeirdWar.Spike2.Presentation
             try
             {
                 var folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", _bootstrap.LogFolder));
-                LogPath = CommandLogWriter.Write(_state, folder, DateTime.Now);
+                LogPath = CommandLogWriter.Write(_state, folder, Clock());
             }
             catch (Exception e) { LogError = e.Message; }
         }

@@ -112,6 +112,10 @@ namespace WeirdWar.Spike2.Tests
                 Assert.AreEqual(_boot.State.CommandLog.Count, read.Commands.Count);
                 Assert.AreEqual(_boot.State.CommandLog[0].Command, read.Commands[0].Command);
                 var path = _boot.StateView.LogPath;
+                // The file name has one-second resolution, so move the clock on: without the once-only guard each frame would make a new file.
+                var clock = new System.DateTime(2030, 1, 1, 12, 0, 0);
+                _boot.StateView.Clock = () => clock = clock.AddSeconds(5);
+                _boot.StateView.Frame(0.1);
                 _boot.StateView.Frame(0.1);
                 Assert.AreEqual(path, _boot.StateView.LogPath);
                 Assert.AreEqual(1, System.IO.Directory.GetFiles(folder).Length, "written once");

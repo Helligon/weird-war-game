@@ -90,6 +90,7 @@ public class BattleEndTests
     [Fact]
     public void VIC_004_CMD_002_a_paused_battle_that_is_not_stepped_does_not_change()
     {
+        // The tactical-view pause itself is tested in TacticalViewTests (CMD-002). This checks that reading the result and the log changes nothing.
         // The tactical view pauses by not calling Step(). Nothing else moves the battle on, and reading it changes nothing.
         var b = NewBattle();
         Steps(b, 50);
@@ -140,7 +141,8 @@ public class BattleEndTests
         Assert.Contains(read.Commands, c => c.Command is OfficerFireCommand);
         Assert.Contains(read.Commands, c => c.Command is MoveCommand);
         Assert.Contains(read.Commands, c => c.Command is TargetCommand);
-        Assert.Contains("\"step\":30,\"time\":3,", text); // step 30 is applied at 3 s of battle time
+        Assert.Contains("\"step\":30,\"time\":3,", text);
+        Assert.DoesNotContain("0000000", text); // times read cleanly, no 0.30000000000000004 // step 30 is applied at 3 s of battle time
         Assert.Equal(b.StepCount, read.Steps);
         Assert.Equal(BattleState.StepSeconds, read.StepSeconds);
         Assert.Equal(b.Outcome, read.Outcome);
@@ -173,6 +175,60 @@ public class BattleEndTests
         replay.Replay(read.Commands, read.Steps);
         Assert.Equal(BattleDigest(original), BattleDigest(replay));
         Assert.Equal(original.Outcome, replay.Outcome);
+    }
+
+    // A battle where the Sections fight it out with volleys (seeded accuracy): the Officer walks and aims but never fires.
+    private static BattleState PlayVolleys(ulong seed)
+    {
+        var b = NewBattle(seed);
+        b.ApplyCommand(new OfficerAimCommand(0, 0.5));
+        b.ApplyCommand(new OfficerMoveCommand(0, 0, 1));
+        Steps(b, 20);
+        b.ApplyCommand(new OfficerMoveCommand(0, 0, 0));
+        b.ApplyCommand(new TargetCommand(BattleState.PlayerSectionId, BattleState.EnemySectionId));
+        for (var i = 0; i < 20000 && b.Outcome == BattleOutcome.InProgress; i++) b.Step();
+        return b;
+    }
+
+    [Fact]
+    public void TEC_005_a_replay_of_a_battle_of_volleys_reaches_the_same_end_state_only_with_the_same_seed()
+    {
+        var original = PlayVolleys(1);
+        Assert.NotEqual(BattleOutcome.InProgress, original.Outcome);
+        var stats = UnitStats.Load(StatsJson);
+        // Both Sections really fired: each took damage (no Officer shot in this battle).
+        var full = stats.RiflemenMaxUnits * stats.RiflemenHealthPerUnit;
+        Assert.True(original.Find(BattleState.PlayerSectionId)!.Health < full);
+        Assert.True(original.Find(BattleState.EnemySectionId)!.Health < full);
+        Assert.DoesNotContain(original.CommandLog, c => c.Command is OfficerFireCommand);
+
+        var read = CommandLogFile.Read(CommandLogFile.Write(original));
+        var same = NewBattle(1);
+        same.Replay(read.Commands, read.Steps);
+        Assert.Equal(BattleDigest(original), BattleDigest(same));
+
+        // The random source matters: other seeds give a different battle for the same log.
+        var differing = 0;
+        for (ulong seed = 2; seed <= 6; seed++)
+        {
+            var other = NewBattle(seed);
+            try { other.Replay(read.Commands, read.Steps); }
+            catch (InvalidOperationException) { differing++; continue; }
+            if (BattleDigest(other) != BattleDigest(original)) differing++;
+        }
+        Assert.True(differing >= 1, "replays with other seeds should not all match");
+    }
+
+    [Fact]
+    public void TEC_008_a_log_with_a_wrong_step_length_time_or_step_count_is_refused()
+    {
+        const string cmd = "{\"type\":\"officerFire\",\"officer\":0}";
+        string Log(string stepSeconds, string steps, string time) => "{\"stepSeconds\":" + stepSeconds + ",\"steps\":" + steps
+            + ",\"outcome\":\"PlayerWon\",\"commands\":[{\"step\":3,\"time\":" + time + ",\"command\":" + cmd + "}]}";
+        Assert.Single(CommandLogFile.Read(Log("0.1", "5", "0.3")).Commands);
+        Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.2", "5", "0.3")));
+        Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.1", "5.5", "0.3")));
+        Assert.Throws<CommandFormatException>(() => CommandLogFile.Read(Log("0.1", "5", "0.4")));
     }
 
     [Fact]
