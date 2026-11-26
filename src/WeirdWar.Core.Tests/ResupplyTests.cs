@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Reflection;
 using WeirdWar.Core.Commands;
 using WeirdWar.Core.Maps;
 using WeirdWar.Core.Simulation;
@@ -41,6 +39,15 @@ public class ResupplyTests
         b.SP = 20;
         Faction(game, f).Reserve = 30;
         return (game, f, b);
+    }
+
+    private static void AssertRejected(GameState game, DistributeSpCommand command)
+    {
+        var before = game.ComputeHash();
+        var logged = game.Log.Count;
+        Assert.False(game.ApplyCommand(command).Accepted);
+        Assert.Equal(before, game.ComputeHash());
+        Assert.Equal(logged, game.Log.Count);
     }
 
     [Fact]
@@ -86,7 +93,7 @@ public class ResupplyTests
     {
         var (game, f, b) = Setup();
 
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, b.Id, amount)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, amount));
         Assert.Equal(30, Faction(game, f).Reserve);
         Assert.Equal(20, b.SP);
     }
@@ -101,11 +108,11 @@ public class ResupplyTests
         var enemyBrigade = BrigadeOf(game, enemy);
 
         // The active Faction names the enemy Brigade.
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, enemyBrigade.Id, 5)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, enemyBrigade.Id, 5));
         // The inactive Faction acts out of turn (TRN-006).
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(enemy, enemyBrigade.Id, 5)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(enemy, enemyBrigade.Id, 5));
         // No such Brigade.
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, 99, 5)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, 99, 5));
         Assert.Equal(10, enemyBrigade.SP);
         Assert.Equal(30, Faction(game, enemy).Reserve);
         Assert.Equal(30, Faction(game, f).Reserve);
@@ -117,10 +124,12 @@ public class ResupplyTests
         var (game, f, b) = Setup();
         game.Phase = TurnPhase.Income;
 
+        var before = game.ComputeHash();
         var result = game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5));
 
         Assert.False(result.Accepted);
         Assert.Contains("Actions phase", result.Reason);
+        Assert.Equal(before, game.ComputeHash());
     }
 
     [Fact]
@@ -168,9 +177,11 @@ public class ResupplyTests
         Assert.True(b.Position.DistanceTo(At(2, 1)) >= 2);
         Assert.True(b.Position.DistanceTo(Location(game, "hq-" + f).Position) >= 2);
 
+        var before = game.ComputeHash();
         var result = game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5));
 
         Assert.False(result.Accepted);
+        Assert.Equal(before, game.ComputeHash());
         Assert.Equal(20, b.SP);
         Assert.Equal(30, Faction(game, f).Reserve);
     }
@@ -184,7 +195,7 @@ public class ResupplyTests
         b.Position = At(2, 1).Neighbours().SelectMany(n => n.Neighbours())
             .First(h => h.DistanceTo(At(2, 1)) == 2 && h.DistanceTo(hq) >= 2);
 
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
     }
 
     [Fact]
@@ -195,9 +206,11 @@ public class ResupplyTests
         Assert.Null(Location(game, "supply-1").Owner);
         Assert.Equal(1, b.Position.DistanceTo(At(2, 1)));
 
+        var before = game.ComputeHash();
         var result = game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5));
 
         Assert.False(result.Accepted);
+        Assert.Equal(before, game.ComputeHash());
         Assert.Equal(20, b.SP);
     }
 
@@ -207,10 +220,10 @@ public class ResupplyTests
         var (game, f, b) = Setup();
         Location(game, "supply-1").Owner = Other(f);
         b.Position = At(3, 1);
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
 
         b.Position = Location(game, "hq-" + Other(f)).Position;
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
     }
 
     [Fact]
@@ -220,7 +233,7 @@ public class ResupplyTests
         Location(game, "command-1").Owner = f;
         b.Position = Location(game, "command-1").Position;
 
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
     }
 
     [Fact]
@@ -277,7 +290,7 @@ public class ResupplyTests
         b.SP = 105;
         var before = game.ComputeHash();
 
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 1)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 1));
         Assert.Equal(105, b.SP);
         Assert.Equal(30, Faction(game, f).Reserve);
         Assert.Equal(before, game.ComputeHash());
@@ -301,7 +314,7 @@ public class ResupplyTests
         b.SP = 105;
         LowerCapacity(b);
 
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5)).Accepted);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
         Assert.Equal(105, b.SP);
         Assert.Equal(30, Faction(game, f).Reserve);
     }
@@ -321,33 +334,32 @@ public class ResupplyTests
     }
 
     [Fact]
-    public void TEC_008_distribute_round_trips_and_replay_reproduces_the_hash()
+    public void TEC_008_distribute_round_trips_and_replay_reproduces_the_hash_including_a_clamped_distribution()
     {
+        // Both Brigades start at 100 of 105 SP, so a request of 8 (within the reserve) is clamped to the room of 5.
+        var mapJson = MapJson.Replace("\"sp\":90", "\"sp\":100").Replace("\"sp\":85", "\"sp\":100");
         var registry = CommandRegistry.CreateDefault();
-        var game = NewGame();
+        var game = new GameState(7, MapImporter.Parse(mapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(Params));
         var f = game.ActiveFaction!;
         var b = BrigadeOf(game, f);
-        Assert.True(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 7)).Accepted);
-        Assert.False(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 100)).Accepted);
+        var reserve = Faction(game, f).Reserve;
+        Assert.True(reserve >= 8, "fixture: the request must fit the reserve");
 
-        var command = new DistributeSpCommand(f, b.Id, 7);
+        Assert.True(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 8)).Accepted);
+        Assert.Equal(105, b.SP);
+        Assert.Equal(reserve - 5, Faction(game, f).Reserve); // only the 5 that moved leave the reserve
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 1)); // now at capacity
+
+        var command = new DistributeSpCommand(f, b.Id, 8);
         Assert.Equal(command, registry.ReadCommand(registry.WriteCommand(command)));
-        Assert.Equal("{\"amount\":7,\"brigade\":" + b.Id + ",\"faction\":\"" + f + "\",\"type\":\"distributeSp\"}", registry.WriteCommand(command));
+        Assert.Equal("{\"amount\":8,\"brigade\":" + b.Id + ",\"faction\":\"" + f + "\",\"type\":\"distributeSp\"}", registry.WriteCommand(command));
 
         var run = registry.ReadLog(registry.WriteLog(7, game.Log));
-        var replayed = GameState.Replay(run.Seed, run.Log, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(Params));
+        var replayed = GameState.Replay(run.Seed, run.Log, MapImporter.Parse(mapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(Params));
         Assert.Equal(game.ComputeHash(), replayed.ComputeHash());
+        Assert.Equal(105, BrigadeOf(replayed, f).SP);
     }
 
-    /// <summary>
-    /// Test fixture: Section transfers do not exist yet (a later Feature), so drop the last Section from the
-    /// Brigade's backing list to lower its maximum capacity (BRG-019).
-    /// </summary>
-    private static void LowerCapacity(Brigade brigade)
-    {
-        var field = typeof(ReadOnlyCollection<Section>).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-            .Single(f => typeof(IList<Section>).IsAssignableFrom(f.FieldType));
-        var backing = (IList<Section>)field.GetValue(brigade.Sections)!;
-        backing.RemoveAt(backing.Count - 1);
-    }
+    /// <summary>Test fixture: Section transfers do not exist yet (a later Feature), so drop the last Section to lower the maximum (BRG-019).</summary>
+    private static void LowerCapacity(Brigade brigade) => brigade.RemoveSection(brigade.Sections.Count - 1);
 }
