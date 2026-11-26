@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="WeirdWar.Core.Tests/WeirdWar.Core.Tests.csproj" />
+  <Project Path="WeirdWar.Core/WeirdWar.Core.csproj" />
+</Solution>

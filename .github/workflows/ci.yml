@@ -22,6 +22,18 @@ jobs:
       - name: Check the design vault
         run: python3 scripts/check_docs.py
 
+  campaign-core:
+    name: Campaign core tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: src/global.json
+      - name: Test the production simulation core (TEC-016)
+        working-directory: src
+        run: dotnet test WeirdWar.Core.Tests
+
   core:
     name: Core tests
     runs-on: ubuntu-latest
