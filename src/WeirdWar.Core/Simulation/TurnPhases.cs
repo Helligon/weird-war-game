@@ -21,7 +21,7 @@ namespace WeirdWar.Core.Simulation
     /// A later Story adds its rule by adding a call inside the matching method, and nothing else:
     ///   StartOfTurn: resolve captures (TRN-009, CC1-75).
     ///   Income: SP to the reserve (CC1-70). Resupply (CC1-74) is a player action, so it is a command in Actions.
-    ///   EndOfTurn: nothing in CC1 (upkeep, rot are later Features).
+    ///   EndOfTurn: may record capture candidates (TRN-009: ending your own turn on the ST, CC1-75); upkeep and rot are later Features.
     /// </summary>
     internal static class TurnPhases
     {

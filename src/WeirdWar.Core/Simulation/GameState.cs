@@ -47,8 +47,15 @@ namespace WeirdWar.Core.Simulation
         /// ST is neutral (MAP-015) and there are no FOBs. Throws <see cref="MapFormatException"/> when the map has no
         /// Factions or the setup names a Section type that is not in <paramref name="sectionTypes"/>.
         /// </summary>
-        public GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters) : this(seed)
+        public GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters)
+            : this(seed, map, sectionTypes, parameters, null)
         {
+        }
+
+        /// <summary>As the public constructor, with a phase observer attached before the first turn begins (tests only).</summary>
+        internal GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters, Action<TurnPhase, string>? phaseObserver) : this(seed)
+        {
+            PhaseObserver = phaseObserver;
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (sectionTypes == null) throw new ArgumentNullException(nameof(sectionTypes));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
@@ -168,7 +175,9 @@ namespace WeirdWar.Core.Simulation
         /// </summary>
         private string? CheckTurn(ICommand command)
         {
-            if (ActiveFaction == null) return null;
+            // Keyed on the map, not on ActiveFaction: every campaign state has a map, so clearing ActiveFaction later
+            // (e.g. at game over) must not switch the gate off.
+            if (Map == null) return null;
             if (command.Issuer != ActiveFaction)
                 return "It is not " + (command.Issuer.Length == 0 ? "an unnamed Faction" : command.Issuer) + "'s turn; the active Faction is " + ActiveFaction;
             if (command.RequiredPhase != null && command.RequiredPhase != Phase)

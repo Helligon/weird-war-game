@@ -30,7 +30,7 @@ namespace WeirdWar.Core.Commands
             TurnPhases.BeginTurn(state, next);
         }
 
-        public Dictionary<string, object?> ToJson() => new Dictionary<string, object?> { ["faction"] = Issuer };
+        public Dictionary<string, object?> ToJson() => CommandRegistry.WithIssuer(new Dictionary<string, object?>(), Issuer);
 
         public static EndTurnCommand FromJson(IReadOnlyDictionary<string, object?> json) =>
             new EndTurnCommand(CommandRegistry.OptionalIssuer(json));
