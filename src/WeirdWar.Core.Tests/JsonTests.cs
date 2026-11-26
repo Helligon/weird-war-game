@@ -90,7 +90,7 @@ public class JsonTests
             Assert.Equal("2.0", Json.Write(2.0));
             Assert.Equal("-1234567", Json.Write(-1234567L));
             Assert.Equal("-12", Json.Write(-12));
-            Assert.Equal("18446744073709551615", Json.Write(ulong.MaxValue));
+            Assert.Equal("9223372036854775807", Json.Write((ulong)long.MaxValue));
             Assert.Equal(-1234567L, Json.Parse("-1234567"));
             Assert.Equal(-1.5, Json.Parse("-1.5"));
         }
@@ -163,7 +163,39 @@ public class JsonTests
         Assert.Equal("[1,2]", Json.Write(new[] { 1, 2 }));
         Assert.Equal("[\"a\",null]", Json.Write(new List<string?> { "a", null }));
         Assert.Equal("{\"x\":[true]}", Json.Write(new Dictionary<string, object?> { ["x"] = new List<bool> { true } }));
-        Assert.Equal("18446744073709551615", Json.Write(ulong.MaxValue));
+        Assert.Equal("9223372036854775807", Json.Write((ulong)long.MaxValue));
+    }
+
+    [Fact]
+    public void TEC_008_json_writer_never_writes_a_ulong_the_reader_would_reject()
+    {
+        Assert.Throws<JsonException>(() => Json.Write((ulong)long.MaxValue + 1));
+        Assert.Throws<JsonException>(() => Json.Write(ulong.MaxValue));
+        Assert.Throws<JsonException>(() => Json.Write(new List<ulong> { ulong.MaxValue }));
+        Assert.Equal(long.MaxValue, Json.Parse(Json.Write((ulong)long.MaxValue)));
+    }
+
+    [Fact]
+    public void TEC_008_json_writer_refuses_unordered_collections()
+    {
+        var hashSet = new HashSet<long> { 1, 2 };
+        var sorted = new SortedSet<long> { 1, 2 };
+
+        var ex = Assert.Throws<JsonException>(() => Json.Write(hashSet));
+        Assert.Contains("Unordered collection", ex.Message);
+        Assert.Throws<JsonException>(() => Json.Write(sorted)); // any ISet is refused, even a sorted one
+        Assert.Throws<JsonException>(() => Json.Write(new Dictionary<string, object?> { ["s"] = hashSet }));
+        Assert.Equal("[1,2]", Json.Write(hashSet.OrderBy(x => x).ToList()));
+    }
+
+    [Fact]
+    public void TEC_008_json_depth_is_released_after_each_container_so_wide_input_is_accepted()
+    {
+        var wide = "[" + string.Join(",", Enumerable.Repeat("{\"a\":[1]}", 100)) + "]";
+        var wideArrays = "[" + string.Join(",", Enumerable.Repeat("[[1]]", 100)) + "]";
+
+        Assert.Equal(100, ((List<object?>)Json.Parse(wide)!).Count);
+        Assert.Equal(100, ((List<object?>)Json.Parse(wideArrays)!).Count);
     }
 
     [Fact]

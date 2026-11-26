@@ -14,7 +14,8 @@ namespace WeirdWar.Core.Serialization
     /// <summary>
     /// Small JSON reader and writer (no external package, TEC-016). The reader returns plain objects:
     /// null, bool, long, double, string, List&lt;object?&gt; and Dictionary&lt;string, object?&gt;.
-    /// The writer also takes int, ulong and any IEnumerable of supported values (e.g. List&lt;long&gt;).
+    /// The writer also takes int, ulong up to long.MaxValue (the reader cannot read more) and any ordered
+    /// IEnumerable of supported values (e.g. List&lt;long&gt;). Sets are refused: their order is not canonical.
     /// Whole numbers beyond long are an error on read; write 64-bit seeds as decimal strings.
     /// The writer is canonical: object keys are sorted ordinally, no whitespace, so output is
     /// identical on every machine (TEC-008).
@@ -51,7 +52,10 @@ namespace WeirdWar.Core.Serialization
                 case bool b: sb.Append(b ? "true" : "false"); break;
                 case int i: sb.Append(i.ToString(CultureInfo.InvariantCulture)); break;
                 case long l: sb.Append(l.ToString(CultureInfo.InvariantCulture)); break;
-                case ulong ul: sb.Append(ul.ToString(CultureInfo.InvariantCulture)); break;
+                case ulong ul:
+                    if (ul > long.MaxValue) throw new JsonException("ulong above long.MaxValue cannot be read back; write it as a string");
+                    sb.Append(ul.ToString(CultureInfo.InvariantCulture));
+                    break;
                 case double d:
                     if (double.IsNaN(d) || double.IsInfinity(d)) throw new JsonException("NaN and Infinity cannot be written");
                     var s = d.ToString("R", CultureInfo.InvariantCulture);
@@ -73,6 +77,8 @@ namespace WeirdWar.Core.Serialization
                     }
                     sb.Append('}');
                     break;
+                case System.Collections.IEnumerable list when IsSet(list):
+                    throw new JsonException("Unordered collection " + v.GetType().Name + " cannot be written canonically; use a sorted list");
                 case System.Collections.IEnumerable list:
                     sb.Append('[');
                     bool first = true;
@@ -86,6 +92,13 @@ namespace WeirdWar.Core.Serialization
                     break;
                 default: throw new JsonException("Cannot write type " + v.GetType().Name);
             }
+        }
+
+        private static bool IsSet(object value)
+        {
+            foreach (var i in value.GetType().GetInterfaces())
+                if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ISet<>)) return true;
+            return false;
         }
 
         private static void WriteString(StringBuilder sb, string s)
