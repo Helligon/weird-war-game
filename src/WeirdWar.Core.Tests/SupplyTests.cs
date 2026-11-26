@@ -146,6 +146,29 @@ public class SupplyTests
         var left = capacity - march - battle - march;
 
         Assert.True(left > 0, "SP left " + left);
-        Assert.NotEqual(SupplyState.Overextended, Supply.StateOf(Infantry(5, (int)Math.Floor(left))));
+        // SUP-009 predicts about 20% left, which is Low and not Overextended.
+        Assert.Equal(SupplyState.Low, Supply.StateOf(Infantry(5, (int)Math.Floor(left))));
+    }
+
+    [Fact]
+    public void SUP_003_a_non_dyadic_threshold_is_exact_on_its_boundary()
+    {
+        // 0.70 * 90 is 62.99999999999999 in double; exactly 70% of 90 is 63, which is not above the threshold.
+        var types = SectionTypeTable.Parse("{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":90,\"consumptionPerHex\":1}}}");
+        var supply = new Supply(types, ParameterTable.Parse("P-SUP-01 = 0.70\nP-SUP-02 = 0.25\n"));
+
+        Assert.Equal(SupplyState.Supplied, supply.StateOf(Make(63, "x")));
+        Assert.Equal(SupplyState.WellSupplied, supply.StateOf(Make(64, "x")));
+    }
+
+    [Fact]
+    public void SUP_004_states_of_a_game_need_a_supply_built_from_the_games_own_section_types()
+    {
+        var map = MapImporter.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "data", "maps", "sample-20x12.json")));
+        var game = new GameState(1, map, Types, Params);
+        var other = new Supply(SectionTypeTable.LoadShipped(), Params);
+
+        Assert.Throws<ArgumentException>(() => other.StatesOf(game));
+        Assert.Equal(game.Brigades.Count, Supply.StatesOf(game).Count);
     }
 }
