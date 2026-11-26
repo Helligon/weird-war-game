@@ -24,6 +24,9 @@ bin/
 # Plain C# core projects are hand-written, unlike Unity's generated *.csproj (DLV-012)
 !prototypes/*/core/*.csproj
 !prototypes/*/core-tests/*.csproj
+# Production core projects and solution are hand-written too (TEC-016)
+!src/**/WeirdWar.*.csproj
+!src/**/WeirdWar.*.slnx
 # Python
 __pycache__/
 docs/.obsidian/
