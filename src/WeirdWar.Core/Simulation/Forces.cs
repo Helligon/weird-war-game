@@ -61,9 +61,18 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>
         /// Where the Brigade stands. The starting Brigade starts on its Faction's HQ hex (by analogy with BRG-026,
-        /// which covers formed Brigades; an assumption for the design owner). Moving it is a later Story.
+        /// which covers formed Brigades; an assumption for the design owner). Only MoveBrigadeCommand moves it.
         /// </summary>
         public HexCoord Position { get; internal set; }
+
+        /// <summary>Hexes moved on the turn <see cref="MovedTurn"/> (TRN-030, SUP-024). Meaningful only when MovedTurn is the current turn.</summary>
+        internal int MovedHexes { get; set; }
+
+        /// <summary>The <see cref="GameState.TurnNumber"/> that <see cref="MovedHexes"/> counts. 0 if the Brigade has never moved.</summary>
+        internal int MovedTurn { get; set; }
+
+        /// <summary>Hexes this Brigade has moved so far in the turn numbered <paramref name="turn"/> (0 if it has not moved that turn).</summary>
+        public int HexesMovedIn(int turn) => MovedTurn == turn ? MovedHexes : 0;
 
         /// <summary>Read-only view: Sections change only through commands (DLV-013).</summary>
         public IReadOnlyList<Section> Sections { get; }
