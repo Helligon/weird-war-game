@@ -5,17 +5,17 @@ namespace WeirdWar.Spike2.Battle.Core.Tests;
 /// <summary>SP2-40: Sections carry out Move, Stop, Clear waypoints, Target and Fall back. Fixed stats, parameters and map in the test.</summary>
 public class SectionOrderTests
 {
-    private static string Stats(double adjacency = 3, double accuracy = 0.6) =>
+    private static string Stats(double accuracy = 0.6) =>
         "{ \"riflemen\": { \"speed\": 2, \"P-HIE-01\": 8, \"P-HIE-02\": 30, \"range\": 30, \"damage\": 1, \"accuracy\": " + accuracy.ToString(System.Globalization.CultureInfo.InvariantCulture)
-        + ", \"volleyInterval\": 2, \"coverAdjacencyDistance\": " + adjacency.ToString(System.Globalization.CultureInfo.InvariantCulture) + " },"
+        + ", \"volleyInterval\": 2 },"
         + " \"officer\": { \"health\": 10, \"speed\": 4, \"rifleRange\": 80, \"rifleDamage\": 3, \"rifleHitRadius\": 3 } }";
 
     private static BattleMap OpenMap() => new BattleMap(100, 60, new List<CoverObject>());
     private static BattleMap CoverMap() => new BattleMap(100, 60, new List<CoverObject> { new CoverObject("ruin", new MapPoint(30, 30), 4) });
 
     private static BattleState Battle(BattleMap? map = null, double adjacency = 3, double penalty = 0.5, double accuracy = 0.6, ulong seed = 1) =>
-        BattleState.SetUp(map ?? OpenMap(), UnitStats.Load(Stats(adjacency, accuracy)),
-            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-CMD-03\": " + penalty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}"), seed);
+        BattleState.SetUp(map ?? OpenMap(), UnitStats.Load(Stats(accuracy)),
+            BattleParameters.Load("{\"P-CMD-01\": 2, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5, \"P-CMD-04\": " + adjacency.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", \"P-CMD-03\": " + penalty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}"), seed);
 
     private static Section Player(BattleState b) => b.Find(BattleState.PlayerSectionId)!;
     private static Section Enemy(BattleState b) => b.Find(BattleState.EnemySectionId)!;
@@ -173,6 +173,34 @@ public class SectionOrderTests
         // Back on default behaviour (CMD-012 stand-in): it walks at the enemy (south-east), not on north to the cleared waypoints.
         Assert.True(Player(b).Position.Y < y);
         Assert.True(Player(b).Position.X > 6);
+    }
+
+    [Fact]
+    public void CMD_007_clear_waypoints_keeps_a_pending_stop_so_the_section_holds_where_it_is()
+    {
+        var b = Battle(); QuietEnemy(b);
+        Accept(b, Move(P, W(6, 55), W(6, 58)));
+        Accept(b, new StopCommand(P));
+        Steps(b, 20);
+        Accept(b, new ClearWaypointsCommand(P));
+        Assert.Empty(Player(b).Waypoints);
+        var (x, y) = (Player(b).Position.X, Player(b).Position.Y);
+        Steps(b, 50);
+        Assert.True(At(Player(b), x, y)); // held, not walking at the enemy
+        Assert.True(Player(b).IsHolding);
+    }
+
+    [Fact]
+    public void CMD_007_clear_waypoints_with_no_pending_stop_returns_to_default_behaviour()
+    {
+        var b = Battle(); QuietEnemy(b);
+        Accept(b, Move(P, W(6, 55)));
+        Steps(b, 10);
+        Accept(b, new ClearWaypointsCommand(P));
+        Assert.False(Player(b).IsHolding);
+        var x = Player(b).Position.X;
+        Steps(b, 50);
+        Assert.True(Player(b).Position.X > x);
     }
 
     [Fact]
@@ -533,9 +561,12 @@ public class SectionOrderTests
     }
 
     [Fact]
-    public void DLV_014_a_stats_file_without_the_cover_adjacency_distance_is_an_error()
+    public void DLV_014_the_cover_adjacency_distance_is_read_by_its_parameter_id_P_CMD_04()
     {
-        Assert.Throws<DataLoadException>(() => UnitStats.Load(Stats().Replace("coverAdjacencyDistance", "x")));
+        Assert.Equal(3, Battle().Parameters.CoverAdjacencyDistance);
+        Assert.Equal(7, Battle(adjacency: 7).Parameters.CoverAdjacencyDistance);
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5}"));
+        Assert.Throws<CommandFormatException>(() => BattleParameters.Load("{\"P-CMD-01\": 2, \"P-CMD-03\": 0.5, \"P-DAI-01\": 25, \"P-DAI-02\": 6, \"P-DAI-03\": 2, \"P-DAI-04\": 0.5, \"P-CMD-04\": -1}"));
     }
 
     [Fact]
@@ -546,6 +577,6 @@ public class SectionOrderTests
         var stats = UnitStats.Load(File.ReadAllText(Path.Combine(dir!.FullName, "data", "stats.json")));
         var parameters = BattleParameters.Load(File.ReadAllText(Path.Combine(dir.FullName, "data", "parameters.json")));
         Assert.True(parameters.CoverSearchRange > 0);
-        Assert.True(stats.CoverAdjacencyDistance >= 0);
+        Assert.True(parameters.CoverAdjacencyDistance >= 0);
     }
 }
