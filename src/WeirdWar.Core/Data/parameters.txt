@@ -9,3 +9,7 @@ P-SUP-03 = 0.30   # placeholder (proposed): standard march cost, fraction of cap
 P-SUP-04 = 0.20   # placeholder (proposed): battle SP cost, fraction of capacity; design-target tests only (CC1 battles cost no SP)
 P-BRG-05 = 3   # Starting Brigade size, Sections (decided)
 P-RES-01 = 5      # placeholder (open): base SP income per turn
+P-RES-02 = 2      # placeholder (open): base CP income per turn
+P-RES-04 = 1      # placeholder (open): SP / CP bonus per held ST, in each currency its type pays
+P-MAP-05 = 5      # placeholder (open): HQ income per turn (SP, CP); data only, the core reads P-RES-01 and P-RES-02 until confirmed
+P-MAP-06 = 1      # placeholder (open): income per ST type; data only, the core reads P-RES-04 until confirmed
