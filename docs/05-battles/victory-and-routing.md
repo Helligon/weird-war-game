@@ -31,7 +31,7 @@ A battle is won by destroying or routing every enemy Unit. There is no time limi
 - Q-VIC-01 (answered → [[morale]]): Morale model and rout chance.
 - Q-VIC-02 (answered → MOR-012): Yes.
 - Q-VIC-03 (answered → TRN-010 to TRN-016): Defenders retreat towards the nearest HQ/FOB, attackers fall back, and a Brigade that can't retreat is destroyed.
-- Q-VIC-04 (open): What happens if both sides' last Units are destroyed at the same moment? Spike 2 calls it a draw as a stand-in (DEC-101).
+- Q-VIC-04: What happens if both sides' last Units are destroyed at the same moment? Spike 2 calls it a draw as a stand-in (DEC-101).
 
 ## Out of scope
 - Anti-stalemate supply drain: **deferred** ([[future-ideas]]).
