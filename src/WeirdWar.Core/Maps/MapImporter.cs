@@ -21,6 +21,9 @@ namespace WeirdWar.Core.Maps
         /// </summary>
         public const int MaxSide = 1000;
 
+        /// <summary>BRG-021: 5 Sections is the hard maximum per Brigade.</summary>
+        public const int MaxSectionsPerBrigade = 5;
+
         public static HexMap Parse(string json)
         {
             object? root;
@@ -162,10 +165,10 @@ namespace WeirdWar.Core.Maps
         private static List<FactionSetup> ReadSetup(Dictionary<string, object?> obj, List<string> factions)
         {
             var result = new List<FactionSetup>();
-            obj.TryGetValue("setup", out var v);
+            var hasSetup = obj.TryGetValue("setup", out var v);
             if (factions.Count == 0)
             {
-                if (v != null) throw new MapFormatException("\"setup\" needs \"factions\"");
+                if (hasSetup) throw new MapFormatException("\"setup\" needs \"factions\"");
                 return result;
             }
             var setup = v as Dictionary<string, object?> ?? throw new MapFormatException("\"setup\" must be an object with one entry per Faction");
@@ -187,8 +190,8 @@ namespace WeirdWar.Core.Maps
                         throw new MapFormatException("In " + where + " brigade: unknown key \"" + key + "\" (expected sp, sections)");
                 var sp = ReadInt(b, "sp", 0, 1000000);
                 var sections = b.TryGetValue("sections", out var sv) ? sv as List<object?> : null;
-                if (sections == null || sections.Count == 0 || sections.Count > 100)
-                    throw new MapFormatException("In " + where + " brigade: \"sections\" must be a list of 1 to 100 Section type ids");
+                if (sections == null || sections.Count == 0 || sections.Count > MaxSectionsPerBrigade)
+                    throw new MapFormatException("In " + where + " brigade: \"sections\" must be a list of 1 to " + MaxSectionsPerBrigade + " Section type ids (BRG-021)");
                 var ids = new List<string>();
                 foreach (var item in sections)
                 {

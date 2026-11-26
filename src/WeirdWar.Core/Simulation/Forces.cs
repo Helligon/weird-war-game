@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using WeirdWar.Core.Maps;
 
 namespace WeirdWar.Core.Simulation
@@ -38,12 +39,13 @@ namespace WeirdWar.Core.Simulation
     /// <summary>A Brigade: a list of Sections plus its own SP (BRG-018). Officers and titles come later.</summary>
     public sealed class Brigade
     {
-        internal Brigade(int id, string faction, int sp, List<Section> sections)
+        internal Brigade(int id, string faction, int sp, HexCoord position, List<Section> sections)
         {
             Id = id;
             Faction = faction;
             SP = sp;
-            Sections = sections;
+            Position = position;
+            Sections = new ReadOnlyCollection<Section>(sections);
         }
 
         public int Id { get; }
@@ -52,6 +54,13 @@ namespace WeirdWar.Core.Simulation
         /// <summary>The Brigade's SP. Sections never hold SP (BRG-018).</summary>
         public int SP { get; internal set; }
 
+        /// <summary>
+        /// Where the Brigade stands. The starting Brigade starts on its Faction's HQ hex (by analogy with BRG-026,
+        /// which covers formed Brigades; an assumption for the design owner). Moving it is a later Story.
+        /// </summary>
+        public HexCoord Position { get; internal set; }
+
+        /// <summary>Read-only view: Sections change only through commands (DLV-013).</summary>
         public IReadOnlyList<Section> Sections { get; }
     }
 }

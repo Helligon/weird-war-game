@@ -25,8 +25,8 @@ The file is read with the core's own JSON reader (`WeirdWar.Core.Serialization.J
     {"id": "major-1", "type": "major", "at": [3, 2]}
   ],
   "setup": {
-    "east": {"reserve": 5, "brigade": {"sp": 10, "sections": ["infantry", "infantry", "artillery"]}},
-    "west": {"reserve": 5, "brigade": {"sp": 10, "sections": ["infantry", "infantry", "recon"]}}
+    "east": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "artillery"]}},
+    "west": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "recon"]}}
   }
 }
 ```
@@ -87,9 +87,9 @@ else is owned at the start but the HQs (MAP-021). FOBs are built in play and are
 ## Starting setup (MAP-021)
 
 `setup` has one entry per Faction, with `reserve` (starting SP reserve) and `brigade` (`sp` and
-`sections`, a list of Section type ids). The Sections are named, not rolled. The reserve and the Brigade's
+`sections`, a list of 1 to 5 Section type ids, BRG-021). The Sections are named, not rolled. The reserve and the Brigade's
 SP are placeholder values with no decided number or parameter ID yet. Section type ids are checked against
-the Section type data (`Data/section-types.json`) when a game starts, not at import.
+the Section type data (`Data/section-types.json`) when a game starts, not at import. The list must then have exactly P-BRG-05 entries (3), and the Brigade starts on its Faction's HQ hex.
 
 ## Coordinates
 

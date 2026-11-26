@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using WeirdWar.Core.Commands;
@@ -46,10 +47,12 @@ namespace WeirdWar.Core.Simulation
         /// ST is neutral (MAP-015) and there are no FOBs. Throws <see cref="MapFormatException"/> when the map has no
         /// Factions or the setup names a Section type that is not in <paramref name="sectionTypes"/>.
         /// </summary>
-        public GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes) : this(seed)
+        public GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters) : this(seed)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (sectionTypes == null) throw new ArgumentNullException(nameof(sectionTypes));
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            var startingSize = parameters.GetInt("P-BRG-05");
             if (map.Factions.Count == 0) throw new MapFormatException("The map has no Factions, so a game cannot start on it");
             Map = map;
             SectionTypes = sectionTypes;
@@ -58,6 +61,9 @@ namespace WeirdWar.Core.Simulation
             foreach (var setup in map.Setup)
             {
                 factions.Add(new FactionState(setup.FactionId, setup.Reserve));
+                if (setup.SectionTypeIds.Count != startingSize)
+                    throw new MapFormatException("Setup for \"" + setup.FactionId + "\" has " + setup.SectionTypeIds.Count
+                        + " Sections; the starting Brigade has " + startingSize + " (P-BRG-05)");
                 var sections = new List<Section>();
                 foreach (var typeId in setup.SectionTypeIds)
                 {
@@ -65,7 +71,8 @@ namespace WeirdWar.Core.Simulation
                         throw new MapFormatException("Setup for \"" + setup.FactionId + "\" uses unknown Section type \"" + typeId + "\"");
                     sections.Add(new Section(typeId, type.Health));
                 }
-                brigades.Add(new Brigade(brigades.Count + 1, setup.FactionId, setup.BrigadeSp, sections));
+                var hq = map.Locations.Single(l => l.Type == LocationType.Hq && l.Faction == setup.FactionId);
+                brigades.Add(new Brigade(brigades.Count + 1, setup.FactionId, setup.BrigadeSp, hq.Position, sections));
             }
             var locations = new List<LocationState>();
             foreach (var l in map.Locations) locations.Add(new LocationState(l, l.Type == LocationType.Hq ? l.Faction : null));
@@ -128,9 +135,9 @@ namespace WeirdWar.Core.Simulation
         /// Rebuilds a state from a seed and a log. Throws <see cref="ReplayDivergenceException"/> if an entry
         /// is out of order (step is not its position) or a command is rejected.
         /// </summary>
-        public static GameState Replay(ulong seed, CommandLog log, HexMap? map = null, SectionTypeTable? sectionTypes = null)
+        public static GameState Replay(ulong seed, CommandLog log, HexMap? map = null, SectionTypeTable? sectionTypes = null, ParameterTable? parameters = null)
         {
-            var state = map == null ? new GameState(seed) : new GameState(seed, map, sectionTypes ?? throw new ArgumentNullException(nameof(sectionTypes)));
+            var state = map == null ? new GameState(seed) : new GameState(seed, map, sectionTypes ?? throw new ArgumentNullException(nameof(sectionTypes)), parameters ?? throw new ArgumentNullException(nameof(parameters)));
             for (int i = 0; i < log.Entries.Count; i++)
             {
                 var entry = log.Entries[i];
@@ -170,7 +177,8 @@ namespace WeirdWar.Core.Simulation
                     if (i > 0) sb.Append(',');
                     sb.Append(b.Sections[i].TypeId).Append(':').Append(b.Sections[i].Health.ToString(CultureInfo.InvariantCulture));
                 }
-                sb.Append('\n');
+                var (bc, br) = b.Position.ToOffset();
+                sb.Append(" at=").Append(bc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(br.ToString(CultureInfo.InvariantCulture)).Append('\n');
             }
             sb.Append("log=").Append(Log.Count.ToString(CultureInfo.InvariantCulture)).Append('\n');
             sb.Append("digest=").Append(Hex(LogDigest)).Append('\n');

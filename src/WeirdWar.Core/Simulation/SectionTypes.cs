@@ -8,6 +8,12 @@ using WeirdWar.Core.Serialization;
 
 namespace WeirdWar.Core.Simulation
 {
+    /// <summary>Thrown when the Section type data is malformed or invalid.</summary>
+    public sealed class SectionTypeFormatException : Exception
+    {
+        public SectionTypeFormatException(string message) : base(message) { }
+    }
+
     /// <summary>
     /// Data for one Section type: health, sight (FOW-004) and the supply profile (P-SUP-09). Only the data shape
     /// is defined here; the capacity maths comes later. Values are placeholders.
@@ -54,28 +60,28 @@ namespace WeirdWar.Core.Simulation
         {
             object? root;
             try { root = Json.Parse(json); }
-            catch (JsonException e) { throw new MapFormatException("Section types are not valid JSON: " + e.Message); }
-            var obj = root as Dictionary<string, object?> ?? throw new MapFormatException("Section types must be a JSON object");
+            catch (JsonException e) { throw new SectionTypeFormatException("Section types are not valid JSON: " + e.Message); }
+            var obj = root as Dictionary<string, object?> ?? throw new SectionTypeFormatException("Section types must be a JSON object");
             foreach (var key in obj.Keys)
                 if (key != "version" && key != "status" && key != "sectionTypes")
-                    throw new MapFormatException("Unknown key \"" + key + "\" in section types (expected version, status, sectionTypes)");
+                    throw new SectionTypeFormatException("Unknown key \"" + key + "\" in section types (expected version, status, sectionTypes)");
             if (!(obj.TryGetValue("version", out var v) && v is long ver && ver == 1))
-                throw new MapFormatException("Section types must have \"version\": 1");
+                throw new SectionTypeFormatException("Section types must have \"version\": 1");
             var list = obj.TryGetValue("sectionTypes", out var s) ? s as Dictionary<string, object?> : null;
-            if (list == null || list.Count == 0) throw new MapFormatException("\"sectionTypes\" must be an object with at least one type");
+            if (list == null || list.Count == 0) throw new SectionTypeFormatException("\"sectionTypes\" must be an object with at least one type");
 
             var types = new SortedDictionary<string, SectionType>(StringComparer.Ordinal);
             foreach (var kv in list)
             {
-                if (!MapIds.IsValid(kv.Key)) throw new MapFormatException("Section type id \"" + kv.Key + "\" may only use letters, digits, - and _");
-                var o = kv.Value as Dictionary<string, object?> ?? throw new MapFormatException("Section type \"" + kv.Key + "\" must be an object");
+                if (!MapIds.IsValid(kv.Key)) throw new SectionTypeFormatException("Section type id \"" + kv.Key + "\" may only use letters, digits, - and _");
+                var o = kv.Value as Dictionary<string, object?> ?? throw new SectionTypeFormatException("Section type \"" + kv.Key + "\" must be an object");
                 foreach (var key in o.Keys)
                     if (key != "health" && key != "sight" && key != "capacityContribution" && key != "consumptionPerHex")
-                        throw new MapFormatException("Unknown key \"" + key + "\" in section type \"" + kv.Key + "\"");
+                        throw new SectionTypeFormatException("Unknown key \"" + key + "\" in section type \"" + kv.Key + "\"");
                 var sight = Num(o, kv.Key, "sight");
-                if (sight < 1 || sight > 3) throw new MapFormatException("Section type \"" + kv.Key + "\": sight must be 1 to 3 (FOW-004)");
+                if (sight < 1 || sight > 3) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": sight must be 1 to 3 (FOW-004, P-FOW-01)");
                 var health = Num(o, kv.Key, "health");
-                if (health < 1) throw new MapFormatException("Section type \"" + kv.Key + "\": health must be at least 1");
+                if (health < 1) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": health must be at least 1");
                 types[kv.Key] = new SectionType(kv.Key, health, sight, Num(o, kv.Key, "capacityContribution"), Num(o, kv.Key, "consumptionPerHex"));
             }
             return new SectionTypeTable(types);
@@ -94,8 +100,8 @@ namespace WeirdWar.Core.Simulation
 
         private static int Num(Dictionary<string, object?> o, string type, string key)
         {
-            if (!o.TryGetValue(key, out var v)) throw new MapFormatException("Section type \"" + type + "\": missing \"" + key + "\"");
-            if (!(v is long n) || n < 0 || n > 1000000) throw new MapFormatException("Section type \"" + type + "\": \"" + key + "\" must be a whole number from 0 to 1000000");
+            if (!o.TryGetValue(key, out var v)) throw new SectionTypeFormatException("Section type \"" + type + "\": missing \"" + key + "\"");
+            if (!(v is long n) || n < 0 || n > 1000000) throw new SectionTypeFormatException("Section type \"" + type + "\": \"" + key + "\" must be a whole number from 0 to 1000000");
             return (int)n;
         }
 
