@@ -61,6 +61,7 @@ namespace WeirdWar.Core.Simulation
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
             var startingSize = parameters.GetInt("P-BRG-05");
             if (map.Factions.Count == 0) throw new MapFormatException("The map has no Factions, so a game cannot start on it");
+            IncomeRules = new IncomeRules(parameters);
             Map = map;
             SectionTypes = sectionTypes;
             var factions = new List<FactionState>();
@@ -123,6 +124,9 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>The map this game is played on, or null for a state made without one (tests of the core only).</summary>
         public HexMap? Map { get; }
+
+        /// <summary>How income is worked out (RES-002, RES-005), or null when there is no map. Fixed for a game; not hashed.</summary>
+        public IncomeRules? IncomeRules { get; }
 
         /// <summary>The Section types in use, or null when there is no map.</summary>
         public SectionTypeTable? SectionTypes { get; }
@@ -219,7 +223,8 @@ namespace WeirdWar.Core.Simulation
             sb.Append("map=").Append(Map == null ? "none" : Map.Digest()).Append('\n');
             sb.Append("sectiontypes=").Append(SectionTypes == null ? "none" : Hex(Sha256(Encoding.UTF8.GetBytes(SectionTypes.CanonicalText())))).Append('\n');
             foreach (var f in Factions)
-                sb.Append("faction=").Append(f.Id).Append(" reserve=").Append(f.Reserve.ToString(CultureInfo.InvariantCulture)).Append('\n');
+                sb.Append("faction=").Append(f.Id).Append(" reserve=").Append(f.Reserve.ToString(CultureInfo.InvariantCulture))
+                  .Append(" cp=").Append(f.Cp.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (var l in Locations)
                 sb.Append("location=").Append(l.Id).Append(" owner=").Append(l.Owner ?? "-").Append('\n');
             foreach (var b in Brigades)
