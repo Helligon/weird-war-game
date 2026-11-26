@@ -26,7 +26,7 @@ public class CaptureTerritoryTests
     private const string Sight = "P-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1";
     private const string Radius = "P-MAP-02 = minus=1 min=1";
     private static string Params(string sight = Sight, string radius = Radius)
-        => "P-BRG-05 = 3\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\n" + sight + "\n" + radius + "\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-10 = 2";
+        => "P-BRG-05 = 3\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\n" + sight + "\n" + radius + "\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
 
     private static GameState NewGame(string? parameters = null)
         => new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(parameters ?? Params()));
@@ -367,7 +367,7 @@ public class CaptureTerritoryTests
         var game = WestEndsTurnOnSupply();
 
         Assert.Contains("location=supply-1 owner=- capturing=west\n", game.CanonicalText());
-        Assert.Equal("3239f0d414d83c9e4aa1e2abd17b7f9c0ce231ad74bd67735c9b8896852dd9d3", game.ComputeHash());
+        Assert.Equal("204cad2a30c90fd8ca6352735681258443b3057806db9f2cefa4281c383bda01", game.ComputeHash());
     }
 
     [Fact]

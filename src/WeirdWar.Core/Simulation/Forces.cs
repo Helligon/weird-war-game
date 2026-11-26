@@ -56,6 +56,7 @@ namespace WeirdWar.Core.Simulation
             Faction = faction;
             SP = sp;
             Position = position;
+            _sections = sections;
             Sections = new ReadOnlyCollection<Section>(sections);
         }
 
@@ -79,6 +80,11 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>Hexes this Brigade has moved so far in the turn numbered <paramref name="turn"/> (0 if it has not moved that turn).</summary>
         public int HexesMovedIn(int turn) => MovedTurn == turn ? MovedHexes : 0;
+
+        private readonly List<Section> _sections;
+
+        /// <summary>Internal seam for the BRG-019 overflow tests: Section transfers (a later Feature) will need a mutator like this.</summary>
+        internal void RemoveSection(int index) => _sections.RemoveAt(index);
 
         /// <summary>Read-only view: Sections change only through commands (DLV-013).</summary>
         public IReadOnlyList<Section> Sections { get; }
