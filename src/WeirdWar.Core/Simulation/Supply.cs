@@ -23,7 +23,7 @@ namespace WeirdWar.Core.Simulation
         private readonly decimal _wellSuppliedAbove;
         private readonly decimal _overextendedBelow;
 
-        /// <summary>P-SUP-08: how far from an owned Supply ST or HQ a Brigade can be resupplied, in hexes (SUP-017).</summary>
+        /// <summary>P-SUP-08: how far from an owned Supply ST, Major ST or HQ a Brigade can be resupplied, in hexes (SUP-017).</summary>
         public int ResupplyRange { get; }
 
         /// <summary>

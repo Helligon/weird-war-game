@@ -294,9 +294,10 @@ public class ResupplyTests
     {
         var (game, f, b) = Setup();
         Location(game, "supply-1").Owner = f;
-        b.Position = At(4, 1);
-        Assert.True(b.Position.DistanceTo(At(2, 1)) >= 2);
-        Assert.True(b.Position.DistanceTo(Location(game, "hq-" + f).Position) >= 2);
+        Location(game, "major-1").Owner = f;
+        b.Position = At(4, 3);
+        foreach (var point in game.Locations.Where(l => l.Type is LocationType.Hq or LocationType.Supply or LocationType.Major))
+            Assert.True(b.Position.DistanceTo(point.Position) >= 2, point.Id);
 
         var before = game.ComputeHash();
         var result = game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5));

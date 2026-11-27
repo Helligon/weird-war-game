@@ -150,8 +150,8 @@ namespace WeirdWar.Core
             for (var i = 0; i < keys.Length; i++)
             {
                 var kv = pairs[i].Split('=');
-                if (kv.Length != 2 || kv[0] != keys[i]
-                    || !int.TryParse(kv[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+                if (kv.Length != 2 || kv[0] != keys[i] || kv[1].StartsWith("+", StringComparison.Ordinal)
+                    || !int.TryParse(kv[1], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var v))
                     throw new ParameterFormatException($"{id} = '{text}' must be key=number pairs for: {expected}.");
                 result[kv[0]] = v;
             }

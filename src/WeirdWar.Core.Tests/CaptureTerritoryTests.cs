@@ -344,6 +344,8 @@ public class CaptureTerritoryTests
     [InlineData("hq=3 hq=3 fob=2 major=2 command=1 supply=1")]    // repeated key
     [InlineData("hq=three fob=2 major=2 command=1 supply=1")]     // not a number
     [InlineData("hq=-3 fob=2 major=2 command=1 supply=1")]        // negative
+    [InlineData("fob=2 hq=3 major=2 command=1 supply=1")]         // keys out of order
+    [InlineData("hq=3  fob=2 major=2 command=1 supply=1")]        // double space
     public void DLV_014_a_malformed_sight_parameter_fails_when_the_game_starts(string value)
     {
         Assert.Throws<ParameterFormatException>(() => NewGame(Params("P-FOW-03 = " + value)));
