@@ -85,7 +85,7 @@ namespace WeirdWar.Core.Maps
             }
 
             var factions = ReadFactions(obj);
-            var locations = ReadLocations(obj, width, height, factions);
+            var locations = ReadLocations(obj, width, height, cells, factions);
             var setup = ReadSetup(obj, factions);
             return new HexMap(width, height, cells, factions, locations, setup);
         }
@@ -108,9 +108,10 @@ namespace WeirdWar.Core.Maps
             return result;
         }
 
-        private static List<Location> ReadLocations(Dictionary<string, object?> obj, int width, int height, List<string> factions)
+        private static List<Location> ReadLocations(Dictionary<string, object?> obj, int width, int height, TerrainType[] cells, List<string> factions)
         {
             var result = new List<Location>();
+            var atHex = new Dictionary<long, string>();
             var hqCount = new Dictionary<string, int>();
             foreach (var f in factions) hqCount[f] = 0;
             if (obj.TryGetValue("locations", out var v))
@@ -142,6 +143,12 @@ namespace WeirdWar.Core.Maps
                         throw new MapFormatException("In " + where + ": \"at\" must be [column,row] with two whole numbers");
                     if (c < 0 || c >= width || r < 0 || r >= height)
                         throw new MapFormatException("In " + where + ": hex [" + c + "," + r + "] is outside the " + width + "x" + height + " grid");
+                    var terrainHere = cells[(int)r * width + (int)c];
+                    if (terrainHere != TerrainType.Open)
+                        throw new MapFormatException("In " + where + ": hex [" + c + "," + r + "] is " + terrainHere.ToString().ToLowerInvariant() + ", which is impassable (MED-007)");
+                    if (atHex.TryGetValue(r * width + c, out var other))
+                        throw new MapFormatException("Locations \"" + other + "\" and \"" + id + "\" are on the same hex [" + c + "," + r + "] (MED-007)");
+                    atHex[r * width + c] = id;
                     string? faction = null;
                     if (type == LocationType.Hq)
                     {

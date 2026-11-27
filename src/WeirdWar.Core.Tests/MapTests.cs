@@ -318,4 +318,97 @@ public class MapTests
         Assert.NotNull(dir);
         return Path.Combine(dir!.FullName, "WeirdWar.Core", "Maps", "MapFormat.md");
     }
+
+    // ---- MED-007: locations on impassable terrain or the same hex; MAP-053: [column,row] odd-q
+
+    private static string LocMap(string terrain, string locations)
+        => "{\"version\":1,\"width\":6,\"height\":4,\"terrain\":" + terrain + ",\"locations\":" + locations + "}";
+
+    [Theory]
+    [InlineData("mountain")]
+    [InlineData("sea")]
+    [InlineData("river")]
+    public void MED_007_location_on_impassable_terrain_is_rejected_naming_location_hex_and_terrain(string terrain)
+    {
+        var json = LocMap("{\"" + terrain + "\":[[2,1]]}", "[{\"id\":\"st-a\",\"type\":\"supply\",\"at\":[2,1]}]");
+
+        var e = Assert.Throws<MapFormatException>(() => MapImporter.Parse(json));
+
+        Assert.Contains("st-a", e.Message);
+        Assert.Contains("[2,1]", e.Message);
+        Assert.Contains(terrain, e.Message);
+    }
+
+    [Fact]
+    public void MED_007_location_on_an_open_hex_imports()
+    {
+        var map = MapImporter.Parse(LocMap("{\"mountain\":[[3,1]]}", "[{\"id\":\"st-a\",\"type\":\"supply\",\"at\":[2,1]}]"));
+
+        Assert.Single(map.Locations);
+    }
+
+    [Theory]
+    [InlineData("supply", "major")]
+    [InlineData("hq", "supply")]
+    public void MED_007_two_locations_on_the_same_hex_are_rejected_naming_both_ids_and_the_hex(string t1, string t2)
+    {
+        var first = t1 == "hq" ? "{\"id\":\"loc-1\",\"type\":\"hq\",\"at\":[4,2],\"faction\":\"east\"}"
+            : "{\"id\":\"loc-1\",\"type\":\"" + t1 + "\",\"at\":[4,2]}";
+        var json = "{\"version\":1,\"width\":6,\"height\":4,\"factions\":[\"east\",\"west\"],\"locations\":[" + first
+            + ",{\"id\":\"loc-2\",\"type\":\"" + t2 + "\",\"at\":[4,2]},"
+            + "{\"id\":\"hq-w\",\"type\":\"hq\",\"at\":[0,0],\"faction\":\"west\"}"
+            + (t1 == "hq" ? "" : ",{\"id\":\"hq-e\",\"type\":\"hq\",\"at\":[5,3],\"faction\":\"east\"}") + "],"
+            + "\"setup\":{\"east\":{\"brigade\":{\"sections\":[\"infantry\"]}},\"west\":{\"brigade\":{\"sections\":[\"infantry\"]}}}}";
+
+        var e = Assert.Throws<MapFormatException>(() => MapImporter.Parse(json));
+
+        Assert.Contains("loc-1", e.Message);
+        Assert.Contains("loc-2", e.Message);
+        Assert.Contains("[4,2]", e.Message);
+    }
+
+    [Fact]
+    public void MED_007_two_locations_on_neighbouring_hexes_import()
+    {
+        var map = MapImporter.Parse(LocMap("{}", "[{\"id\":\"a\",\"type\":\"supply\",\"at\":[4,2]},{\"id\":\"b\",\"type\":\"supply\",\"at\":[5,2]}]"));
+
+        Assert.Equal(2, map.Locations.Count);
+    }
+
+    [Fact]
+    public void MED_007_a_rejected_map_returns_no_partial_map()
+    {
+        HexMap? map = null;
+        Assert.Throws<MapFormatException>(() =>
+            map = MapImporter.Parse(LocMap("{\"sea\":[[2,1]]}", "[{\"id\":\"a\",\"type\":\"supply\",\"at\":[0,0]},{\"id\":\"b\",\"type\":\"supply\",\"at\":[2,1]}]")));
+
+        Assert.Null(map);
+    }
+
+    [Theory]
+    [InlineData(4, 5)]
+    [InlineData(5, 5)]
+    public void MAP_053_flat_top_odd_q_neighbours_match_the_table(int c, int r)
+    {
+        var table = c % 2 == 0 ? EvenCol : OddCol;
+        var expected = table.Select(d => (c + d.Item1, r + d.Item2)).ToHashSet();
+
+        Assert.Equal(expected, OffsetSet(At(c, r).Neighbours()));
+    }
+
+    [Fact]
+    public void MAP_053_neighbours_of_the_two_example_hexes_are_the_documented_ones()
+    {
+        Assert.Equal(new HashSet<(int, int)> { (5, 4), (5, 5), (4, 6), (3, 5), (3, 4), (4, 4) }, OffsetSet(At(4, 5).Neighbours()));
+        Assert.Equal(new HashSet<(int, int)> { (6, 5), (6, 6), (5, 6), (4, 6), (4, 5), (5, 4) }, OffsetSet(At(5, 5).Neighbours()));
+    }
+
+    [Fact]
+    public void MAP_053_a_location_written_column_row_lands_on_that_column_and_row_from_the_top_left()
+    {
+        var map = MapImporter.Parse(LocMap("{}", "[{\"id\":\"a\",\"type\":\"supply\",\"at\":[3,1]}]"));
+
+        Assert.Equal((3, 1), map.Locations[0].Position.ToOffset());
+        Assert.Equal((0, 0), At(0, 0).ToOffset());
+    }
 }
