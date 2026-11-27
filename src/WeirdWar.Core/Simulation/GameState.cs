@@ -71,6 +71,7 @@ namespace WeirdWar.Core.Simulation
             Supply = new Supply(sectionTypes, parameters);
             MovementRules = new MovementRules(parameters);
             Territory = new TerritoryRules(parameters);
+            BrigadeRules = new BrigadeRules(parameters);
             _parametersDigest = parameters.Digest();
             var factions = new List<FactionState>();
             var brigades = new List<Brigade>();
@@ -158,6 +159,9 @@ namespace WeirdWar.Core.Simulation
         /// <summary>Territory radii (MAP-016, MAP-027), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameters are in the digest).</summary>
         public TerritoryRules? Territory { get; }
 
+        /// <summary>Brigade size limit (P-BRG-01, BRG-021), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameter is in the digest).</summary>
+        public BrigadeRules? BrigadeRules { get; }
+
         /// <summary>The Section types in use, or null when there is no map.</summary>
         public SectionTypeTable? SectionTypes { get; }
 
@@ -175,14 +179,18 @@ namespace WeirdWar.Core.Simulation
         internal int NextBrigadeId => _nextBrigadeId;
         private int _nextBrigadeId = 1;
 
-        /// <summary>Takes the next never-used Brigade id. Whatever forms a Brigade later calls this.</summary>
+        /// <summary>Takes the next never-used Brigade id. Whatever forms a Brigade later calls this. May only be called from inside a command's Apply (DLV-013).</summary>
         internal int TakeBrigadeId() => _nextBrigadeId++;
+
+        /// <summary>Adds a formed Brigade. Whatever forms Brigades later calls this; until then tests use it to place extra Brigades. Take its id from <see cref="TakeBrigadeId"/>.</summary>
+        internal void AddBrigade(Brigade brigade) => _brigades.Add(brigade);
 
         /// <summary>
         /// Removes one Section from a Brigade (the shared step for transfers and desertion). A Brigade left with 0 Sections
         /// is disbanded (BRG-023): it leaves <see cref="Brigades"/>, so its hex is free. Nothing else is touched: a pending
         /// battle that names the Brigade stays as it is, because no rule says what happens to it. The officer's return to
         /// the roster is a later Story. After forming there is no minimum size (BRG-020).
+        /// May only be called from inside a command's Apply (DLV-013).
         /// </summary>
         internal void RemoveSectionFromBrigade(Brigade brigade, int sectionIndex)
         {

@@ -26,7 +26,7 @@ public class DisbandBrigadeTests
     private const string Sight = "P-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1";
     private const string Radius = "P-MAP-02 = minus=1 min=1";
     private static string Params(string sight = Sight, string radius = Radius)
-        => "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\n" + sight + "\n" + radius + "\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
+        => "P-BRG-01 = 5\nP-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\n" + sight + "\n" + radius + "\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
 
     private static GameState NewGame(string? parameters = null)
         => new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(parameters ?? Params()));
@@ -154,7 +154,7 @@ public class DisbandBrigadeTests
         RemoveSections(game, west, 3);
         // A new Brigade (never id 2) stands on the ST at west's next turn start.
         var fresh = new Brigade(game.TakeBrigadeId(), "west", 40, At(0, 2), new List<Section> { new Section("infantry", 10) });
-        ((List<Brigade>)game.Brigades).Add(fresh);
+        game.AddBrigade(fresh);
 
         EndTurn(game);
 

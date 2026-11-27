@@ -23,7 +23,7 @@ public class ContactTests
         "\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
         "\"west\":{\"brigade\":{\"sections\":[" + westSections + "]}}}}";
 
-    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
+    private const string Params = "P-BRG-01 = 5\nP-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
 
     private static ParameterTable Table(string parameters = Params) => ParameterTable.Parse(parameters);
 
@@ -407,6 +407,6 @@ public class ContactTests
         Assert.True(MoveDown(game, 2).Accepted);
 
         Assert.Contains("brigade=2 faction=west sp=84 sections=infantry:10,infantry:10,infantry:10 at=0,2 moved=1:2\nbattle=2,1\nturn=1", game.CanonicalText());
-        Assert.Equal("270b9fdad1cc3c5717f65bbad57c01a264cc54715a5386755a21c237561f077f", game.ComputeHash());
+        Assert.Equal("facf22dd175f3c802e936d1cb51e234e3766f8ea08b7140bd0e0caee5c4e96f3", game.ComputeHash());
     }
 }

@@ -89,8 +89,11 @@ namespace WeirdWar.Core.Simulation
 
         private readonly List<Section> _sections;
 
-        /// <summary>Internal seam for the BRG-019 overflow tests: Section transfers (a later Feature) will need a mutator like this.</summary>
+        /// <summary>Removes a Section. Go through <see cref="GameState.RemoveSectionFromBrigade"/>, so an empty Brigade is disbanded.</summary>
         internal void RemoveSection(int index) => _sections.RemoveAt(index);
+
+        /// <summary>Adds a Section at the end (BRG-016). The size limit is checked by the command (BRG-021).</summary>
+        internal void AddSection(Section section) => _sections.Add(section);
 
         /// <summary>Read-only view: Sections change only through commands (DLV-013).</summary>
         public IReadOnlyList<Section> Sections { get; }
