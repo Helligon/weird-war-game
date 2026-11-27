@@ -144,4 +144,73 @@ public class ParameterTableTests
         Assert.False(table.IsPlaceholder("P-SUP-01"));
         Assert.True(table.IsPlaceholder("P-RES-01"));
     }
+
+    private static readonly string[] FowKeys = { "hq", "fob", "major", "command", "supply" };
+
+    [Fact]
+    public void TEC_017_reads_each_key_as_its_number_in_the_documented_order()
+    {
+        var table = ParameterTable.Parse("P-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\n");
+
+        var fow = table.GetKeyedInts("P-FOW-03", FowKeys);
+        Assert.Equal(new[] { 3, 2, 2, 1, 1 }, FowKeys.Select(k => fow[k]));
+        var map = table.GetKeyedInts("P-MAP-02", "minus", "min");
+        Assert.Equal(1, map["minus"]);
+        Assert.Equal(1, map["min"]);
+    }
+
+    [Theory]
+    [InlineData("fob=2 hq=3 major=2 command=1 supply=1")]   // different order
+    [InlineData("hq=3 fob=2 major=2 command=1")]            // missing key
+    [InlineData("hq=3 fob=2 major=2 command=1 supply=1 x=1")] // extra key
+    [InlineData("hq=3 fob=2 major=2 command=1 depot=1")]    // unknown key
+    [InlineData("hq=3 hq=3 major=2 command=1 supply=1")]    // repeated key
+    [InlineData("hq=3  fob=2 major=2 command=1 supply=1")]  // two spaces
+    [InlineData("hq=3 fob=2 major=2 command=1 supply=1.5")] // not a whole number
+    [InlineData("hq=3 fob=2 major=2 command=1 supply=x")]
+    [InlineData("hq=3 fob=2 major=2 command=1 supply=")]
+    public void TEC_017_wrong_format_throws_naming_the_parameter(string value)
+    {
+        var table = ParameterTable.Parse("P-FOW-03 = " + value + "\n");
+
+        var ex = Assert.Throws<ParameterFormatException>(() => table.GetKeyedInts("P-FOW-03", FowKeys));
+        Assert.Contains("P-FOW-03", ex.Message);
+    }
+
+    [Fact]
+    public void DLV_014_keyed_read_of_a_missing_parameter_throws_missing()
+    {
+        var ex = Assert.Throws<MissingParameterException>(() => ParameterTable.Parse("").GetKeyedInts("P-FOW-03", FowKeys));
+        Assert.Equal("P-FOW-03", ex.ParameterId);
+    }
+
+    [Fact]
+    public void TEC_017_territory_rules_read_the_shipped_values_through_the_shared_reader()
+    {
+        var rules = new WeirdWar.Core.Simulation.TerritoryRules(ParameterTable.LoadShipped());
+
+        Assert.Equal(2, rules.RadiusOf(WeirdWar.Core.Maps.LocationType.Hq));
+        Assert.Equal(1, rules.RadiusOf(WeirdWar.Core.Maps.LocationType.Major));
+        Assert.Equal(1, rules.RadiusOf(WeirdWar.Core.Maps.LocationType.Command));
+        Assert.Equal(1, rules.RadiusOf(WeirdWar.Core.Maps.LocationType.Supply));
+    }
+
+    [Fact]
+    public void TEC_017_territory_has_no_key_number_parser_of_its_own()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "WeirdWar.Core", "WeirdWar.Core.csproj")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        var text = File.ReadAllText(Path.Combine(dir!.FullName, "WeirdWar.Core", "Simulation", "Territory.cs"));
+
+        Assert.DoesNotContain("ParseKeys", text);
+        Assert.DoesNotContain("Split('=')", text);
+    }
+
+    [Fact]
+    public void TEC_018_a_fraction_still_reads_as_a_decimal()
+    {
+        Assert.Equal(0.75m, ParameterTable.Parse("P-SUP-01 = 0.75\n").GetDecimal("P-SUP-01"));
+    }
 }
