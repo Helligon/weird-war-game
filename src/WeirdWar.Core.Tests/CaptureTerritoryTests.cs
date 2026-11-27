@@ -33,7 +33,7 @@ public class CaptureTerritoryTests
 
     private static LocationState Location(GameState g, string id) => g.Locations.Single(l => l.Id == id);
     private static FactionState Faction(GameState g, string id) => g.Factions.Single(f => f.Id == id);
-    private static Brigade West(GameState g) => g.Brigades.Single(b => b.Faction == "west");
+    private static Brigade West(GameState g) => g.Brigades.First(b => b.Faction == "west"); // the original one: the lowest id
     private static Brigade East(GameState g) => g.Brigades.Single(b => b.Faction == "east");
     private static HexCoord At(int c, int r) => HexCoord.FromOffset(c, r);
     private static void EndTurn(GameState g) => Assert.True(g.ApplyCommand(new EndTurnCommand(g.ActiveFaction)).Accepted);
@@ -89,6 +89,75 @@ public class CaptureTerritoryTests
 
         Assert.Null(Location(game, "supply-1").Owner);
         Assert.Null(Location(game, "supply-1").Capturing); // the pending capture is dropped
+    }
+
+    private static Brigade AddWestBrigade(GameState g, HexCoord at)
+    {
+        var b = new Brigade(3, "west", 40, at, new List<Section> { new Section("infantry", 10) });
+        ((List<Brigade>)g.Brigades).Add(b);
+        return b;
+    }
+
+    [Fact]
+    public void TRN_009_the_state_records_the_brigade_that_started_the_capture()
+    {
+        var game = WestEndsTurnOnSupply();
+
+        Assert.Equal(West(game).Id, Location(game, "supply-1").CapturingBrigade);
+        Assert.Equal("west", Location(game, "supply-1").Capturing);
+    }
+
+    [Fact]
+    public void TRN_009_a_different_brigade_of_the_same_faction_does_not_complete_the_capture_and_the_mark_is_cleared()
+    {
+        var game = WestEndsTurnOnSupply();
+        AddWestBrigade(game, At(0, 2)); // B is on the ST at the start of west's next turn
+        West(game).Position = At(0, 3); // A is gone
+
+        EndTurn(game);
+
+        Assert.Null(Location(game, "supply-1").Owner);
+        Assert.Null(Location(game, "supply-1").Capturing);
+        Assert.Null(Location(game, "supply-1").CapturingBrigade);
+    }
+
+    [Fact]
+    public void TRN_009_the_other_brigade_then_starts_a_new_capture_and_completes_it_a_turn_later()
+    {
+        var game = WestEndsTurnOnSupply();
+        var b = AddWestBrigade(game, At(0, 2));
+        West(game).Position = At(0, 3);
+        EndTurn(game); // east ends: A's mark is cleared at west's start
+        Assert.Null(Location(game, "supply-1").Capturing);
+
+        EndTurn(game); // west ends with B on the ST: B starts a capture
+        Assert.Equal(b.Id, Location(game, "supply-1").CapturingBrigade);
+        Assert.Null(Location(game, "supply-1").Owner);
+
+        EndTurn(game); // east ends
+        Assert.Equal("west", Location(game, "supply-1").Owner);
+        Assert.Null(Location(game, "supply-1").Capturing);
+    }
+
+    [Fact]
+    public void TRN_009_the_brigade_with_the_lowest_id_starts_the_capture_when_two_are_on_the_st()
+    {
+        var game = NewGame();
+        West(game).Position = At(0, 2);
+        AddWestBrigade(game, At(0, 2));
+        EndTurn(game);
+
+        Assert.Equal(2, Location(game, "supply-1").CapturingBrigade);
+    }
+
+    [Fact]
+    public void TEC_008_the_capturing_brigade_is_in_the_state_and_replays_to_the_same_hash()
+    {
+        var game = WestEndsTurnOnSupply();
+        var replayed = GameState.Replay(7, game.Log, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(Params()));
+
+        Assert.Equal(game.ComputeHash(), replayed.ComputeHash());
+        Assert.Equal(West(game).Id, Location(replayed, "supply-1").CapturingBrigade);
     }
 
     [Fact]
@@ -368,8 +437,8 @@ public class CaptureTerritoryTests
         // Pinned value computed independently in Python from the canonical text format, not from this code.
         var game = WestEndsTurnOnSupply();
 
-        Assert.Contains("location=supply-1 owner=- capturing=west\n", game.CanonicalText());
-        Assert.Equal("81f9c432b3a732ecb7083898ad8cb4e098bd2ecac568de1b6009ffdfd3e1a61c", game.ComputeHash());
+        Assert.Contains("location=supply-1 owner=- capturing=west brigade=2\n", game.CanonicalText());
+        Assert.Equal("7abce80d7ea0275852278a51f9ed6ef93c12dcb04e9853e32dafe69ac55f8b6d", game.ComputeHash());
     }
 
     [Fact]
