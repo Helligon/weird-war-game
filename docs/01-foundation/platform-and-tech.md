@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [foundation, tech]
 related: ["[[multiplayer]]", "[[map-editor]]"]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Platform and technology
@@ -34,6 +34,7 @@ The game will be built in **Unity** and published on **itch.io**. Alex is new to
 - **TEC-019** (`decided`, DEC-104): Simulation state that is hashed (TEC-008) MUST hold no floating-point numbers. It MUST use integers or decimals.
 - **TEC-014** (`decided`): The repo MUST use Git LFS for binary assets, using Unity's standard `.gitattributes` setup (DEC-087).
 - **TEC-015** (`decided`, revised by DEC-092): The Unity editor MUST be an LTS (long-term support) release. The project uses **6000.3.29f1** (Unity 6.3 LTS). The exact version is recorded in the project's `ProjectSettings/ProjectVersion.txt`.
+- **TEC-020** (`decided`, DEC-117): Production Unity work MUST use the Input System package (`com.unity.inputsystem`) from the start. Alex approved the dependency. Spike 2 keeps the legacy Input Manager (TEC-013).
 
 ## Open questions
 - Q-TEC-01 (answered → TEC-007): Not essential; possibly single-player only.

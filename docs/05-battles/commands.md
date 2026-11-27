@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [battle, controls]
 related: ["[[default-ai-behaviour]]", "[[player-character]]", "[[hierarchy]]"]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Commands and tactical view
@@ -44,6 +44,17 @@ The player gives orders to Sections from a tactical view. The command set is del
 ### Formations
 - **CMD-015** (`decided`): There MUST be no formations (may change later; see [[future-ideas]]).
 
+### Weapons and sprinting
+- **CMD-021** (`decided`, DEC-116): Range MUST belong to weapons (P-CMD-05), not to Officers, Sections or Units.
+- **CMD-022** (`decided`, DEC-116): Every rifle MUST have a rate of fire (P-CMD-06) and a spread (P-CMD-07).
+- **CMD-023** (`decided`, DEC-116): Moving MUST apply a penalty to accuracy (P-CMD-03) and to spread (P-CMD-08).
+- **CMD-024** (`decided`, DEC-116): Every unit, Officers included, MUST be able to sprint. Sprint speed MUST vary by unit type (P-CMD-09).
+- **CMD-025** (`decided`, DEC-116): A unit MUST NOT fire while sprinting.
+
+### Tactical view display
+- **CMD-026** (`decided`, DEC-116): In the tactical view, targeting an enemy Section (CMD-008) MUST show a red line from the selected Section to the target.
+- **CMD-027** (`decided`, DEC-116): Sections and Officers MUST have name labels.
+
 ## Parameters
 | ID | Name | Value | Status |
 |---|---|---|---|
@@ -51,6 +62,11 @@ The player gives orders to Sections from a tactical view. The command set is del
 | P-CMD-02 | Max Sections per side in battle | 10 | decided |
 | P-CMD-03 | Accuracy penalty while moving: the share of accuracy lost, so hit chance = accuracy × (1 − P-CMD-03) (DEC-098) | – | open |
 | P-CMD-04 | Next-to-cover distance: a waypoint this close to a cover object's edge counts as next to it (CMD-005, DEC-100) | 3 m (Spike 2 placeholder) | proposed |
+| P-CMD-05 | Weapon range, per weapon (CMD-021, DEC-116) | – | open |
+| P-CMD-06 | Rate of fire, per rifle (CMD-022, DEC-116) | – | open |
+| P-CMD-07 | Spread, per rifle (CMD-022, DEC-116) | – | open |
+| P-CMD-08 | Spread penalty while moving (CMD-023, DEC-116) | – | open |
+| P-CMD-09 | Sprint speed, per unit type (CMD-024, DEC-116) | – | open |
 
 ## Open questions
 - Q-CMD-01 (answered → CMD-016): No. Single-Section orders only.

@@ -29,6 +29,7 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 
 ### Movement
 - **SUP-005** (`decided`, revised by DEC-104): A Brigade MUST spend SP to move. It can move as far as its SP allows. Every Section type MUST consume at least 1 SP per hex (P-SUP-09), including future undead, which will be the minimum. A Section type with a capacity contribution of 0 is invalid.
+- **SUP-029** (`proposed`, DEC-113): Moving through the moving Faction's own territory (MAP-016, MAP-027) SHOULD cost less SP per hex than moving outside it, by P-SUP-13. How this fits the minimum of 1 SP per hex in SUP-005 is not decided.
 - **SUP-015** (`decided`): A Brigade MUST only spend SP from its own supply, never directly from the reserve (see UPK-007).
 - **SUP-006** (`decided`, revised by DEC-110): A Brigade's SP MUST NOT go below 0. A Brigade moves as far as its SP lets it: the path is walked hex by hex, and the Brigade stops on the last hex it could pay for. A move that stops at contact (TRN-008) works the same way.
 - **SUP-007** (`decided`, revised by DEC-111): A Brigade that attacks or defends in a battle with SP below P-SUP-02 of its capacity MUST be Overextended for that battle (SUP-003). SP below 0 is not possible (SUP-006).
@@ -74,6 +75,7 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 | P-SUP-05 | Well Supplied bonus (morale, reload) | – | open |
 | P-SUP-07 | Overextended morale penalty | – | open |
 | P-SUP-08 | Resupply range around the HQ and owned Supply STs, Major STs and FOBs | Same or adjacent hex | decided |
+| P-SUP-13 | SP saved per hex when moving through your own territory (SUP-029) | – | open |
 
 ## Interactions
 - [[deployment]]: Overextended deployment patterns, and reinforcement timing by supply state.
@@ -83,12 +85,15 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 
 ## Edge cases
 - A Brigade at 0 SP stays at 0 (SP never goes negative, SUP-006) and is Overextended.
+- A path whose last hex holds a friendly Brigade is accepted when running out of SP (SUP-006) stops the Brigade earlier, on an empty hex. Only a move that would end on the occupied hex is rejected (TRN-020, DEC-113).
 - With the placeholder budget (SUP-009), a Brigade that marches out, fights and marches back ends Overextended. This is a balance point for later.
 
 ## Removed parameters
 - Parameter 06 of the P-SUP series (the Low penalty, e.g. slower reloads) was struck by DEC-111 when the Low state was removed. Its number is not reused. (check_docs.py cannot read a struck parameter ID, so it is written without the full ID.)
 
 ## Open questions
+- Q-SUP-10: Should the number of hexes a Brigade moves per turn be capped, so that SP is not the only limit? To be trialled later. SUP-024 (no general cap) stands until then (DEC-113).
+- Q-SUP-11: P-SUP-03 and P-SUP-04, and possibly the P-SUP-02 threshold, will be tuned in a balancing session against SUP-008 and SUP-009 (DEC-111, DEC-113).
 - Q-SUP-01 (answered → SUP-016): Capacity = 10 hexes of movement + 1 battle, to be tuned later.
 - Q-SUP-05 (answered → SUP-019, SUP-020): Yes. Bigger Brigades have more capacity and higher cost per hex, and Section types have modifiers.
 - Q-SUP-06 (answered → SUP-024): No general cap; only Slow-tagged Sections.

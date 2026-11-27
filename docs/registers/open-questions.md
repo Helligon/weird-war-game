@@ -48,6 +48,8 @@ Generated from the **Open questions** sections of every feature note. The note i
 | Q-MAP-21 | [[map-and-locations]] | Any owned ST; lost on capture. | answered → MAP-052 |
 | Q-MAP-11 | [[map-and-locations]] | The Field depot Card was dropped, then brought back as a single-use Card. | answered → SUP-014 withdrawn, then reinstated by DEC-065 |
 | Q-RES-01 | [[resources]] | No. | answered → RES-008 |
+| Q-SUP-10 | [[supply]] | Should the number of hexes a Brigade moves per turn be capped, so that SP is not the only limit? To be trialled later. SUP-024 (no general cap) stands until then (DEC-113). | open |
+| Q-SUP-11 | [[supply]] | P-SUP-03 and P-SUP-04, and possibly the P-SUP-02 threshold, will be tuned in a balancing session against SUP-008 and SUP-009 (DEC-111, DEC-113). | open |
 | Q-SUP-01 | [[supply]] | Capacity = 10 hexes of movement + 1 battle, to be tuned later. | answered → SUP-016 |
 | Q-SUP-05 | [[supply]] | Yes. Bigger Brigades have more capacity and higher cost per hex, and Section types have modifiers. | answered → SUP-019, SUP-020 |
 | Q-SUP-06 | [[supply]] | No general cap; only Slow-tagged Sections. | answered → SUP-024 |
@@ -104,6 +106,8 @@ Generated from the **Open questions** sections of every feature note. The note i
 | Q-FAC-02 | [[factions-overview]] | No nation-wide bonuses; Sections may carry nation tags with modifiers. | answered → FAC-008, FAC-009 |
 | Q-WAL-01 | [[western-allies]] | Full faction-specific roster and stats. | open |
 | Q-BIN-01 | [[battle-initiation]] | Auto-resolve formula and its inputs. To be designed in a dedicated session once Brigades and values exist. | deferred → working session |
+| Q-BIN-05 | [[battle-initiation]] | When a Brigade makes contact next to several enemy Brigades, which one defends? Decide properly here; BIN-011 (lowest id) is an interim rule (DEC-115). | open |
+| Q-BIN-06 | [[battle-initiation]] | Can a Brigade that is already in a pending battle be drawn into a second battle (for example as reinforcements under BIN-009 or BIN-010, or by another Brigade's contact)? Linked to Q-BIN-01 and TRN-037 (DEC-115). | open |
 | Q-BIN-02 | [[battle-initiation]] | Defender chooses Fight / Retreat / Offer auto-resolve. | answered → BIN-005, BIN-006 |
 | Q-BIN-03 | [[battle-initiation]] | The defender picks one adjacent friendly Brigade to join. | answered → BIN-009 |
 | Q-BIN-04 | [[battle-initiation]] | Yes, the same as the defender. | answered → BIN-010 |
@@ -137,7 +141,7 @@ Generated from the **Open questions** sections of every feature note. The note i
 | Q-MOR-06 | [[morale]] | Yes to both. | answered → MOR-014 |
 | Q-MOR-04 | [[morale]] | Capped at 100%. | answered → MOR-016 |
 | Q-MOR-05 | [[morale]] | The event catalogue: what raises and lowers morale on the map and in battle, and by how much? | open |
-| Q-PCH-01 | [[player-character]] | Third-person controls, camera and weapon handling. | deferred → dedicated session with a prototype |
+| Q-PCH-01 | [[player-character]] | Third-person controls, camera and weapon handling. Start production from the Spike 2 scheme; eased camera turning, a sweeping view switch, and weapon rules (range, rate of fire, spread, moving penalty, sprint) are decided (DEC-116). | answered → PCH-010 to PCH-014, CMD-021 to CMD-025 |
 | Q-PCH-02 | [[player-character]] | No. | answered → PCH-008 |
 | Q-VIC-01 | [[victory-and-routing]] | Morale model and rout chance. | answered → [[morale]] |
 | Q-VIC-02 | [[victory-and-routing]] | Yes. | answered → MOR-012 |
@@ -192,7 +196,12 @@ Generated from the **Open questions** sections of every feature note. The note i
 | Q-MUL-02 | [[multiplayer]] | Any pairing, including mirrors. | answered → MUL-010 |
 | Q-MUL-03 | [[multiplayer]] | Private invites only, no matchmaking. | answered → MUL-012 |
 | Q-MUL-04 | [[multiplayer]] | Single session for now; asynchronous play later. | answered → MUL-013 |
-| Q-MUL-05 | [[multiplayer]] | How will real-time battles be networked (e.g. a deterministic simulation driven by commands, or Unity netcode syncing state)? MUST be answered before production battle work starts, so battles aren't rebuilt later (DEC-087). | open |
+| Q-MUL-05 | [[multiplayer]] | A deterministic, command-driven battle is viable; build production battles that way. The network model is decided later (Q-MUL-10). | answered → MUL-015 |
+| Q-MUL-06 | [[multiplayer]] | What number type should battle state use when it is hashed or compared across machines: integers, fixed-point, or floats on one simulating machine (in the spirit of TEC-019)? To answer before production battle work. | open |
+| Q-MUL-07 | [[multiplayer]] | Should the command log header be self-contained, with the seed, the map and the data version in it? To answer before production battle work. | open |
+| Q-MUL-08 | [[multiplayer]] | Should the command log carry a per-step (or periodic) state hash, so a silent divergence is found? | open |
+| Q-MUL-09 | [[multiplayer]] | Should a battle hash be checked across platforms (Mac and Linux CI), as Spike 1 did for the campaign? | open |
+| Q-MUL-10 | [[multiplayer]] | Which network model sits on top of the deterministic battle: a server that runs the simulation while clients send commands, or lockstep? Decided later. | open |
 | Q-VEH-01 | [[vehicles]] | Vehicle types, classes, and whether they are Heavy or their own class. | open |
 | Q-VEH-02 | [[vehicles]] | Can the player character drive or crew vehicles in third person? | open |
 | Q-VEH-03 | [[vehicles]] | Repair mechanics (Sappers, Supply STs, Cards). | open |
