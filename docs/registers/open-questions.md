@@ -3,7 +3,7 @@ id: REG-Q
 title: Open questions register
 status: decided
 tags: [register]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Open questions register

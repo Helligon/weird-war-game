@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [campaign, economy, battle-modifier]
 related: ["[[resources]]", "[[upkeep-and-desertion]]", "[[deployment]]", "[[map-and-locations]]"]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Supply
@@ -24,18 +24,18 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 | Well Supplied | SP > P-SUP-01 of capacity | Bonus to morale and reload speed (P-SUP-05) |
 | Supplied | between thresholds | None |
 | Low | SP < P-SUP-02 of capacity | Small penalty, e.g. slower reloads (P-SUP-06) |
-| Overextended | SP < 0 on entering battle | Morale penalty (P-SUP-07) **and** loses choice of deployment (see [[deployment]]) |
+| Overextended | SP < P-SUP-13 when attacking or defending in a battle (takes precedence over Low) | Morale penalty (P-SUP-07) **and** loses choice of deployment (see [[deployment]]) |
 
 - **SUP-004** (`decided`): The UI MUST clearly show each Brigade's supply state.
 
 ### Movement
 - **SUP-005** (`decided`, revised by DEC-104): A Brigade MUST spend SP to move. It can move as far as its SP allows. Every Section type MUST consume at least 1 SP per hex (P-SUP-09), including future undead, which will be the minimum. A Section type with a capacity contribution of 0 is invalid.
 - **SUP-015** (`decided`): A Brigade MUST only spend SP from its own supply, never directly from the reserve (see UPK-007).
-- **SUP-006** (`decided`): A Brigade MUST NOT move into negative SP **unless that move ends in a battle**.
-- **SUP-007** (`decided`): A Brigade whose move into battle takes its SP below zero MUST be marked **Overextended** for that battle.
+- **SUP-006** (`decided`, revised by DEC-110): A Brigade's SP MUST NOT go below 0. A Brigade moves as far as its SP lets it: the path is walked hex by hex, and the Brigade stops on the last hex it could pay for. A move that stops at contact (TRN-008) works the same way.
+- **SUP-007** (`decided`, revised by DEC-110): A Brigade that attacks or defends in a battle with less SP than P-SUP-13 MUST be marked **Overextended** for that battle. SP below 0 is not possible (SUP-006).
 - **SUP-008** (`decided`): **Design target:** a Brigade at full capacity MUST be able to move a standard distance, fight, and move the same distance back with SP left over, so it is not penalised every time it attacks.
 - **SUP-009** (`proposed`, battle cost deferred to the battle-results Feature by DEC-104): Placeholder budget to meet SUP-008: standard march ≈ 30% of capacity (P-SUP-03), battle ≈ 20% (P-SUP-04). Full → march (~70%, Supplied) → battle (~50%) → march back (~20%, Low, not Overextended).
-- **SUP-010** (`proposed`, deferred to the battle-results Feature by DEC-104): A battle SHOULD consume SP (ammunition) (P-SUP-04).
+- **SUP-010** (`proposed`, deferred to the battle-results Feature by DEC-104): A battle SHOULD consume SP (ammunition) (P-SUP-04). A battle MUST NOT take a Brigade's SP below 0 (SUP-006).
 - **SUP-011** (`proposed`): Terrain SHOULD change movement cost (mud and no-man's-land more expensive, rail cheaper).
 
 ### Resupply
@@ -57,6 +57,7 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 - **SUP-018** (`decided`): Resupplying MUST cost nothing extra (no action, move or fee beyond the SP transferred). It is limited only by being near the HQ or an owned Supply ST, Major ST or FOB.
 - **SUP-014** (`decided`, reinstated by DEC-065): The Field depot Card MUST place a full Supply ST where a Brigade stands (it earns SP and is a resupply point). It is permanent and capturable. The Card is **single use** and MUST be removed from the deck after playing.
 - **SUP-026** (`decided`): A Supply ST from the Field depot Card MUST behave like any other Supply ST: it generates SP and resupplies Brigades.
+- **SUP-028** (`decided`, DEC-110): A resupply command MUST move the smallest of three amounts: the amount requested, the Brigade's room below its capacity, and the Faction's reserve. It MUST be rejected only if that smallest amount is 0, for example when the Brigade is full or the reserve is empty, or if the Brigade is not near a resupply point (SUP-012).
 - **SUP-027** (`decided`, DEC-104): An enemy Brigade standing on an owned ST or the HQ MUST block resupply from that location, the same way TRN-016 blocks income from an ST or FOB. The Faction MAY still resupply from its other locations.
 
 ## Parameters
@@ -74,6 +75,7 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 | P-SUP-05 | Well Supplied bonus (morale, reload) | – | open |
 | P-SUP-06 | Low penalty | – | open |
 | P-SUP-07 | Overextended morale penalty | – | open |
+| P-SUP-13 | Overextended threshold: SP below this when attacking or defending (SUP-007) | 5 SP (placeholder) | proposed |
 | P-SUP-08 | Resupply range around the HQ and owned Supply STs, Major STs and FOBs | Same or adjacent hex | decided |
 
 ## Interactions
@@ -83,8 +85,8 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 - [[cards]]: Resupply and Gain SP Cards.
 
 ## Edge cases
-- A Brigade at exactly 0 SP is Low, not Overextended (Overextended requires < 0).
-- A Brigade cannot go below 0 on a move that does not end in a battle (SUP-006).
+- A Brigade at 0 SP stays at 0: SP never goes negative (SUP-006). In a battle it is Overextended, because 0 is below P-SUP-13.
+- A Brigade with SP of P-SUP-13 or more is never Overextended, however low its SP is relative to capacity (it may be Low).
 
 ## Open questions
 - Q-SUP-01 (answered → SUP-016): Capacity = 10 hexes of movement + 1 battle, to be tuned later.

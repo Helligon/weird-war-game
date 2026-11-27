@@ -3,7 +3,7 @@ id: GLO
 title: Glossary
 status: decided
 tags: [foundation, reference]
-updated: 2026-11-21
+updated: 2026-11-27
 ---
 
 # Glossary
@@ -40,7 +40,7 @@ The maximum SP a Brigade can carry (its supply train).
 ### Supply state
 Well Supplied / Supplied / Low / Overextended. Derived from a Brigade's SP relative to its capacity. See [[supply]].
 ### Overextended
-A Brigade that entered a battle with SP below zero.
+A Brigade that attacked or defended in a battle with SP below the Overextended threshold (P-SUP-13).
 ### Upkeep
 The SP cost per turn of keeping a Brigade in the field. See [[upkeep-and-desertion]].
 ### Desertion

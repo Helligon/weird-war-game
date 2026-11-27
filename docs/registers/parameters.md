@@ -3,7 +3,7 @@ id: REG-P
 title: Parameters register
 status: decided
 tags: [register]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Parameters register
@@ -46,8 +46,10 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-SUP-05 | Well Supplied bonus (morale, reload) | – | open | [[supply]] |
 | P-SUP-06 | Low penalty | – | open | [[supply]] |
 | P-SUP-07 | Overextended morale penalty | – | open | [[supply]] |
+| P-SUP-13 | Overextended threshold: SP below this when attacking or defending (SUP-007) | 5 SP (placeholder) | proposed | [[supply]] |
 | P-SUP-08 | Resupply range around the HQ and owned Supply STs, Major STs and FOBs | Same or adjacent hex | decided | [[supply]] |
 | P-TRN-01 | Extra starting Cards for the second player | 1 | decided | [[turn-structure]] |
+| P-TRN-02 | SP cost of attacking an adjacent enemy hex (TRN-036) | 1 (placeholder) | proposed | [[turn-structure]] |
 | P-UPK-01 | Upkeep inside perimeter | 0 | decided | [[upkeep-and-desertion]] |
 | P-UPK-02 | Upkeep outside perimeter | whole SP per turn by title (e.g. Infantry 1, Artillery 2) | decided (examples), open (full table) | [[upkeep-and-desertion]] |
 | P-UPK-03 | Desertion health loss range | ~15% (bounds TBD) | decided (centre), open (bounds) | [[upkeep-and-desertion]] |
