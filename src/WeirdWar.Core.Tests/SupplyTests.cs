@@ -70,11 +70,9 @@ public class SupplyTests
     [InlineData(75, SupplyState.Supplied)]   // exactly on P-SUP-01: not above
     [InlineData(50, SupplyState.Supplied)]
     [InlineData(25, SupplyState.Supplied)]   // exactly on P-SUP-02: not below
-    [InlineData(24, SupplyState.Low)]
-    [InlineData(1, SupplyState.Low)]
-    [InlineData(0, SupplyState.Low)]         // zero is Low, not Overextended
-    [InlineData(-1, SupplyState.Overextended)]
-    [InlineData(-50, SupplyState.Overextended)]
+    [InlineData(24, SupplyState.Overextended)]
+    [InlineData(1, SupplyState.Overextended)]
+    [InlineData(0, SupplyState.Overextended)]
     public void SUP_003_supply_state_follows_the_thresholds(int sp, SupplyState expected)
     {
         // Capacity 100, so SP equals the percentage of capacity.
@@ -91,7 +89,7 @@ public class SupplyTests
         Assert.Equal(SupplyState.WellSupplied, supply.StateOf(Make(51, "x")));
         Assert.Equal(SupplyState.Supplied, supply.StateOf(Make(50, "x")));
         Assert.Equal(SupplyState.Supplied, supply.StateOf(Make(10, "x")));
-        Assert.Equal(SupplyState.Low, supply.StateOf(Make(9, "x")));
+        Assert.Equal(SupplyState.Overextended, supply.StateOf(Make(9, "x")));
     }
 
     [Fact]
@@ -137,7 +135,7 @@ public class SupplyTests
     }
 
     [Fact]
-    public void SUP_008_march_battle_and_march_back_leave_sp_and_do_not_overextend()
+    public void SUP_008_march_battle_and_march_back_leave_sp()
     {
         var capacity = Supply.CapacityOf(Infantry(5));
         var march = Params.GetDouble("P-SUP-03") * capacity;   // proposed placeholders, data only
@@ -146,8 +144,7 @@ public class SupplyTests
         var left = capacity - march - battle - march;
 
         Assert.True(left > 0, "SP left " + left);
-        // SUP-009 predicts about 20% left, which is Low and not Overextended.
-        Assert.Equal(SupplyState.Low, Supply.StateOf(Infantry(5, (int)Math.Floor(left))));
+        // Only the leftover SP is asserted. The state on the march back is an open question for Alex (DEC-111).
     }
 
     [Fact]
@@ -159,6 +156,31 @@ public class SupplyTests
 
         Assert.Equal(SupplyState.Supplied, supply.StateOf(Make(63, "x")));
         Assert.Equal(SupplyState.WellSupplied, supply.StateOf(Make(64, "x")));
+    }
+
+    [Fact]
+    public void SUP_003_a_brigade_state_is_one_of_exactly_three()
+    {
+        Assert.Equal(new[] { "Overextended", "Supplied", "WellSupplied" }, Enum.GetNames(typeof(SupplyState)).OrderBy(n => n).ToArray());
+    }
+
+    [Fact]
+    public void SUP_007_a_brigade_below_P_SUP_02_of_capacity_is_overextended()
+    {
+        var capacity = Supply.CapacityOf(Infantry(5));
+        var below = (int)Math.Ceiling(0.25 * capacity) - 1;
+
+        Assert.Equal(SupplyState.Overextended, Supply.StateOf(Infantry(5, below)));
+        Assert.Equal(SupplyState.Supplied, Supply.StateOf(Infantry(5, below + 1)));
+    }
+
+    [Fact]
+    public void SUP_003_a_missing_P_SUP_02_fails_at_game_start()
+    {
+        var withoutIt = string.Join("\n", File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "data", "parameters.txt")).Where(l => !l.StartsWith("P-SUP-02")));
+        var map = MapImporter.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "data", "maps", "sample-20x12.json")));
+
+        Assert.Throws<MissingParameterException>(() => new GameState(1, map, Types, ParameterTable.Parse(withoutIt)));
     }
 
     [Fact]
