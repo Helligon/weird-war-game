@@ -581,6 +581,30 @@ public class MovementTests
         Assert.Contains("SUP-005", e.Message);
     }
 
+    [Fact]
+    public void SUP_005_a_section_type_with_a_capacity_contribution_of_zero_is_rejected_naming_type_and_field()
+    {
+        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":0,\"consumptionPerHex\":1}}}";
+
+        var e = Assert.Throws<SectionTypeFormatException>(() => SectionTypeTable.Parse(json));
+        Assert.Contains("\"x\"", e.Message);
+        Assert.Contains("capacityContribution", e.Message);
+    }
+
+    [Fact]
+    public void SUP_005_a_section_type_with_a_capacity_contribution_of_one_loads()
+    {
+        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1}}}";
+
+        Assert.Equal(1, SectionTypeTable.Parse(json).Get("x").CapacityContribution);
+    }
+
+    [Fact]
+    public void SUP_005_the_shipped_section_types_load()
+    {
+        Assert.NotNull(SectionTypeTable.LoadShipped());
+    }
+
     // ---- TEC-008
 
     [Fact]
