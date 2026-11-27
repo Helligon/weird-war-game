@@ -33,7 +33,7 @@ public class CaptureTerritoryTests
 
     private static LocationState Location(GameState g, string id) => g.Locations.Single(l => l.Id == id);
     private static FactionState Faction(GameState g, string id) => g.Factions.Single(f => f.Id == id);
-    private static Brigade West(GameState g) => g.Brigades.First(b => b.Faction == "west"); // the original one: the lowest id
+    private static Brigade West(GameState g) => g.Brigades.Single(b => b.Id == 2); // west's starting Brigade (east is 1)
     private static Brigade East(GameState g) => g.Brigades.Single(b => b.Faction == "east");
     private static HexCoord At(int c, int r) => HexCoord.FromOffset(c, r);
     private static void EndTurn(GameState g) => Assert.True(g.ApplyCommand(new EndTurnCommand(g.ActiveFaction)).Accepted);
@@ -140,7 +140,7 @@ public class CaptureTerritoryTests
     }
 
     [Fact]
-    public void TRN_009_the_brigade_with_the_lowest_id_starts_the_capture_when_two_are_on_the_st()
+    public void TEC_008_safeguard_the_lowest_id_starts_the_capture_in_a_state_TRN_020_forbids()
     {
         var game = NewGame();
         West(game).Position = At(0, 2);

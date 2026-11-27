@@ -686,4 +686,31 @@ public class MovementTests
 
         Assert.Equal("a430beb08dfb119fe82fb75b687e823617f688a18b766be1d0124fc74f110427", game.ComputeHash());
     }
+
+    // ---- Carried from the PR 98 review
+
+    [Fact]
+    public void SUP_025_a_slow_brigade_with_sp_for_two_hexes_given_a_three_hex_path_is_rejected_by_the_path_length()
+    {
+        // The Slow cap counts the whole path ordered, not only the hexes SP would pay for (a path longer than the cap is rejected).
+        var game = NewGame("thrall,thrall,thrall");
+        West(game).SP = 6; // two hexes at 3 SP
+        var hash = game.ComputeHash();
+
+        Assert.False(Move(game, 3).Accepted);
+        Assert.Equal(hash, game.ComputeHash());
+    }
+
+    [Fact]
+    public void TRN_020_a_full_path_ending_on_a_friendly_held_hex_is_accepted_when_sp_stops_the_brigade_earlier_on_an_empty_hex()
+    {
+        // Pins the current reading of TRN-020 (only the hex the Brigade stops on counts) while the question to Alex is open.
+        var game = NewGame();
+        West(game).SP = 7; // two hexes
+        ((List<Brigade>)game.Brigades).Add(new Brigade(3, "west", 40, At(0, 3), new List<Section> { new Section("infantry", 10) }));
+
+        Assert.True(Move(game, 3).Accepted);
+
+        Assert.Equal(At(0, 2), West(game).Position);
+    }
 }

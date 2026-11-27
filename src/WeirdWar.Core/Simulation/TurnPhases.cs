@@ -58,7 +58,7 @@ namespace WeirdWar.Core.Simulation
             foreach (var l in state.Locations)
             {
                 if (l.Type == LocationType.Hq || l.Owner == faction) continue;
-                // The Brigade with the lowest id on the hex starts it, so the choice is the same on every replay.
+                // Safeguard only: TRN-020 means no two Brigades share a hex, so at most one is found. If a bug ever allowed two, the lowest id would start the capture, so the choice is the same on every replay.
                 var starter = state.Brigades.Where(b => b.Faction == faction && b.Position.Equals(l.Position)).OrderBy(b => b.Id).FirstOrDefault();
                 if (starter == null) continue;
                 l.Capturing = faction;
