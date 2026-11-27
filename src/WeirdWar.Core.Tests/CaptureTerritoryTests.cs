@@ -26,14 +26,14 @@ public class CaptureTerritoryTests
     private const string Sight = "P-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1";
     private const string Radius = "P-MAP-02 = minus=1 min=1";
     private static string Params(string sight = Sight, string radius = Radius)
-        => "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\n" + sight + "\n" + radius + "\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
+        => "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\n" + sight + "\n" + radius + "\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
 
     private static GameState NewGame(string? parameters = null)
         => new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(parameters ?? Params()));
 
     private static LocationState Location(GameState g, string id) => g.Locations.Single(l => l.Id == id);
     private static FactionState Faction(GameState g, string id) => g.Factions.Single(f => f.Id == id);
-    private static Brigade West(GameState g) => g.Brigades.First(b => b.Faction == "west"); // the original one: the lowest id
+    private static Brigade West(GameState g) => g.Brigades.Single(b => b.Id == 2); // west's starting Brigade (east is 1)
     private static Brigade East(GameState g) => g.Brigades.Single(b => b.Faction == "east");
     private static HexCoord At(int c, int r) => HexCoord.FromOffset(c, r);
     private static void EndTurn(GameState g) => Assert.True(g.ApplyCommand(new EndTurnCommand(g.ActiveFaction)).Accepted);
@@ -140,7 +140,7 @@ public class CaptureTerritoryTests
     }
 
     [Fact]
-    public void TRN_009_the_brigade_with_the_lowest_id_starts_the_capture_when_two_are_on_the_st()
+    public void TEC_008_safeguard_the_lowest_id_starts_the_capture_in_a_state_TRN_020_forbids()
     {
         var game = NewGame();
         West(game).Position = At(0, 2);
@@ -438,7 +438,7 @@ public class CaptureTerritoryTests
         var game = WestEndsTurnOnSupply();
 
         Assert.Contains("location=supply-1 owner=- capturing=west brigade=2\n", game.CanonicalText());
-        Assert.Equal("7abce80d7ea0275852278a51f9ed6ef93c12dcb04e9853e32dafe69ac55f8b6d", game.ComputeHash());
+        Assert.Equal("41e196b1d5251764631561947026a58e9e2bf82744ec17f1d54ab64fac910ed1", game.ComputeHash());
     }
 
     [Fact]

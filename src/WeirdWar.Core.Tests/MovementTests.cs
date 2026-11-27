@@ -24,7 +24,7 @@ public class MovementTests
         "\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
         "\"west\":{\"brigade\":{\"sections\":[" + westSections + "]}}}}";
 
-    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
+    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
 
     private static GameState NewGame(string westSections = "infantry,infantry,infantry", string parameters = Params)
     {
@@ -389,7 +389,7 @@ public class MovementTests
         Assert.Contains("enemy", result.Reason);
         Assert.Equal(hash, game.ComputeHash());
         Assert.False(Move(game, 2).Accepted);
-        Assert.True(Move(game, 1).Accepted); // the hex before the enemy is fine
+        Assert.True(Move(game, 1).Accepted); // the hex before the enemy is fine (contact stops it there)
     }
 
     [Fact]
@@ -681,6 +681,33 @@ public class MovementTests
         var game = NewGame();
         Assert.True(Move(game, 2).Accepted);
 
-        Assert.Equal("d439219c9191220fa81b6a0c1fcc83f973b114e7b4d8497ca42f180a57a866c1", game.ComputeHash());
+        Assert.Equal("a430beb08dfb119fe82fb75b687e823617f688a18b766be1d0124fc74f110427", game.ComputeHash());
+    }
+
+    // ---- Carried from the PR 98 review
+
+    [Fact]
+    public void SUP_025_a_slow_brigade_with_sp_for_two_hexes_given_a_three_hex_path_is_rejected_by_the_path_length()
+    {
+        // The Slow cap counts the whole path ordered, not only the hexes SP would pay for (a path longer than the cap is rejected).
+        var game = NewGame("thrall,thrall,thrall");
+        West(game).SP = 6; // two hexes at 3 SP
+        var hash = game.ComputeHash();
+
+        Assert.False(Move(game, 3).Accepted);
+        Assert.Equal(hash, game.ComputeHash());
+    }
+
+    [Fact]
+    public void TRN_020_a_full_path_ending_on_a_friendly_held_hex_is_accepted_when_sp_stops_the_brigade_earlier_on_an_empty_hex()
+    {
+        // Pins the current reading of TRN-020 (only the hex the Brigade stops on counts) while the question to Alex is open.
+        var game = NewGame();
+        West(game).SP = 7; // two hexes
+        ((List<Brigade>)game.Brigades).Add(new Brigade(3, "west", 40, At(0, 3), new List<Section> { new Section("infantry", 10) }));
+
+        Assert.True(Move(game, 3).Accepted);
+
+        Assert.Equal(At(0, 2), West(game).Position);
     }
 }
