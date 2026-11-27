@@ -133,6 +133,31 @@ namespace WeirdWar.Core
             return v;
         }
 
+        /// <summary>
+        /// Reads a parameter written as "key=number" pairs (TEC-017): single spaces between pairs and the keys exactly in
+        /// <paramref name="keys"/> order (the order the parameter's row documents). Each number is a whole number.
+        /// A missing ID throws <see cref="MissingParameterException"/>; any other mismatch throws
+        /// <see cref="ParameterFormatException"/> naming the ID.
+        /// </summary>
+        public Dictionary<string, int> GetKeyedInts(string id, params string[] keys)
+        {
+            var text = Get(id);
+            var pairs = text.Split(' ');
+            var expected = string.Join(" ", keys) + " in that order, single-spaced";
+            if (pairs.Length != keys.Length)
+                throw new ParameterFormatException($"{id} = '{text}' must be key=number pairs for: {expected}.");
+            var result = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (var i = 0; i < keys.Length; i++)
+            {
+                var kv = pairs[i].Split('=');
+                if (kv.Length != 2 || kv[0] != keys[i]
+                    || !int.TryParse(kv[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+                    throw new ParameterFormatException($"{id} = '{text}' must be key=number pairs for: {expected}.");
+                result[kv[0]] = v;
+            }
+            return result;
+        }
+
         public double GetDouble(string id)
         {
             var text = Get(id);

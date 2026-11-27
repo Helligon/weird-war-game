@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using WeirdWar.Core.Maps;
 
@@ -22,8 +21,8 @@ namespace WeirdWar.Core.Simulation
         public TerritoryRules(ParameterTable parameters)
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
-            var sight = ParseKeys("P-FOW-03", parameters.Get("P-FOW-03"), "hq", "fob", "major", "command", "supply");
-            var rule = ParseKeys("P-MAP-02", parameters.Get("P-MAP-02"), "minus", "min");
+            var sight = parameters.GetKeyedInts("P-FOW-03", "hq", "fob", "major", "command", "supply");
+            var rule = parameters.GetKeyedInts("P-MAP-02", "minus", "min");
             foreach (var kv in sight)
                 if (kv.Value < 0) throw new ParameterFormatException("P-FOW-03: '" + kv.Key + "' must not be negative.");
             foreach (var kv in rule)
@@ -33,22 +32,6 @@ namespace WeirdWar.Core.Simulation
             _radius[LocationType.Major] = Radius("major");
             _radius[LocationType.Command] = Radius("command");
             _radius[LocationType.Supply] = Radius("supply");
-        }
-
-        private static Dictionary<string, int> ParseKeys(string id, string text, params string[] keys)
-        {
-            var result = new Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (var part in text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                var kv = part.Split('=');
-                if (kv.Length != 2 || !keys.Contains(kv[0]) || result.ContainsKey(kv[0])
-                    || !int.TryParse(kv[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
-                    throw new ParameterFormatException(id + " = '" + text + "' must be 'key=number' pairs for: " + string.Join(", ", keys) + ".");
-                result[kv[0]] = v;
-            }
-            foreach (var k in keys)
-                if (!result.ContainsKey(k)) throw new ParameterFormatException(id + " = '" + text + "' has no value for '" + k + "'.");
-            return result;
         }
 
         /// <summary>The territory radius of a location type (MAP-027): its sight minus P-MAP-02's amount, never below the minimum.</summary>
