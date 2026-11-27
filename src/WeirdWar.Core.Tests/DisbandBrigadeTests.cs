@@ -154,7 +154,7 @@ public class DisbandBrigadeTests
         RemoveSections(game, west, 3);
         // A new Brigade (never id 2) stands on the ST at west's next turn start.
         var fresh = new Brigade(game.TakeBrigadeId(), "west", 40, At(0, 2), new List<Section> { new Section("infantry", 10) });
-        ((List<Brigade>)game.Brigades).Add(fresh);
+        game.AddBrigade(fresh);
 
         EndTurn(game);
 

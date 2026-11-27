@@ -179,7 +179,7 @@ namespace WeirdWar.Core.Simulation
         internal int NextBrigadeId => _nextBrigadeId;
         private int _nextBrigadeId = 1;
 
-        /// <summary>Takes the next never-used Brigade id. Whatever forms a Brigade later calls this.</summary>
+        /// <summary>Takes the next never-used Brigade id. Whatever forms a Brigade later calls this. May only be called from inside a command's Apply (DLV-013).</summary>
         internal int TakeBrigadeId() => _nextBrigadeId++;
 
         /// <summary>Adds a formed Brigade. Whatever forms Brigades later calls this; until then tests use it to place extra Brigades. Take its id from <see cref="TakeBrigadeId"/>.</summary>
@@ -190,6 +190,7 @@ namespace WeirdWar.Core.Simulation
         /// is disbanded (BRG-023): it leaves <see cref="Brigades"/>, so its hex is free. Nothing else is touched: a pending
         /// battle that names the Brigade stays as it is, because no rule says what happens to it. The officer's return to
         /// the roster is a later Story. After forming there is no minimum size (BRG-020).
+        /// May only be called from inside a command's Apply (DLV-013).
         /// </summary>
         internal void RemoveSectionFromBrigade(Brigade brigade, int sectionIndex)
         {
