@@ -40,13 +40,11 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-SUP-11 | Undead rot losses per turn | – | open | [[supply]] |
 | P-SUP-12 | Undead grace period (turns without battle before rotting) | 2 | decided | [[supply]] |
 | P-SUP-01 | Well Supplied threshold | 75% | decided | [[supply]] |
-| P-SUP-02 | Low threshold | 25% | decided | [[supply]] |
+| P-SUP-02 | Overextended threshold (fraction of capacity) | 25% | decided | [[supply]] |
 | P-SUP-03 | Standard march cost | ~30% (re-derive from hex costs) | proposed | [[supply]] |
 | P-SUP-04 | Battle SP cost | ~20% | proposed | [[supply]] |
 | P-SUP-05 | Well Supplied bonus (morale, reload) | – | open | [[supply]] |
-| P-SUP-06 | Low penalty | – | open | [[supply]] |
 | P-SUP-07 | Overextended morale penalty | – | open | [[supply]] |
-| P-SUP-13 | Overextended threshold: SP below this when attacking or defending (SUP-007) | 5 SP (placeholder) | proposed | [[supply]] |
 | P-SUP-08 | Resupply range around the HQ and owned Supply STs, Major STs and FOBs | Same or adjacent hex | decided | [[supply]] |
 | P-TRN-01 | Extra starting Cards for the second player | 1 | decided | [[turn-structure]] |
 | P-TRN-02 | SP cost of attacking an adjacent enemy hex (TRN-036) | 1 (placeholder) | proposed | [[turn-structure]] |
@@ -88,8 +86,7 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-DAI-04 | Hit chance of an uncontrolled officer's shot, rolled on the battle's seeded random source (DAI-005, DEC-102) | 0.5 (Spike 2 placeholder) | proposed | [[default-ai-behaviour]] |
 | P-DEP-01 | Terrain → pattern weights | – | open | [[deployment]] |
 | P-DEP-02 | Max Brigades per side (= 2) | – | decided | [[deployment]] |
-| P-DEP-03 | Low-supply reinforcement timer | – | open | [[deployment]] |
-| P-DEP-04 | Overextended reinforcement timer (> P-DEP-03) | – | open | [[deployment]] |
+| P-DEP-03 | Overextended reinforcement timer (longer than P-DEP-05; DEC-111 removed the separate Low tier and the longest-timer row; its number, 04, is not reused) | – | open | [[deployment]] |
 | P-DEP-05 | Well Supplied / Supplied reinforcement timer (short) | – | open | [[deployment]] |
 | P-DEP-06 | Deployment-zone depth | – | 15–20% of map depth (decided) | [[deployment]] |
 | P-MOR-01 | Default Brigade base morale | – | open | [[morale]] |

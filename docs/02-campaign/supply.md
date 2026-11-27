@@ -17,14 +17,13 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 ### Capacity and states
 - **SUP-001** (`decided`): Each Brigade MUST have a supply capacity (its supply train) (P-SUP-00).
 - **SUP-002** (`decided`): Supply state MUST be measured relative to capacity, so bigger Brigades need more SP to stay effective.
-- **SUP-003** (`decided`): Supply states MUST be:
+- **SUP-003** (`decided`, revised by DEC-111): There MUST be three supply states, derived from SP relative to capacity (the Low state is removed):
 
 | State | Condition | Effect in battle |
 |---|---|---|
 | Well Supplied | SP > P-SUP-01 of capacity | Bonus to morale and reload speed (P-SUP-05) |
 | Supplied | between thresholds | None |
-| Low | SP < P-SUP-02 of capacity | Small penalty, e.g. slower reloads (P-SUP-06) |
-| Overextended | SP < P-SUP-13 when attacking or defending in a battle (takes precedence over Low) | Morale penalty (P-SUP-07) **and** loses choice of deployment (see [[deployment]]) |
+| Overextended | SP < P-SUP-02 of capacity | Morale penalty (P-SUP-07) **and** loses choice of deployment (see [[deployment]]) |
 
 - **SUP-004** (`decided`): The UI MUST clearly show each Brigade's supply state.
 
@@ -32,9 +31,9 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 - **SUP-005** (`decided`, revised by DEC-104): A Brigade MUST spend SP to move. It can move as far as its SP allows. Every Section type MUST consume at least 1 SP per hex (P-SUP-09), including future undead, which will be the minimum. A Section type with a capacity contribution of 0 is invalid.
 - **SUP-015** (`decided`): A Brigade MUST only spend SP from its own supply, never directly from the reserve (see UPK-007).
 - **SUP-006** (`decided`, revised by DEC-110): A Brigade's SP MUST NOT go below 0. A Brigade moves as far as its SP lets it: the path is walked hex by hex, and the Brigade stops on the last hex it could pay for. A move that stops at contact (TRN-008) works the same way.
-- **SUP-007** (`decided`, revised by DEC-110): A Brigade that attacks or defends in a battle with less SP than P-SUP-13 MUST be marked **Overextended** for that battle. SP below 0 is not possible (SUP-006).
+- **SUP-007** (`decided`, revised by DEC-111): A Brigade that attacks or defends in a battle with SP below P-SUP-02 of its capacity MUST be Overextended for that battle (SUP-003). SP below 0 is not possible (SUP-006).
 - **SUP-008** (`decided`): **Design target:** a Brigade at full capacity MUST be able to move a standard distance, fight, and move the same distance back with SP left over, so it is not penalised every time it attacks.
-- **SUP-009** (`proposed`, battle cost deferred to the battle-results Feature by DEC-104): Placeholder budget to meet SUP-008: standard march ≈ 30% of capacity (P-SUP-03), battle ≈ 20% (P-SUP-04). Full → march (~70%, Supplied) → battle (~50%) → march back (~20%, Low, not Overextended).
+- **SUP-009** (`proposed`, battle cost deferred to the battle-results Feature by DEC-104): Placeholder budget to meet SUP-008: standard march ≈ 30% of capacity (P-SUP-03), battle ≈ 20% (P-SUP-04). Full → march (~70%, Supplied) → battle (~50%) → march back (~20%, Overextended).
 - **SUP-010** (`proposed`, deferred to the battle-results Feature by DEC-104): A battle SHOULD consume SP (ammunition) (P-SUP-04). A battle MUST NOT take a Brigade's SP below 0 (SUP-006).
 - **SUP-011** (`proposed`): Terrain SHOULD change movement cost (mud and no-man's-land more expensive, rail cheaper).
 
@@ -69,13 +68,11 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 | P-SUP-11 | Undead rot losses per turn | – | open |
 | P-SUP-12 | Undead grace period (turns without battle before rotting) | 2 | decided |
 | P-SUP-01 | Well Supplied threshold | 75% | decided |
-| P-SUP-02 | Low threshold | 25% | decided |
+| P-SUP-02 | Overextended threshold (fraction of capacity) | 25% | decided |
 | P-SUP-03 | Standard march cost | ~30% (re-derive from hex costs) | proposed |
 | P-SUP-04 | Battle SP cost | ~20% | proposed |
 | P-SUP-05 | Well Supplied bonus (morale, reload) | – | open |
-| P-SUP-06 | Low penalty | – | open |
 | P-SUP-07 | Overextended morale penalty | – | open |
-| P-SUP-13 | Overextended threshold: SP below this when attacking or defending (SUP-007) | 5 SP (placeholder) | proposed |
 | P-SUP-08 | Resupply range around the HQ and owned Supply STs, Major STs and FOBs | Same or adjacent hex | decided |
 
 ## Interactions
@@ -85,8 +82,11 @@ Each Brigade carries SP up to its **supply capacity**. SP is spent to move. A Br
 - [[cards]]: Resupply and Gain SP Cards.
 
 ## Edge cases
-- A Brigade at 0 SP stays at 0: SP never goes negative (SUP-006). In a battle it is Overextended, because 0 is below P-SUP-13.
-- A Brigade with SP of P-SUP-13 or more is never Overextended, however low its SP is relative to capacity (it may be Low).
+- A Brigade at 0 SP stays at 0 (SP never goes negative, SUP-006) and is Overextended.
+- With the placeholder budget (SUP-009), a Brigade that marches out, fights and marches back ends Overextended. This is a balance point for later.
+
+## Removed parameters
+- Parameter 06 of the P-SUP series (the Low penalty, e.g. slower reloads) was struck by DEC-111 when the Low state was removed. Its number is not reused. (check_docs.py cannot read a struck parameter ID, so it is written without the full ID.)
 
 ## Open questions
 - Q-SUP-01 (answered → SUP-016): Capacity = 10 hexes of movement + 1 battle, to be tuned later.
