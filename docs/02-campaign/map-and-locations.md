@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [campaign, map]
 related: ["[[supply]]", "[[upkeep-and-desertion]]", "[[brigades]]", "[[battle-maps]]", "[[fog-of-war]]", "[[resources]]", "[[map-editor]]"]
-updated: 2026-11-25
+updated: 2026-11-26
 ---
 
 # Map and locations
@@ -71,7 +71,7 @@ The campaign is played on fixed, hand-made hex maps (about 50 wide by 30 tall to
 - **MAP-014** (`decided`): A destroyed FOB MUST be called a **Levelled FOB** (working name).
 
 ### Supply STs as resupply points
-- **MAP-015** (`decided`): There MUST be no separate "supply depot" location. Supply STs generate SP **and** are where Brigades resupply (on or adjacent). All start neutral, except those placed by the single-use Field depot Card (SUP-014).
+- **MAP-015** (`decided`, revised by DEC-104): There MUST be no separate "supply depot" location. Supply STs generate SP **and** are where Brigades resupply (on or adjacent), and so are Major STs, once owned (SUP-012, SUP-013). All start neutral, except those placed by the single-use Field depot Card (SUP-014).
 
 ### Garrisons
 - **MAP-046** (`decided`): The only ST upgrade MUST be the Supply ST → FOB upgrade (MAP-012).
@@ -87,8 +87,8 @@ The campaign is played on fixed, hand-made hex maps (about 50 wide by 30 tall to
 - **MAP-030** (`decided`): A Brigade defending a Major ST MUST get a larger morale and defence bonus than at other STs (P-MAP-08).
 
 ### Territory
-- **MAP-016** (`decided`): A Faction's territory MUST be the hexes around the locations it owns.
-- **MAP-027** (`decided`): Each owned location MUST claim territory in a radius equal to its sight radius minus 1, with a minimum of 1 (P-MAP-02):
+- **MAP-016** (`decided`, revised by DEC-104): A Faction's territory MUST be the hexes around the locations it owns, **including each location's own hex**. Every hex MUST count, including sea, mountain and river; only the map edge limits it. To be revisited when upkeep uses territory.
+- **MAP-027** (`decided`, revised by DEC-104): Each owned location MUST claim territory in a radius equal to its sight radius minus 1, with a minimum of 1 (P-MAP-02), counted from the location's own hex (MAP-016):
 
 | Location | Sight (P-FOW-03) | Territory radius |
 |---|---|---|
@@ -102,15 +102,16 @@ The campaign is played on fixed, hand-made hex maps (about 50 wide by 30 tall to
 - **MAP-031** (`decided`): **Every** FOB MUST generate SP each turn, whether it was upgraded from a Supply ST or placed by the New FOB Card (P-MAP-14). An upgraded Supply ST keeps the same amount for now (may be increased later).
 - **MAP-013** (`decided`): Supply ST→FOB upgrades are kept in check by their rising CP cost (MAP-025).
 
+### Hex layout
+- **MAP-053** (`decided`, DEC-104): Hexes MUST be flat-top with **odd-q** offset coordinates: odd columns sit half a hex lower. Map files MUST give a hex as `[column,row]`, both counted from 0 at the top left (MED-006).
+
 ## Parameters
 | ID | Name | Value | Status |
 |---|---|---|---|
 | P-MAP-01 | FOB-capture bonus | ~50% of build cost, in SP + CP | decided |
-| P-MAP-02 | Territory radius | sight − 1, min 1 | decided |
+| P-MAP-02 | Territory radius: sight minus `minus`, at least `min` (per-type format, TEC-017; keys in the order `minus`, `min`) | minus=1 min=1 | decided |
 | P-MAP-03 | Supply ST→FOB upgrade cost | standard SP + rising CP | decided (values open) |
 | P-MAP-04 | Starting map size | ~50×30 hexes (50 wide, 30 tall) | decided |
-| P-MAP-05 | HQ income per turn (SP, CP) | – | open |
-| P-MAP-06 | Income per ST type | – | open |
 | P-MAP-07 | Major ST bombardment defence | – | open |
 | P-MAP-08 | Defender morale/defence bonus by ST type | – | open |
 | P-MAP-09 | HQ and FOB health | – | open |

@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [forces, content]
 related: ["[[unit-tags]]", "[[factions-overview]]", "[[vehicles]]"]
-updated: 2026-11-21
+updated: 2026-11-26
 ---
 
 # Standard roster
@@ -22,7 +22,7 @@ Every Faction has access to a standard set of Section types. Faction-specific Se
 | Riflemen | All-rounder | Infantry | decided |
 | Shotgunners | Close range | Infantry | decided |
 | Snipers | Long range | Infantry | decided |
-| Sappers | Anti-armour | Support | decided (class proposed) |
+| Sappers | Anti-armour | Support | decided (class proposed; the Sapper class is deferred to the battle-results Feature, DEC-104) |
 | Heavy infantry | Mechanised armoured infantry | Heavy | decided |
 | Medic | Healing / damage reduction | Support | decided |
 | Machine gunners | Suppression | Infantry | proposed |

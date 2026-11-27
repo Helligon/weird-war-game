@@ -19,6 +19,7 @@ A battle is won by destroying or routing every enemy Unit. There is no time limi
 - **VIC-003** (`decided`): Routed Units that escape MUST survive with low health and a morale penalty (P-VIC-01). They are not destroyed.
 - **VIC-004** (`decided`): Battles MUST have no time limit (the only timer is for reinforcements; see [[deployment]]).
 - **VIC-006** (`decided`, DEC-101): Once a side has won, the battle MUST end. It no longer advances and accepts no further commands, so the recorded command log matches the battle.
+- **VIC-007** (`decided`, DEC-104): If the last Units of both sides are destroyed or routed at the same moment, the battle MUST end in a draw: neither side wins, and the outcome is `Draw`. This closes Q-VIC-04.
 - **VIC-005** (`proposed`): Pursuing routing Units SHOULD be worthwhile, especially to stop veterans escaping.
 
 ## Parameters
@@ -31,7 +32,7 @@ A battle is won by destroying or routing every enemy Unit. There is no time limi
 - Q-VIC-01 (answered → [[morale]]): Morale model and rout chance.
 - Q-VIC-02 (answered → MOR-012): Yes.
 - Q-VIC-03 (answered → TRN-010 to TRN-016): Defenders retreat towards the nearest HQ/FOB, attackers fall back, and a Brigade that can't retreat is destroyed.
-- Q-VIC-04: What happens if both sides' last Units are destroyed at the same moment? Spike 2 calls it a draw as a stand-in (DEC-101).
+- Q-VIC-04 (answered → VIC-007): A draw: neither side wins, and the outcome is `Draw`.
 
 ## Out of scope
 - Anti-stalemate supply drain: **deferred** ([[future-ideas]]).

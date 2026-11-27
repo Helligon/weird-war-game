@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [campaign, economy]
 related: ["[[supply]]", "[[cards]]", "[[map-and-locations]]"]
-updated: 2026-11-21
+updated: 2026-11-26
 ---
 
 # Resources: SP and CP
@@ -34,13 +34,18 @@ Two currencies. **Supply Points (SP)** are logistics: movement, upkeep, forming 
 - **RES-011** (`decided`): The guaranteed minimum income MUST exist so that a losing player can recover. It MUST come from the HQ (MAP-024).
 - **RES-012** (`proposed`): ST bonuses SHOULD diminish as a Faction holds more STs, to limit snowballing.
 
+### Starting values
+- **RES-013** (`decided`, DEC-104): A Faction MUST start the campaign with a starting SP reserve (P-RES-05) and starting CP (P-RES-06).
+
 ## Parameters
 | ID | Name | Status |
 |---|---|---|
 | P-RES-01 | Base SP income per turn | open |
 | P-RES-02 | Base CP income per turn | open |
 | P-RES-03 | CP cap / decay | proposed |
-| P-RES-04 | SP / CP bonus per ST (by type) | open |
+| P-RES-04 | SP / CP bonus per ST: one bonus for all ST types for now; MAY be split per type later using the per-type format (TEC-017) | open |
+| P-RES-05 | Starting SP reserve | 5 | decided |
+| P-RES-06 | Starting CP | 0 | decided |
 
 ## Interactions
 - [[upkeep-and-desertion]]: upkeep is paid in SP.

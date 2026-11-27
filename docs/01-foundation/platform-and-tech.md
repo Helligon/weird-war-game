@@ -29,6 +29,9 @@ The game will be built in **Unity** and published on **itch.io**. Alex is new to
 - **TEC-006** (`decided`): The art style SHOULD stay simple-looking (VIS-006), which helps performance, especially for a browser build.
 - **TEC-013** (`decided`): Spike code MUST live in a `prototypes/` folder in this repo and is merged to `main` like any other work. It is throwaway: production code MUST NOT build on it (DEC-087).
 - **TEC-016** (`decided`, DEC-103): Production code MUST live in top-level `src/`: the simulation core in `src/WeirdWar.Core` (netstandard2.1, no Unity references, DLV-012) and its tests in `src/WeirdWar.Core.Tests`, with its own CI job. Nothing in `src/` MAY reference `prototypes/` (TEC-013). Whether Unity loads the core as a DLL or a local package is decided in the first Unity Feature.
+- **TEC-017** (`decided`, DEC-104): A parameter MAY hold one value per type. It MUST be written as `key=number` pairs separated by single spaces, with the keys in a fixed order that the parameter's row documents (for example P-FOW-03: `hq=3 fob=2 major=2 command=1 supply=1`). The same format MAY name parts of a value instead of types (P-MAP-02: `minus=1 min=1`).
+- **TEC-018** (`decided`, DEC-104): Percentages MUST be stored in data as fractions (0.75, not 75%).
+- **TEC-019** (`decided`, DEC-104): Simulation state that is hashed (TEC-008) MUST hold no floating-point numbers. It MUST use integers or decimals.
 - **TEC-014** (`decided`): The repo MUST use Git LFS for binary assets, using Unity's standard `.gitattributes` setup (DEC-087).
 - **TEC-015** (`decided`, revised by DEC-092): The Unity editor MUST be an LTS (long-term support) release. The project uses **6000.3.29f1** (Unity 6.3 LTS). The exact version is recorded in the project's `ProjectSettings/ProjectVersion.txt`.
 
