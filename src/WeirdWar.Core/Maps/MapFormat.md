@@ -72,7 +72,8 @@ decided and are not part of this format.
 ## Locations (MAP-003, MAP-015, MAP-022)
 
 Each entry in `locations` has `id` (unique), `type`, `at` (`[column, row]`, on the grid) and, for an HQ only,
-`faction`. Any other key is an error.
+`faction`. Any other key is an error. A location on a `mountain`, `sea` or `river` hex is an error, and so are two
+locations on the same hex (MED-007).
 
 | Type | Meaning |
 |---|---|
