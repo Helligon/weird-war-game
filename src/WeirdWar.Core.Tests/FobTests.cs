@@ -202,7 +202,7 @@ public class FobTests
     }
 
     [Fact]
-    public void MAP_013_only_the_active_faction_can_upgrade()
+    public void TRN_006_only_the_active_faction_can_upgrade()
     {
         var (game, f) = Setup();
 
@@ -386,6 +386,15 @@ public class FobTests
         Assert.Throws<MissingParameterException>(() => NewGame(Params.Replace("\nP-MAP-14 = 7", "")));
         Assert.Throws<MissingParameterException>(() => NewGame(Params.Replace("\nP-MAP-03 = sp=5 cp=2 cpStep=3", "")));
         Assert.Throws<ParameterFormatException>(() => NewGame(Params.Replace("cpStep=3", "cpStep=-1")));
+    }
+
+    [Fact]
+    public void MAP_025_a_cp_step_below_1_fails_at_game_start_naming_the_parameter()
+    {
+        var zero = Assert.Throws<ParameterFormatException>(() => NewGame(Params.Replace("cpStep=3", "cpStep=0")));
+        Assert.Contains("P-MAP-03", zero.Message);
+        Assert.Contains("P-MAP-03", Assert.Throws<ParameterFormatException>(() => NewGame(Params.Replace("cpStep=3", "cpStep=-1"))).Message);
+        NewGame(Params.Replace("cpStep=3", "cpStep=1"));   // 1 is allowed
     }
 
     [Fact]

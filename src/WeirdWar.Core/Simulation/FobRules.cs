@@ -17,6 +17,7 @@ namespace WeirdWar.Core.Simulation
             var v = parameters.GetKeyedInts("P-MAP-03", "sp", "cp", "cpStep");
             foreach (var kv in v)
                 if (kv.Value < 0) throw new ParameterFormatException("P-MAP-03: '" + kv.Key + "' must not be negative.");
+            if (v["cpStep"] < 1) throw new ParameterFormatException("P-MAP-03: cpStep = " + v["cpStep"] + " must be at least 1, so the CP cost rises with each upgrade (MAP-012, MAP-025).");
             _sp = v["sp"]; _cp = v["cp"]; _cpStep = v["cpStep"];
         }
 
