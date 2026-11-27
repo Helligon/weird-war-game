@@ -9,6 +9,7 @@ P-SUP-08 = 1      # Resupply range around an owned Supply ST or HQ, hexes: the s
 P-SUP-03 = 0.30   # placeholder (proposed): standard march cost, fraction of capacity; design-target tests only
 P-SUP-04 = 0.20   # placeholder (proposed): battle SP cost, fraction of capacity; design-target tests only (CC1 battles cost no SP)
 P-SUP-10 = 2     # placeholder (open): Slow hexes-per-turn cap, total across split moves
+P-BRG-01 = 5   # Most Sections in one Brigade, also through transfers (decided)
 P-BRG-05 = 3   # Starting Brigade size, Sections (decided)
 P-BRG-09 = 90  # Starting SP of each Faction's starting Brigade (decided)
 P-RES-05 = 5   # Starting SP reserve (decided)

@@ -30,7 +30,7 @@ public class SetupTests
         => "{\"version\":1,\"width\":6,\"height\":4,\"terrain\":{\"mountain\":[[1,1]]},\"factions\":" + factions +
            ",\"locations\":[" + locations + "],\"setup\":" + setup + "}";
 
-    private static ParameterTable Params() => ParameterTable.Parse("P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1");
+    private static ParameterTable Params() => ParameterTable.Parse("P-BRG-01 = 5\nP-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1");
 
     private static SectionTypeTable Types() => SectionTypeTable.Parse(TypesJson);
 
@@ -247,7 +247,7 @@ public class SetupTests
         Assert.Equal(3, shipped.GetInt("P-BRG-05"));
         Assert.False(shipped.IsPlaceholder("P-BRG-05"));
         // A different value in the table changes what the game accepts.
-        var two = ParameterTable.Parse("P-BRG-05 = 2\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1");
+        var two = ParameterTable.Parse("P-BRG-01 = 5\nP-BRG-05 = 2\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1");
         var json = MapJson(setup: SetupBlock.Replace("[\"infantry\",\"infantry\",\"artillery\"]", "[\"infantry\",\"infantry\"]").Replace("[\"infantry\",\"infantry\",\"recon\"]", "[\"infantry\",\"recon\"]"));
         Assert.Equal(2, new GameState(1, MapImporter.Parse(json), Types(), two).Brigades[0].Sections.Count);
     }
@@ -386,7 +386,7 @@ public class SetupTests
         Assert.Equal(
             "weirdwar.state.v1\nseed=7\nrandom=11400714819323198492\ntally=0\n" +
             "map=" + PinnedMapDigest + "\n" +
-            "parameters=cf40e3843a3405c001c35ec05f8e52a253717ad76ac34f0c9d9340182ecd5813\n" +
+            "parameters=6375cf5930a723e0850afcd6633e23138cde878dc132b9c3ad2e877dddb89e54\n" +
             "sectiontypes=112c78174a1ff84d08284198c7614f21d3328cd78a677dbe6351db8ccd9c563b\n" +
             "faction=east reserve=5 cp=0\nfaction=west reserve=10 cp=2\n" +
             "location=command-1 owner=-\nlocation=hq-east owner=east\nlocation=hq-west owner=west\n" +
@@ -397,7 +397,7 @@ public class SetupTests
             "turn=1 active=west phase=Actions\n" +
             "log=0\ndigest=" + new string('0', 64) + "\n",
             game.CanonicalText());
-        Assert.Equal("728bc709d06b90ca0ee0ecf909f8fe16f3dbbcff3258d48444dd2d8b8c6338b3", game.ComputeHash());
+        Assert.Equal("c470211ee6362380bc1a0cb3642ffda9ede42aaa08fe126851404de5e48d4531", game.ComputeHash());
     }
 
     [Fact]
@@ -406,7 +406,7 @@ public class SetupTests
         var game = NewGame();
         Assert.True(game.ApplyCommand(new AddToTallyCommand(5, "west")).Accepted);
 
-        Assert.Equal("c53cc55c1736e5114af7c1028114e16cdf161cf01eee8e04747c4a3cbb09e7bf", game.ComputeHash());
+        Assert.Equal("de37ee91fc950f79c696470a39a177e4ed9d7c35121af016d150acc19fbcf1a2", game.ComputeHash());
     }
 
     [Fact]
@@ -417,7 +417,7 @@ public class SetupTests
         Assert.True(game.ApplyCommand(new EndTurnCommand("west")).Accepted);
 
         Assert.Contains("turn=2 active=east phase=Actions\n", game.CanonicalText());
-        Assert.Equal("e6e750672dfc4ef67a31dabce4e8c456a83f82149562331ce009042043e42e05", game.ComputeHash());
+        Assert.Equal("c9c6600eb6902e8da837a2a16a7746207b993c7a9c4b936d09a58343b83e47c1", game.ComputeHash());
     }
 
     [Fact]

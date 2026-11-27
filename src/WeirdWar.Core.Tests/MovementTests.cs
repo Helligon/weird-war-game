@@ -24,7 +24,7 @@ public class MovementTests
         "\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
         "\"west\":{\"brigade\":{\"sections\":[" + westSections + "]}}}}";
 
-    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
+    private const string Params = "P-BRG-01 = 5\nP-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
 
     private static GameState NewGame(string westSections = "infantry,infantry,infantry", string parameters = Params)
     {
@@ -681,7 +681,7 @@ public class MovementTests
         var game = NewGame();
         Assert.True(Move(game, 2).Accepted);
 
-        Assert.Equal("fc2b13e4644aa63a6bd194a11836792b0c7aa71840fe2584604143afebcd4d46", game.ComputeHash());
+        Assert.Equal("3cb53aa5c86fda4a5c388cf6842172de460528687420fdecb849c66666ecf3b0", game.ComputeHash());
     }
 
     // ---- Carried from the PR 98 review
