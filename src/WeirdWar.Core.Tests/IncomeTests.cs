@@ -7,7 +7,7 @@ namespace WeirdWar.Core.Tests;
 public class IncomeTests
 {
     private const string TypesJson =
-        "{\"version\":1,\"sectionTypes\":{\"infantry\":{\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}}}";
+        "{\"version\":1,\"sectionTypes\":{\"infantry\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}}}";
 
     private const string MapJson =
         "{\"version\":1,\"width\":8,\"height\":4,\"terrain\":{},\"factions\":[\"east\",\"west\"],\"locations\":[" +

@@ -14,14 +14,22 @@ namespace WeirdWar.Core.Simulation
         public SectionTypeFormatException(string message) : base(message) { }
     }
 
+    /// <summary>The Section class (TAG-001).</summary>
+    public enum SectionClass { Infantry, Heavy, Artillery, Support }
+
     /// <summary>
-    /// Data for one Section type: health, sight (FOW-004) and the supply profile (P-SUP-09). Only the data shape
+    /// Data for one Section type: class, SP cost, health, Units, sight (FOW-004) and the supply profile (P-SUP-09). Only the data shape
     /// is defined here; the capacity maths comes later. Values are placeholders.
     /// </summary>
     public sealed class SectionType
     {
-        internal SectionType(string id, int health, int sight, int capacityContribution, int consumptionPerHex, bool slow = false)
+        internal SectionType(string id, SectionClass sectionClass, int spCost, int healthPerUnit, int maxUnits, int health, int sight, int capacityContribution, int consumptionPerHex, bool slow = false, bool strange = false)
         {
+            Class = sectionClass;
+            SpCost = spCost;
+            HealthPerUnit = healthPerUnit;
+            MaxUnits = maxUnits;
+            Strange = strange;
             Id = id;
             Health = health;
             Sight = sight;
@@ -31,6 +39,28 @@ namespace WeirdWar.Core.Simulation
         }
 
         public string Id { get; }
+
+        /// <summary>Infantry, Heavy, Artillery or Support (TAG-001).</summary>
+        public SectionClass Class { get; }
+
+        /// <summary>The SP cost of one Section of this type (BRG-034, P-BRG-02). Only the data; charging it comes later.</summary>
+        public int SpCost { get; }
+
+        /// <summary>Health of one Unit (HIE-002, P-HIE-02). Data only: nothing caps health by <see cref="MaxUnits"/> yet.</summary>
+        public int HealthPerUnit { get; }
+
+        /// <summary>Most Units a Section of this type has (P-HIE-01).</summary>
+        public int MaxUnits { get; }
+
+        /// <summary>The Strange tag, optional in the data and false when absent. TAG-004 and BRG-030 count Strange Sections.</summary>
+        public bool Strange { get; }
+
+        /// <summary>Heavy weaponry (TAG-012) is derived from the class, not stored per type.</summary>
+        public bool IsHeavyWeaponry => Class == SectionClass.Heavy || Class == SectionClass.Artillery;
+
+        /// <summary>Units at a given health: they follow health, rounding up, so 0 only at 0 health (HIE-002, HIE-004, HIE-010).</summary>
+        public int UnitsAt(int health) => health <= 0 ? 0 : (health + HealthPerUnit - 1) / HealthPerUnit;
+
         public int Health { get; }
         public int Sight { get; }
         public int CapacityContribution { get; }
@@ -60,6 +90,12 @@ namespace WeirdWar.Core.Simulation
             return t;
         }
 
+        /// <summary>Units of a Section, from its health (HIE-002, HIE-004, HIE-010).</summary>
+        public int UnitsOf(Section section) => Get(section.TypeId).UnitsAt(section.Health);
+
+        /// <summary>TAG-012: true for the Heavy and Artillery classes.</summary>
+        public static bool IsHeavyWeaponry(SectionType type) => type.IsHeavyWeaponry;
+
         public static SectionTypeTable Parse(string json)
         {
             object? root;
@@ -67,10 +103,16 @@ namespace WeirdWar.Core.Simulation
             catch (JsonException e) { throw new SectionTypeFormatException("Section types are not valid JSON: " + e.Message); }
             var obj = root as Dictionary<string, object?> ?? throw new SectionTypeFormatException("Section types must be a JSON object");
             foreach (var key in obj.Keys)
-                if (key != "version" && key != "status" && key != "sectionTypes")
-                    throw new SectionTypeFormatException("Unknown key \"" + key + "\" in section types (expected version, status, sectionTypes)");
+                if (key != "version" && key != "status" && key != "placeholders" && key != "sectionTypes")
+                    throw new SectionTypeFormatException("Unknown key \"" + key + "\" in section types (expected version, status, placeholders, sectionTypes)");
             if (!(obj.TryGetValue("version", out var v) && v is long ver && ver == 1))
                 throw new SectionTypeFormatException("Section types must have \"version\": 1");
+            if (obj.TryGetValue("placeholders", out var ph))
+            {
+                var markers = ph as Dictionary<string, object?> ?? throw new SectionTypeFormatException("\"placeholders\" must be an object of text markers");
+                foreach (var m in markers)
+                    if (!(m.Value is string)) throw new SectionTypeFormatException("Placeholder marker \"" + m.Key + "\" must be text");
+            }
             var list = obj.TryGetValue("sectionTypes", out var s) ? s as Dictionary<string, object?> : null;
             if (list == null || list.Count == 0) throw new SectionTypeFormatException("\"sectionTypes\" must be an object with at least one type");
 
@@ -80,8 +122,20 @@ namespace WeirdWar.Core.Simulation
                 if (!MapIds.IsValid(kv.Key)) throw new SectionTypeFormatException("Section type id \"" + kv.Key + "\" may only use letters, digits, - and _");
                 var o = kv.Value as Dictionary<string, object?> ?? throw new SectionTypeFormatException("Section type \"" + kv.Key + "\" must be an object");
                 foreach (var key in o.Keys)
-                    if (key != "health" && key != "sight" && key != "capacityContribution" && key != "consumptionPerHex" && key != "slow")
+                    if (key != "class" && key != "spCost" && key != "healthPerUnit" && key != "maxUnits" && key != "strange" && key != "health" && key != "sight" && key != "capacityContribution" && key != "consumptionPerHex" && key != "slow")
                         throw new SectionTypeFormatException("Unknown key \"" + key + "\" in section type \"" + kv.Key + "\"");
+                if (!o.TryGetValue("class", out var cv) || !(cv is string cs))
+                    throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": missing \"class\" (Infantry, Heavy, Artillery or Support, TAG-001)");
+                if (!(cs == "Infantry" || cs == "Heavy" || cs == "Artillery" || cs == "Support") || !Enum.TryParse<SectionClass>(cs, out var sectionClass))
+                    throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": unknown class \"" + cs + "\" (Infantry, Heavy, Artillery or Support, TAG-001)");
+                var spCost = Num(o, kv.Key, "spCost");
+                var healthPerUnit = Num(o, kv.Key, "healthPerUnit");
+                if (healthPerUnit < 1) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": healthPerUnit must be at least 1 (HIE-002)");
+                var maxUnits = Num(o, kv.Key, "maxUnits");
+                if (maxUnits < 1) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": maxUnits must be at least 1 (HIE-002)");
+                var strange = false;
+                if (o.TryGetValue("strange", out var strangeValue))
+                    strange = strangeValue as bool? ?? throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": \"strange\" must be true or false (TAG-004)");
                 var sight = Num(o, kv.Key, "sight");
                 if (sight < 1 || sight > 3) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": sight must be 1 to 3 (FOW-004, P-FOW-01)");
                 var health = Num(o, kv.Key, "health");
@@ -93,7 +147,7 @@ namespace WeirdWar.Core.Simulation
                 if (consumption < 1) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": consumptionPerHex must be at least 1, because a Brigade MUST spend SP to move (SUP-005, RES-004)");
                 var capacity = Num(o, kv.Key, "capacityContribution");
                 if (capacity < 1) throw new SectionTypeFormatException("Section type \"" + kv.Key + "\": capacityContribution must be at least 1 (SUP-005)");
-                types[kv.Key] = new SectionType(kv.Key, health, sight, capacity, consumption, slow);
+                types[kv.Key] = new SectionType(kv.Key, sectionClass, spCost, healthPerUnit, maxUnits, health, sight, capacity, consumption, slow, strange);
             }
             return new SectionTypeTable(types);
         }
@@ -126,8 +180,12 @@ namespace WeirdWar.Core.Simulation
                   .Append(" sight=").Append(t.Sight.ToString(CultureInfo.InvariantCulture))
                   .Append(" capacity=").Append(t.CapacityContribution.ToString(CultureInfo.InvariantCulture))
                   .Append(" consumption=").Append(t.ConsumptionPerHex.ToString(CultureInfo.InvariantCulture))
-                  // Only written when set, so the digest of data without the Slow tag is unchanged.
-                  .Append(t.Slow ? " slow=1" : "").Append('\n');
+                  .Append(" class=").Append(t.Class.ToString())
+                  .Append(" spcost=").Append(t.SpCost.ToString(CultureInfo.InvariantCulture))
+                  .Append(" hpu=").Append(t.HealthPerUnit.ToString(CultureInfo.InvariantCulture))
+                  .Append(" maxunits=").Append(t.MaxUnits.ToString(CultureInfo.InvariantCulture))
+                  // Tags are only written when set.
+                  .Append(t.Slow ? " slow=1" : "").Append(t.Strange ? " strange=1" : "").Append('\n');
             return sb.ToString();
         }
     }

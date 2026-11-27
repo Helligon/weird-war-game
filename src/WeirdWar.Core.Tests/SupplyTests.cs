@@ -5,12 +5,12 @@ namespace WeirdWar.Core.Tests;
 
 public class SupplyTests
 {
-    private static readonly SectionTypeTable Types = SectionTypeTable.LoadShipped();
+    private static readonly SectionTypeTable Types = SectionTypeTable.Load(Path.Combine(AppContext.BaseDirectory, "data", "test-section-types.json"));
     private static readonly ParameterTable Params = ParameterTable.LoadShipped();
     private static readonly Supply Supply = new Supply(Types, Params);
 
     private const string OneTypeJson =
-        "{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":100,\"consumptionPerHex\":1}}}";
+        "{\"version\":1,\"sectionTypes\":{\"x\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":100,\"consumptionPerHex\":1}}}";
 
     private static Brigade Make(int sp, params string[] sections)
         => new Brigade(1, "east", sp, HexCoord.FromOffset(0, 0), sections.Select(t => new Section(t, 1)).ToList());
@@ -27,8 +27,8 @@ public class SupplyTests
     public void SUP_021_capacity_and_cost_are_sums_of_the_section_profiles()
     {
         var types = SectionTypeTable.Parse("{\"version\":1,\"sectionTypes\":{" +
-            "\"a\":{\"health\":1,\"sight\":1,\"capacityContribution\":40,\"consumptionPerHex\":3}," +
-            "\"b\":{\"health\":1,\"sight\":2,\"capacityContribution\":7,\"consumptionPerHex\":5}}}");
+            "\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":40,\"consumptionPerHex\":3}," +
+            "\"b\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":2,\"capacityContribution\":7,\"consumptionPerHex\":5}}}");
         var supply = new Supply(types, Params);
 
         var brigade = Make(0, "a", "a", "b");
@@ -113,13 +113,15 @@ public class SupplyTests
     public void SUP_004_the_core_reports_every_brigades_supply_state()
     {
         var map = MapImporter.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "data", "maps", "sample-20x12.json")));
-        var game = new GameState(1, map, Types, Params);
+        var shipped = SectionTypeTable.LoadShipped();
+        var supply = new Supply(shipped, Params);
+        var game = new GameState(1, map, shipped, Params);
         var before = game.ComputeHash();
 
-        var states = Supply.StatesOf(game);
+        var states = supply.StatesOf(game);
 
         Assert.Equal(game.Brigades.Select(b => b.Id), states.Select(s => s.Key));
-        Assert.Equal(game.Brigades.Select(b => Supply.StateOf(b)), states.Select(s => s.Value));
+        Assert.Equal(game.Brigades.Select(b => supply.StateOf(b)), states.Select(s => s.Value));
         Assert.Equal(before, game.ComputeHash()); // derived on demand: the hash is unchanged
     }
 
@@ -151,7 +153,7 @@ public class SupplyTests
     public void SUP_003_a_non_dyadic_threshold_is_exact_on_its_boundary()
     {
         // 0.70 * 90 is 62.99999999999999 in double; exactly 70% of 90 is 63, which is not above the threshold.
-        var types = SectionTypeTable.Parse("{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":90,\"consumptionPerHex\":1}}}");
+        var types = SectionTypeTable.Parse("{\"version\":1,\"sectionTypes\":{\"x\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":90,\"consumptionPerHex\":1}}}");
         var supply = new Supply(types, ParameterTable.Parse("P-SUP-01 = 0.70\nP-SUP-02 = 0.25\nP-SUP-08 = 1\n"));
 
         Assert.Equal(SupplyState.Supplied, supply.StateOf(Make(63, "x")));
@@ -187,10 +189,11 @@ public class SupplyTests
     public void SUP_004_states_of_a_game_need_a_supply_built_from_the_games_own_section_types()
     {
         var map = MapImporter.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "data", "maps", "sample-20x12.json")));
-        var game = new GameState(1, map, Types, Params);
-        var other = new Supply(SectionTypeTable.LoadShipped(), Params);
+        var shipped = SectionTypeTable.LoadShipped();
+        var game = new GameState(1, map, shipped, Params);
+        var other = new Supply(Types, Params);
 
         Assert.Throws<ArgumentException>(() => other.StatesOf(game));
-        Assert.Equal(game.Brigades.Count, Supply.StatesOf(game).Count);
+        Assert.Equal(game.Brigades.Count, new Supply(shipped, Params).StatesOf(game).Count);
     }
 }

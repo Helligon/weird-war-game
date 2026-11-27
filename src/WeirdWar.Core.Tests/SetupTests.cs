@@ -9,9 +9,9 @@ public class SetupTests
 {
     private const string TypesJson =
         "{\"version\":1,\"sectionTypes\":{" +
-        "\"infantry\":{\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}," +
-        "\"artillery\":{\"health\":6,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":2}," +
-        "\"recon\":{\"health\":4,\"sight\":3,\"capacityContribution\":25,\"consumptionPerHex\":1}}}";
+        "\"infantry\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}," +
+        "\"artillery\":{\"class\":\"Artillery\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":6,\"health\":6,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":2}," +
+        "\"recon\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":4,\"health\":4,\"sight\":3,\"capacityContribution\":25,\"consumptionPerHex\":1}}}";
 
     private const string Hqs =
         "{\"id\":\"hq-east\",\"type\":\"hq\",\"at\":[5,1],\"faction\":\"east\"}," +
@@ -280,7 +280,7 @@ public class SetupTests
     public void SUP_016_placeholder_profiles_let_a_five_section_brigade_move_10_hexes_and_fight_one_battle()
     {
         // SUP-021: capacity and cost per hex are sums. P-SUP-03 (~30%) and P-SUP-04 (~20%) are proposed placeholders.
-        var inf = SectionTypeTable.LoadShipped().Get("infantry");
+        var inf = SectionTypeTable.Load(Path.Combine(AppContext.BaseDirectory, "data", "test-section-types.json")).Get("infantry");
         var capacity = 5 * inf.CapacityContribution;
         var march10 = 10 * 5 * inf.ConsumptionPerHex;
         var battle = capacity * 20 / 100;
@@ -351,10 +351,10 @@ public class SetupTests
     }
 
     [Theory]
-    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"health\":1,\"sight\":4,\"capacityContribution\":1,\"consumptionPerHex\":1}}}")]
-    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"health\":0,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1}}}")]
-    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"health\":1,\"sight\":1,\"capacityContribution\":1}}}")]
-    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1,\"sp\":1}}}")]
+    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":4,\"capacityContribution\":1,\"consumptionPerHex\":1}}}")]
+    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":0,\"health\":0,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1}}}")]
+    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":1}}}")]
+    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1,\"sp\":1}}}")]
     [InlineData("{\"version\":1,\"sectionTypes\":{}}")]
     [InlineData("{\"version\":2,\"sectionTypes\":{}}")]
     [InlineData("{\"sectionTypes\":{}}")]
@@ -387,7 +387,7 @@ public class SetupTests
             "weirdwar.state.v1\nseed=7\nrandom=11400714819323198492\ntally=0\n" +
             "map=" + PinnedMapDigest + "\n" +
             "parameters=cf40e3843a3405c001c35ec05f8e52a253717ad76ac34f0c9d9340182ecd5813\n" +
-            "sectiontypes=3682338fa7adc7ba4e6dad930b4292cd2e583523d2e7c16d432aae993ebbcd99\n" +
+            "sectiontypes=112c78174a1ff84d08284198c7614f21d3328cd78a677dbe6351db8ccd9c563b\n" +
             "faction=east reserve=5 cp=0\nfaction=west reserve=10 cp=2\n" +
             "location=command-1 owner=-\nlocation=hq-east owner=east\nlocation=hq-west owner=west\n" +
             "location=major-1 owner=-\nlocation=supply-1 owner=-\n" +
@@ -396,7 +396,7 @@ public class SetupTests
             "turn=1 active=west phase=Actions\n" +
             "log=0\ndigest=" + new string('0', 64) + "\n",
             game.CanonicalText());
-        Assert.Equal("8f740b333f247d092b88b75e5b4ecc603bde04e0a1e81c320e1b6539754ded66", game.ComputeHash());
+        Assert.Equal("60110ee4ef2a84becf5b8f5bb41baf1a6be39bd75db725fb611a1ac009185fb3", game.ComputeHash());
     }
 
     [Fact]
@@ -405,7 +405,7 @@ public class SetupTests
         var game = NewGame();
         Assert.True(game.ApplyCommand(new AddToTallyCommand(5, "west")).Accepted);
 
-        Assert.Equal("aa7a19c26b383a6779a63c22ccb6d819b9c43346a19581b1bad52194a4895a2c", game.ComputeHash());
+        Assert.Equal("d69f2c369b0ed119af991b118c1831d432521131dacca0fab9555829053b606c", game.ComputeHash());
     }
 
     [Fact]
@@ -416,7 +416,7 @@ public class SetupTests
         Assert.True(game.ApplyCommand(new EndTurnCommand("west")).Accepted);
 
         Assert.Contains("turn=2 active=east phase=Actions\n", game.CanonicalText());
-        Assert.Equal("85019a440ce5542de3b2a0f89c793dc2570f80794a9387cdc3a8a79cbfcad908", game.ComputeHash());
+        Assert.Equal("15e885d08ab264c62bbc8cafd7979df856183cc96ae2867bcfe7ff7b79330411", game.ComputeHash());
     }
 
     [Fact]
@@ -438,7 +438,7 @@ public class SetupTests
     {
         var baseline = NewGame().ComputeHash();
         var otherMap = NewGame(json: MapJson().Replace("[[1,1]]", "[[2,2]]")).ComputeHash();
-        var otherTypes = new GameState(7, MapImporter.Parse(MapJson()), SectionTypeTable.Parse(TypesJson.Replace("\"health\":10", "\"health\":11")), Params()).ComputeHash();
+        var otherTypes = new GameState(7, MapImporter.Parse(MapJson()), SectionTypeTable.Parse(TypesJson.Replace("\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10", "\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":11,\"health\":11")), Params()).ComputeHash();
 
         Assert.NotEqual(baseline, otherMap);
         Assert.NotEqual(baseline, otherTypes);

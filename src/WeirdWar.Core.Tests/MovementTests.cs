@@ -11,8 +11,8 @@ public class MovementTests
     // Seed 7 gives west the first turn (see TurnTests). Every Section here costs 1 SP per hex, so a Brigade costs 3 per hex.
     private const string TypesJson =
         "{\"version\":1,\"sectionTypes\":{" +
-        "\"infantry\":{\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}," +
-        "\"thrall\":{\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1,\"slow\":true}}}";
+        "\"infantry\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}," +
+        "\"thrall\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1,\"slow\":true}}}";
 
     private static string MapJson(string westSections = "\"infantry\",\"infantry\",\"infantry\"") =>
         "{\"version\":1,\"width\":4,\"height\":10," +
@@ -528,7 +528,7 @@ public class MovementTests
     [InlineData("\"slow\":null")]
     public void TAG_010_a_slow_value_that_is_not_true_or_false_is_rejected(string slow)
     {
-        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1," + slow + "}}}";
+        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1," + slow + "}}}";
 
         Assert.Throws<SectionTypeFormatException>(() => SectionTypeTable.Parse(json));
     }
@@ -575,7 +575,7 @@ public class MovementTests
     [Fact]
     public void SUP_005_a_section_type_that_costs_no_sp_to_move_is_rejected_by_the_data_loader()
     {
-        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":0}}}";
+        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":0}}}";
 
         var e = Assert.Throws<SectionTypeFormatException>(() => SectionTypeTable.Parse(json));
         Assert.Contains("SUP-005", e.Message);
@@ -584,7 +584,7 @@ public class MovementTests
     [Fact]
     public void SUP_005_a_section_type_with_a_capacity_contribution_of_zero_is_rejected_naming_type_and_field()
     {
-        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":0,\"consumptionPerHex\":1}}}";
+        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":0,\"consumptionPerHex\":1}}}";
 
         var e = Assert.Throws<SectionTypeFormatException>(() => SectionTypeTable.Parse(json));
         Assert.Contains("\"x\"", e.Message);
@@ -594,7 +594,7 @@ public class MovementTests
     [Fact]
     public void SUP_005_a_section_type_with_a_capacity_contribution_of_one_loads()
     {
-        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1}}}";
+        var json = "{\"version\":1,\"sectionTypes\":{\"x\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1}}}";
 
         Assert.Equal(1, SectionTypeTable.Parse(json).Get("x").CapacityContribution);
     }
@@ -681,7 +681,7 @@ public class MovementTests
         var game = NewGame();
         Assert.True(Move(game, 2).Accepted);
 
-        Assert.Equal("a430beb08dfb119fe82fb75b687e823617f688a18b766be1d0124fc74f110427", game.ComputeHash());
+        Assert.Equal("8e100d656d5fa497ee05d841f98b0a3ab1c6e815a75f2442ff3715a06d9588b6", game.ComputeHash());
     }
 
     // ---- Carried from the PR 98 review
