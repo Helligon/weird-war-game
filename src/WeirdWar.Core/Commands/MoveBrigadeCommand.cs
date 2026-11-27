@@ -12,8 +12,8 @@ namespace WeirdWar.Core.Commands
     /// the hexes entered, in order, not the start hex. Validation covers the whole path, so a rejected move changes
     /// nothing. Apply then takes the SP hex by hex (TRN-029) and counts the hexes moved this turn (SUP-024).
     ///
-    /// Rules: SP is the limit (SUP-005); the SP comes only from the Brigade, never the reserve (SUP-015), and a move
-    /// that would take it below 0 is rejected (SUP-006; the battle exception is CC1-73). A Brigade with a Slow Section
+    /// Rules: SP is the limit (SUP-005); the SP comes only from the Brigade, never the reserve (SUP-015), and the Brigade stops on the last
+    /// hex it can pay for (SUP-005, SUP-006; a move that cannot pay for the first hex is rejected; the battle exception is CC1-73). A Brigade with a Slow Section
     /// may move at most P-SUP-10 hexes per turn in total (TAG-010, SUP-024, SUP-025). A hex that is impassable terrain,
     /// off the map or held by an enemy cannot be entered (TRN-023, TRN-024). No Brigade may end its move on an occupied
     /// hex, friendly or enemy (TRN-020); a path may pass through a friendly Brigade (TRN-023 lists only enemies as blocking).
@@ -53,8 +53,9 @@ namespace WeirdWar.Core.Commands
         /// The single walk along the path, used by both Validate and Apply so they cannot drift apart (CC1-73 will stop
         /// it at contact here). Returns the steps, or a reason the path cannot be walked. It reads the state and never changes it.
         /// </summary>
-        private string? Walk(GameState state, out Brigade? brigade, out List<Step> steps)
+        private string? Walk(GameState state, out Brigade? brigade, out List<Step> steps, out int pathLength)
         {
+            pathLength = _path.Length;
             steps = new List<Step>();
             brigade = null;
             if (state.Map == null || state.Supply == null || state.MovementRules == null) return "There is no campaign to move in";
@@ -80,17 +81,29 @@ namespace WeirdWar.Core.Commands
                     // TRN-023: an enemy hex is impassable anywhere on the path. TRN-020: no Brigade may end on an occupied hex;
                     // passing through a friendly one is allowed (TRN-023 lists only enemy Brigades as blocking).
                     if (holder.Faction != mover.Faction) return "Hex " + hex + " is held by an enemy Brigade (TRN-023)";
-                    if (i == _path.Length - 1) return "Hex " + hex + " is held by Brigade " + holder.Id + "; two Brigades cannot share a hex (TRN-020)";
                 }
                 steps.Add(new Step(hex, perHex * factor.Value));
                 from = hex;
             }
+
+            // SUP-005, SUP-006: the Brigade stops on the last hex its own SP pays for (SUP-015: never the reserve).
+            // The checks above still cover the whole path. CC1-73 adds the stop at contact here.
+            long left = mover.SP;
+            var paid = 0;
+            while (paid < steps.Count && steps[paid].Cost <= left) left -= steps[paid++].Cost;
+            if (paid == 0) return "The Brigade has " + mover.SP + " SP and cannot pay " + steps[0].Cost + " for the first hex; SP may not go below 0 (SUP-006, SUP-015)";
+            steps.RemoveRange(paid, steps.Count - paid);
+
+            // TRN-020: no Brigade may end its move on an occupied hex; the hex it stops on is the one that counts.
+            var end = steps[steps.Count - 1].Hex;
+            var onEnd = state.Brigades.FirstOrDefault(b => b.Id != mover.Id && b.Position == end);
+            if (onEnd != null) return "Hex " + end + " is held by Brigade " + onEnd.Id + "; two Brigades cannot share a hex (TRN-020)";
             return null;
         }
 
         public string? Validate(GameState state)
         {
-            var reason = Walk(state, out var brigade, out var steps);
+            var reason = Walk(state, out var brigade, out var steps, out var pathLength);
             if (reason != null) return reason;
             var b = brigade!;
 
@@ -98,19 +111,16 @@ namespace WeirdWar.Core.Commands
             {
                 var cap = state.MovementRules!.SlowCap;
                 var moved = b.HexesMovedIn(state.TurnNumber);
-                if (moved + steps.Count > cap)
-                    return "A Slow Brigade may move " + cap + " hexes a turn (P-SUP-10); it has moved " + moved + " and this move adds " + steps.Count;
+                if (moved + pathLength > cap)
+                    return "A Slow Brigade may move " + cap + " hexes a turn (P-SUP-10); it has moved " + moved + " and this move adds " + pathLength;
             }
 
-            long cost = steps.Sum(s => (long)s.Cost);
-            if (b.SP - cost < 0)
-                return "Moving " + steps.Count + " hexes costs " + cost + " SP and the Brigade has " + b.SP + "; SP may not go below 0 (SUP-006, SUP-015)";
             return null;
         }
 
         public void Apply(GameState state)
         {
-            Walk(state, out var brigade, out var steps);
+            Walk(state, out var brigade, out var steps, out _);
             var b = brigade!;
             // A new turn starts the count afresh (SUP-024).
             if (b.MovedTurn != state.TurnNumber) { b.MovedTurn = state.TurnNumber; b.MovedHexes = 0; }
