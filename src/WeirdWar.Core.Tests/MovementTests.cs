@@ -76,15 +76,16 @@ public class MovementTests
     }
 
     [Fact]
-    public void SUP_005_a_brigade_can_move_as_many_hexes_as_its_sp_allows_and_no_further()
+    public void SUP_005_a_path_longer_than_the_sp_allows_stops_on_the_last_hex_the_brigade_can_pay_for()
     {
         var game = NewGame();
         West(game).SP = 7; // 3 per hex: two hexes fit, three do not
 
-        Assert.False(Move(game, 3).Accepted);
-        Assert.True(Move(game, 2).Accepted);
-        Assert.Equal(1, West(game).SP);
+        Assert.True(Move(game, 3).Accepted);
+
         Assert.Equal(At(0, 2), West(game).Position);
+        Assert.Equal(1, West(game).SP); // the cost of two hexes only
+        Assert.Equal(2, West(game).HexesMovedIn(game.TurnNumber));
     }
 
     [Fact]
@@ -130,20 +131,49 @@ public class MovementTests
     // ---- SUP-006
 
     [Fact]
-    public void SUP_006_a_move_that_would_take_sp_below_zero_is_rejected_and_nothing_changes()
+    public void SUP_006_a_move_that_cannot_pay_for_the_first_hex_is_rejected_and_nothing_changes()
     {
         var game = NewGame();
-        West(game).SP = 5;
+        West(game).SP = 2; // 3 per hex
         var hash = game.ComputeHash();
 
-        var result = Move(game, 2); // costs 6
+        var result = Move(game, 2);
 
         Assert.False(result.Accepted);
         Assert.Contains("SUP-006", result.Reason);
-        Assert.Equal(5, West(game).SP);
+        Assert.Equal(2, West(game).SP);
         Assert.Equal(At(0, 0), West(game).Position);
         Assert.Equal(0, game.Log.Count);
         Assert.Equal(hash, game.ComputeHash());
+    }
+
+    [Fact]
+    public void SUP_006_a_stop_on_a_hex_held_by_a_friendly_brigade_is_rejected_and_nothing_changes()
+    {
+        var game = NewGame();
+        West(game).SP = 7; // pays for two hexes of a three-hex path
+        ((List<Brigade>)game.Brigades).Add(new Brigade(99, "west", 40, At(0, 2), new List<Section> { new Section("infantry", 10) }));
+        var hash = game.ComputeHash();
+
+        var result = Move(game, 3);
+
+        Assert.False(result.Accepted);
+        Assert.Contains("TRN-020", result.Reason);
+        Assert.Equal(hash, game.ComputeHash());
+    }
+
+    [Fact]
+    public void SUP_006_the_shorter_walk_replays_to_the_same_hash()
+    {
+        GameState Run()
+        {
+            var game = NewGame();
+            West(game).SP = 7;
+            Assert.True(Move(game, 3).Accepted);
+            return game;
+        }
+
+        Assert.Equal(Run().ComputeHash(), Run().ComputeHash());
     }
 
     [Fact]
