@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [campaign, map]
 related: ["[[supply]]", "[[upkeep-and-desertion]]", "[[brigades]]", "[[battle-maps]]", "[[fog-of-war]]", "[[resources]]", "[[map-editor]]"]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Map and locations
@@ -104,6 +104,9 @@ The campaign is played on fixed, hand-made hex maps (about 50 wide by 30 tall to
 
 ### Hex layout
 - **MAP-053** (`decided`, DEC-104): Hexes MUST be flat-top with **odd-q** offset coordinates: odd columns sit half a hex lower. Map files MUST give a hex as `[column,row]`, both counted from 0 at the top left (MED-006).
+
+### Terrain features
+- **MAP-054** (`decided`, DEC-114): A bridge MUST be a terrain feature, not a location. A bridge MUST make the river hex it sits on passable to ground Brigades (TRN-024). A bridge MUST NOT count as an HQ, ST or FOB, so MED-007 does not apply to it. A bridge MAY be part of a map (MED-003) or be placed by the Bridgelayer Card (CRD-019).
 
 ## Parameters
 | ID | Name | Value | Status |

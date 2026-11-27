@@ -35,9 +35,9 @@ How a campaign turn flows. Players take alternating turns; each turn runs throug
 - **TRN-021** (`decided`): Exception: a retreating Brigade MAY pass through a hex occupied by a friendly Brigade. It moves 1 extra hex beyond it (still towards the nearest HQ/FOB, still free).
 - **TRN-022** (`proposed`, deferred to the battle-results Feature by DEC-104): If the extra hex is also friendly-occupied, the Brigade SHOULD keep moving hex by hex until it reaches a free valid hex. If it reaches an impassable hex first, it is destroyed (TRN-014).
 - **TRN-023** (`decided`, revised by DEC-104): A hex MUST be impassable if it is impassable terrain, the map edge, or occupied by an enemy Brigade. An impassable hex MUST block the whole path through it, not only a move that ends on it.
-- **TRN-024** (`decided`): Impassable terrain for ground Brigades MUST include mountains, sea and rivers.
+- **TRN-024** (`decided`): Impassable terrain for ground Brigades MUST include mountains, sea and rivers, except a river hex with a bridge (MAP-054, DEC-114).
 - **TRN-025** (`proposed` by Alex, tentative): Marsh MAY also be impassable.
-- **TRN-026** (`proposed`): A river hex with a bridge SHOULD be passable (implied by the future idea of blowing bridges).
+- **TRN-026** (`proposed`): A river hex with a bridge SHOULD be passable (implied by the future idea of blowing bridges). MAP-054 (DEC-114) now decides that a bridge makes a river hex passable.
 - **TRN-027** (`proposed`): A Brigade SHOULD only be able to enter a hex that **every** one of its Sections can enter (in line with SUP-025, slowest Section).
 - **TRN-028** (`decided`): Enemy Brigades MUST block air movement, just as they block ground movement. An air Brigade MAY only enter an enemy-occupied hex to attack it.
 - **TRN-014** (`decided`): A defeated Brigade with no valid retreat hex (TRN-018) MUST be destroyed.
@@ -64,14 +64,18 @@ flowchart LR
 - **TRN-032** (`decided`): A Brigade formed this turn MAY move straight away.
 - **TRN-033** (`decided`): The first player MUST be chosen at random. The second player MUST start with 1 extra Card (P-TRN-01).
 - **TRN-034** (`decided`, DEC-104): The first player MUST receive income on turn 1, like every later turn (TRN-005).
-- **TRN-036** (`decided`, DEC-110): A move order that targets an adjacent enemy hex MUST start a battle at once. The attacker walks 0 hexes and stays where it is. The attack MUST cost P-TRN-02 SP, so a Brigade with less SP than that MUST NOT be able to attack this way.
+- **TRN-036** (`decided`, DEC-110): A move order that targets an adjacent enemy hex MUST start a battle at once. The attacker walks 0 hexes and stays where it is. The attack MUST cost at least 1 SP: P-TRN-02 MUST NOT be set below 1. A Brigade with less SP than P-TRN-02 MUST NOT be able to attack this way (DEC-113).
+- **TRN-037** (`decided`, DEC-115): A Brigade in a pending battle MUST NOT move or attack until the battle is resolved.
 - **TRN-035** (`decided`, DEC-104): The turn number MUST count Faction turns, not rounds: each Faction's turn adds 1, so turn 1 is the first player's and turn 2 is the second player's.
 
 ## Parameters
 | ID | Name | Value | Status |
 |---|---|---|---|
 | P-TRN-01 | Extra starting Cards for the second player | 1 | decided |
-| P-TRN-02 | SP cost of attacking an adjacent enemy hex (TRN-036) | 1 (placeholder) | proposed |
+| P-TRN-02 | SP cost of attacking an adjacent enemy hex (TRN-036); at least 1 | 1 (placeholder) | proposed |
+
+## Edge cases
+- A path whose last hex holds a friendly Brigade is accepted when the Brigade runs out of SP (SUP-006) before reaching it and stops earlier on an empty hex. Only a move that would actually end on the occupied hex is rejected (TRN-020, DEC-113). A move that contact (TRN-008) would stop on an occupied hex is still rejected.
 
 ## Open questions
 - Q-TRN-05 (answered → TRN-017, TRN-018): 1 hex, free, only towards the nearest HQ/FOB.

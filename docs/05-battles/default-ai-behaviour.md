@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [battle, ai]
 related: ["[[commands]]", "[[ai-opponents]]"]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Default Section behaviour
@@ -20,6 +20,7 @@ With no orders, Sections behave very simply, so that players are encouraged to g
 - **DAI-004** (`decided`): A Section given Stop MUST hold its position, and SHOULD fire at enemies in range.
 - **DAI-006** (`decided`, revised by DEC-096): By default, a Section MUST target the nearest enemy in range, preferring one that is attacking it. Enemy officers and heroes count as enemies.
 - **DAI-005** (`decided`, DEC-094): By default, an officer or hero that the player is not controlling SHOULD Protect the nearest friendly Section.
+- **DAI-007** (`decided`, DEC-116): An Officer under AI control MUST be weaker than one the player controls, for example slower to aim, less accurate or more cautious, so that playing the Officer yourself wins.
 
 ## Parameters
 | ID | Name | Value | Status |

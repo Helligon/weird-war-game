@@ -46,8 +46,9 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-SUP-05 | Well Supplied bonus (morale, reload) | – | open | [[supply]] |
 | P-SUP-07 | Overextended morale penalty | – | open | [[supply]] |
 | P-SUP-08 | Resupply range around the HQ and owned Supply STs, Major STs and FOBs | Same or adjacent hex | decided | [[supply]] |
+| P-SUP-13 | SP saved per hex when moving through your own territory (SUP-029) | – | open | [[supply]] |
 | P-TRN-01 | Extra starting Cards for the second player | 1 | decided | [[turn-structure]] |
-| P-TRN-02 | SP cost of attacking an adjacent enemy hex (TRN-036) | 1 (placeholder) | proposed | [[turn-structure]] |
+| P-TRN-02 | SP cost of attacking an adjacent enemy hex (TRN-036); at least 1 | 1 (placeholder) | proposed | [[turn-structure]] |
 | P-UPK-01 | Upkeep inside perimeter | 0 | decided | [[upkeep-and-desertion]] |
 | P-UPK-02 | Upkeep outside perimeter | whole SP per turn by title (e.g. Infantry 1, Artillery 2) | decided (examples), open (full table) | [[upkeep-and-desertion]] |
 | P-UPK-03 | Desertion health loss range | ~15% (bounds TBD) | decided (centre), open (bounds) | [[upkeep-and-desertion]] |
@@ -80,6 +81,11 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-CMD-02 | Max Sections per side in battle | 10 | decided | [[commands]] |
 | P-CMD-03 | Accuracy penalty while moving: the share of accuracy lost, so hit chance = accuracy × (1 − P-CMD-03) (DEC-098) | – | open | [[commands]] |
 | P-CMD-04 | Next-to-cover distance: a waypoint this close to a cover object's edge counts as next to it (CMD-005, DEC-100) | 3 m (Spike 2 placeholder) | proposed | [[commands]] |
+| P-CMD-05 | Weapon range, per weapon (CMD-021, DEC-116) | – | open | [[commands]] |
+| P-CMD-06 | Rate of fire, per rifle (CMD-022, DEC-116) | – | open | [[commands]] |
+| P-CMD-07 | Spread, per rifle (CMD-022, DEC-116) | – | open | [[commands]] |
+| P-CMD-08 | Spread penalty while moving (CMD-023, DEC-116) | – | open | [[commands]] |
+| P-CMD-09 | Sprint speed, per unit type (CMD-024, DEC-116) | – | open | [[commands]] |
 | P-DAI-01 | Nearby cover distance (DAI-001) | 25 m (Spike 2 placeholder) | proposed | [[default-ai-behaviour]] |
 | P-DAI-02 | Protect distance: how far in front of the protected Section an uncontrolled officer stands (DAI-005, DEC-102) | 6 m (Spike 2 placeholder) | proposed | [[default-ai-behaviour]] |
 | P-DAI-03 | Time between an uncontrolled officer's shots (DAI-005, DEC-102) | 2 s (Spike 2 placeholder) | proposed | [[default-ai-behaviour]] |

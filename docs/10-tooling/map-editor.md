@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [tooling]
 related: ["[[map-and-locations]]"]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Map editor
@@ -19,7 +19,8 @@ A very simple, internal map editor that Alex uses to build the campaign maps. It
 - **MED-003** (`proposed`): Minimum features:
   - Create a map of a given size (default ~50×30, 50 wide by 30 tall, P-MAP-04).
   - Paint terrain per hex (including impassable terrain: mountains, sea, rivers; marsh maybe).
-  - Place locations: HQ starts, STs by type (Supply / Command / Major), bridges.
+  - Place locations: HQ starts, STs by type (Supply / Command / Major).
+  - Place bridges on river hexes. A bridge is a terrain feature, not a location (MAP-054).
   - Save and load to a data file the game reads.
 - **MED-004** (`decided`): The editor MUST be a separate tool for now, and MUST export maps as JSON (or a similarly simple format) that the game imports.
 - **MED-006** (`decided`, DEC-103): Until the editor is designed (MED-003), agents MAY define the map JSON format the core imports. It MUST be minimal and documented next to the code. Passable terrain is a single "open" type with equal movement cost, plus the impassable types the rules name (mountains, sea, river); terrain costs (SUP-011, TRN-025, TRN-026) are added once decided.

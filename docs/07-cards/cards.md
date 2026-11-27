@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [cards]
 related: ["[[resources]]", "[[supply]]", "[[brigades]]", "[[map-and-locations]]", "[[fog-of-war]]", "[[heroes]]"]
-updated: 2026-11-22
+updated: 2026-11-27
 ---
 
 # Cards
@@ -31,6 +31,8 @@ Cards are one-off effects played on the campaign map by paying CP. They work lik
 - **CRD-008** (`decided`): Cards MUST only be played on the campaign map, never during a battle.
 - **CRD-009** (`decided`): There MUST be no limit on Cards played per turn and no cooldowns. Rarity comes from the number of copies in the deck and from CP cost.
 - **CRD-010** (`decided`): A Card MAY have play conditions, e.g. "only on a Brigade on a Supply ST/HQ/FOB" or "only on a Brigade that has been in battle this turn".
+
+- **CRD-019** (`decided`, DEC-114): The **Bridgelayer** Card MUST place a bridge (MAP-054) on a single river hex. That hex MUST have a passable land hex on each side.
 
 ### Card pools
 - **CRD-011** (`decided`): There MUST be a shared core of Cards available to every Faction, plus faction-only Cards (e.g. turning enemies into Thralls for the Central Powers; calling in a seconded Section for the Entente).
@@ -60,6 +62,7 @@ Cards are one-off effects played on the campaign map by paying CP. They work lik
 | Continuous Shelling | Reloads an Artillery Brigade, an HQ or a Bomber Squadron (deferred with air units), letting it fire again. The extra shot still costs SP | CP | Core | decided |
 | Free re-rolls | Gives a number of free re-rolls when forming a Brigade (P-BRG-08) | CP | Core | decided |
 | Call In The Big Guns | Form a Brigade by **choosing** its Sections (working title) | CP | Core | decided |
+| Bridgelayer | Places a bridge (MAP-054) on a single river hex that has a passable land hex on each side | CP | – | decided |
 | Named Brigade Cards | Call in a special named Brigade with its own bonuses: Barnum's Brigade, Haig's Heroes, Australian Light Brigade, Helsing's Hunters, 5th Kaiservolk, Grand Duke's Guard, The Red Baron, Billy's Crack Shots, Angels of Mannequin Hill (working titles) | CP | Faction-specific? | decided |
 | Turn enemies | Converts routed enemy infantry into Thralls | CP | Central Powers | proposed |
 | Seconded Section | Calls in a Section from the other Entente Faction | CP | Entente | proposed |
