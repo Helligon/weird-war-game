@@ -94,7 +94,8 @@ namespace WeirdWar.Core.Simulation
             foreach (var l in map.Locations) locations.Add(new LocationState(l, l.Type == LocationType.Hq ? l.Faction : null));
             Factions = factions;
             Locations = locations;
-            Brigades = brigades;
+            _brigades = brigades;
+            _nextBrigadeId = brigades.Count + 1;
             // TRN-033: the first player comes from the state's seeded source, so the same seed gives the same one.
             // Drawn here, as part of making the new game; replay rebuilds the state the same way.
             ActiveFaction = factions[Random.NextInt(factions.Count)].Id;
@@ -167,7 +168,27 @@ namespace WeirdWar.Core.Simulation
         public IReadOnlyList<LocationState> Locations { get; } = new List<LocationState>();
 
         /// <summary>Brigades sorted by id. Ids start at 1.</summary>
-        public IReadOnlyList<Brigade> Brigades { get; } = new List<Brigade>();
+        public IReadOnlyList<Brigade> Brigades => _brigades;
+        private List<Brigade> _brigades = new List<Brigade>();
+
+        /// <summary>The id the next new Brigade takes. It only goes up, so a disbanded Brigade's id is never used again (BRG-023, TEC-008). In the hash.</summary>
+        internal int NextBrigadeId => _nextBrigadeId;
+        private int _nextBrigadeId = 1;
+
+        /// <summary>Takes the next never-used Brigade id. Whatever forms a Brigade later calls this.</summary>
+        internal int TakeBrigadeId() => _nextBrigadeId++;
+
+        /// <summary>
+        /// Removes one Section from a Brigade (the shared step for transfers and desertion). A Brigade left with 0 Sections
+        /// is disbanded (BRG-023): it leaves <see cref="Brigades"/>, so its hex is free. Nothing else is touched: a pending
+        /// battle that names the Brigade stays as it is, because no rule says what happens to it. The officer's return to
+        /// the roster is a later Story. After forming there is no minimum size (BRG-020).
+        /// </summary>
+        internal void RemoveSectionFromBrigade(Brigade brigade, int sectionIndex)
+        {
+            brigade.RemoveSection(sectionIndex);
+            if (brigade.Sections.Count == 0) _brigades.Remove(brigade);
+        }
 
         /// <summary>
         /// Battles that have started and not been resolved (TRN-003, TRN-008, TRN-036). CC1 only starts them (DEC-103), so
@@ -270,6 +291,7 @@ namespace WeirdWar.Core.Simulation
                 if (l.Capturing != null) sb.Append(" capturing=").Append(l.Capturing).Append(" brigade=").Append(l.CapturingBrigade?.ToString(CultureInfo.InvariantCulture) ?? "-");
                 sb.Append('\n');
             }
+            if (Map != null) sb.Append("nextbrigade=").Append(_nextBrigadeId.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (var b in Brigades)
             {
                 sb.Append("brigade=").Append(b.Id.ToString(CultureInfo.InvariantCulture)).Append(" faction=").Append(b.Faction)

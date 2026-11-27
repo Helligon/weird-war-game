@@ -391,12 +391,13 @@ public class SetupTests
             "faction=east reserve=5 cp=0\nfaction=west reserve=10 cp=2\n" +
             "location=command-1 owner=-\nlocation=hq-east owner=east\nlocation=hq-west owner=west\n" +
             "location=major-1 owner=-\nlocation=supply-1 owner=-\n" +
+            "nextbrigade=3\n" +
             "brigade=1 faction=east sp=90 sections=infantry:10,infantry:10,artillery:6 at=5,1\n" +
             "brigade=2 faction=west sp=90 sections=infantry:10,infantry:10,recon:4 at=0,2\n" +
             "turn=1 active=west phase=Actions\n" +
             "log=0\ndigest=" + new string('0', 64) + "\n",
             game.CanonicalText());
-        Assert.Equal("60110ee4ef2a84becf5b8f5bb41baf1a6be39bd75db725fb611a1ac009185fb3", game.ComputeHash());
+        Assert.Equal("728bc709d06b90ca0ee0ecf909f8fe16f3dbbcff3258d48444dd2d8b8c6338b3", game.ComputeHash());
     }
 
     [Fact]
@@ -405,7 +406,7 @@ public class SetupTests
         var game = NewGame();
         Assert.True(game.ApplyCommand(new AddToTallyCommand(5, "west")).Accepted);
 
-        Assert.Equal("d69f2c369b0ed119af991b118c1831d432521131dacca0fab9555829053b606c", game.ComputeHash());
+        Assert.Equal("c53cc55c1736e5114af7c1028114e16cdf161cf01eee8e04747c4a3cbb09e7bf", game.ComputeHash());
     }
 
     [Fact]
@@ -416,7 +417,7 @@ public class SetupTests
         Assert.True(game.ApplyCommand(new EndTurnCommand("west")).Accepted);
 
         Assert.Contains("turn=2 active=east phase=Actions\n", game.CanonicalText());
-        Assert.Equal("15e885d08ab264c62bbc8cafd7979df856183cc96ae2867bcfe7ff7b79330411", game.ComputeHash());
+        Assert.Equal("e6e750672dfc4ef67a31dabce4e8c456a83f82149562331ce009042043e42e05", game.ComputeHash());
     }
 
     [Fact]
