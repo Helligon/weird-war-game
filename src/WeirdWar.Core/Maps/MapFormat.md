@@ -25,8 +25,8 @@ The file is read with the core's own JSON reader (`WeirdWar.Core.Serialization.J
     {"id": "major-1", "type": "major", "at": [3, 2]}
   ],
   "setup": {
-    "east": {"brigade": {"sections": ["infantry", "infantry", "artillery"]}},
-    "west": {"brigade": {"sections": ["infantry", "infantry", "recon"]}}
+    "east": {"brigade": {"sections": ["riflemen", "riflemen", "heavy-infantry"]}},
+    "west": {"brigade": {"sections": ["riflemen", "riflemen", "snipers"]}}
   }
 }
 ```

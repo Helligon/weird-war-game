@@ -17,7 +17,7 @@
     {"id": "major-1", "type": "major", "at": [30, 14]}
   ],
   "setup": {
-    "east": {"brigade": {"sections": ["infantry", "infantry", "artillery"]}},
-    "west": {"brigade": {"sections": ["infantry", "infantry", "recon"]}}
+    "east": {"brigade": {"sections": ["riflemen", "riflemen", "heavy-infantry"]}},
+    "west": {"brigade": {"sections": ["riflemen", "riflemen", "snipers"]}}
   }
 }

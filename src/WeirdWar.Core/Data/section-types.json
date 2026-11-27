@@ -1,9 +1,22 @@
 {
   "version": 1,
-  "status": "placeholder (open): P-SUP-09 supply profile and P-FOW-01 sight per Section type have no decided values",
+  "status": "placeholder (open): the six decided standard-roster Sections (ROS-001). Every number below is a placeholder until the balance pass",
+  "placeholders": {
+    "spCost": "placeholder (open): P-BRG-02 SP cost per Section type",
+    "capacityContribution": "placeholder (open): P-SUP-09 supply profile",
+    "consumptionPerHex": "placeholder (open): P-SUP-09 supply profile",
+    "sight": "placeholder (open): P-FOW-01 sight per type",
+    "maxUnits": "placeholder (open): P-HIE-01 max Units per Section",
+    "healthPerUnit": "placeholder (open): P-HIE-02 health per Unit",
+    "health": "placeholder (open): starting health, healthPerUnit times maxUnits",
+    "class.sappers": "placeholder (proposed): the Sapper class (Support) is proposed (DEC-104, ROS table)"
+  },
   "sectionTypes": {
-    "infantry": { "health": 10, "sight": 1, "capacityContribution": 35, "consumptionPerHex": 1 },
-    "artillery": { "health": 6, "sight": 1, "capacityContribution": 35, "consumptionPerHex": 2 },
-    "recon": { "health": 4, "sight": 3, "capacityContribution": 25, "consumptionPerHex": 1 }
+    "riflemen": { "class": "Infantry", "spCost": 10, "healthPerUnit": 2, "maxUnits": 5, "health": 10, "sight": 1, "capacityContribution": 35, "consumptionPerHex": 1 },
+    "shotgunners": { "class": "Infantry", "spCost": 10, "healthPerUnit": 2, "maxUnits": 5, "health": 10, "sight": 1, "capacityContribution": 35, "consumptionPerHex": 1 },
+    "snipers": { "class": "Infantry", "spCost": 12, "healthPerUnit": 1, "maxUnits": 4, "health": 4, "sight": 3, "capacityContribution": 25, "consumptionPerHex": 1 },
+    "sappers": { "class": "Support", "spCost": 10, "healthPerUnit": 2, "maxUnits": 3, "health": 6, "sight": 1, "capacityContribution": 30, "consumptionPerHex": 1 },
+    "heavy-infantry": { "class": "Heavy", "spCost": 20, "healthPerUnit": 4, "maxUnits": 3, "health": 12, "sight": 1, "capacityContribution": 40, "consumptionPerHex": 2 },
+    "medic": { "class": "Support", "spCost": 8, "healthPerUnit": 2, "maxUnits": 3, "health": 6, "sight": 1, "capacityContribution": 30, "consumptionPerHex": 1 }
   }
 }

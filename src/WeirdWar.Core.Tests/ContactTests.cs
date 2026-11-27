@@ -10,8 +10,8 @@ public class ContactTests
     // Every Section costs 1 SP per hex, so a Brigade costs 3 per hex.
     private const string TypesJson =
         "{\"version\":1,\"sectionTypes\":{" +
-        "\"infantry\":{\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}," +
-        "\"thrall\":{\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1,\"slow\":true}}}";
+        "\"infantry\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}," +
+        "\"thrall\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1,\"slow\":true}}}";
 
     private static string MapJson(string westSections) =>
         "{\"version\":1,\"width\":4,\"height\":10," +
@@ -407,6 +407,6 @@ public class ContactTests
         Assert.True(MoveDown(game, 2).Accepted);
 
         Assert.Contains("brigade=2 faction=west sp=84 sections=infantry:10,infantry:10,infantry:10 at=0,2 moved=1:2\nbattle=2,1\nturn=1", game.CanonicalText());
-        Assert.Equal("c9a5010688dae7e994fbaf76a6827edc0f39f61b483a44c858046945b7932ad2", game.ComputeHash());
+        Assert.Equal("8b89be695695c78121f64a5f8ff2b237db85a0df137d5263534d2d001d06d44b", game.ComputeHash());
     }
 }

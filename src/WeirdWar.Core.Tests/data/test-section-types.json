@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "status": "test-only Section types, not shipped game data",
+  "sectionTypes": {
+    "infantry": { "class": "Infantry", "spCost": 10, "healthPerUnit": 1, "maxUnits": 10, "health": 10, "sight": 1, "capacityContribution": 35, "consumptionPerHex": 1 },
+    "artillery": { "class": "Artillery", "spCost": 10, "healthPerUnit": 1, "maxUnits": 6, "health": 6, "sight": 1, "capacityContribution": 35, "consumptionPerHex": 2 },
+    "recon": { "class": "Infantry", "spCost": 10, "healthPerUnit": 1, "maxUnits": 4, "health": 4, "sight": 3, "capacityContribution": 25, "consumptionPerHex": 1 }
+  }
+}

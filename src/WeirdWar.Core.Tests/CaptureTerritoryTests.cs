@@ -10,8 +10,8 @@ public class CaptureTerritoryTests
     // Seed 7 gives west the first turn (see TurnTests). Brigade 1 is east, brigade 2 is west.
     private const string TypesJson =
         "{\"version\":1,\"sectionTypes\":{" +
-        "\"infantry\":{\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}," +
-        "\"thrall\":{\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1,\"slow\":true}}}";
+        "\"infantry\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1}," +
+        "\"thrall\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10,\"sight\":1,\"capacityContribution\":35,\"consumptionPerHex\":1,\"slow\":true}}}";
 
     private const string MapJson =
         "{\"version\":1,\"width\":12,\"height\":8,\"terrain\":{},\"factions\":[\"east\",\"west\"],\"locations\":[" +
@@ -438,7 +438,7 @@ public class CaptureTerritoryTests
         var game = WestEndsTurnOnSupply();
 
         Assert.Contains("location=supply-1 owner=- capturing=west brigade=2\n", game.CanonicalText());
-        Assert.Equal("41e196b1d5251764631561947026a58e9e2bf82744ec17f1d54ab64fac910ed1", game.ComputeHash());
+        Assert.Equal("bebbc54fd34f36dc87df2ff81ebb59e22e0543cd7d9925a0ad517da0c2216fe3", game.ComputeHash());
     }
 
     [Fact]
