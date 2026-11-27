@@ -15,7 +15,8 @@ public class ResupplyTests
         "{\"id\":\"hq-east\",\"type\":\"hq\",\"at\":[7,1],\"faction\":\"east\"}," +
         "{\"id\":\"hq-west\",\"type\":\"hq\",\"at\":[0,2],\"faction\":\"west\"}," +
         "{\"id\":\"supply-1\",\"type\":\"supply\",\"at\":[2,1]}," +
-        "{\"id\":\"command-1\",\"type\":\"command\",\"at\":[5,1]}]," +
+        "{\"id\":\"command-1\",\"type\":\"command\",\"at\":[5,1]}," +
+        "{\"id\":\"major-1\",\"type\":\"major\",\"at\":[4,1]}]," +
         "\"setup\":{\"east\":{\"reserve\":5,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
         "\"west\":{\"reserve\":6,\"brigade\":{\"sp\":85,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}}";
 
@@ -73,17 +74,137 @@ public class ResupplyTests
     }
 
     [Fact]
-    public void RES_003_more_than_the_reserve_is_rejected_and_changes_nothing()
+    public void SUP_028_a_request_above_the_reserve_moves_the_whole_reserve()
     {
         var (game, f, b) = Setup();
-        var before = game.ComputeHash();
 
         var result = game.ApplyCommand(new DistributeSpCommand(f, b.Id, 31));
 
-        Assert.False(result.Accepted);
-        Assert.Equal(30, Faction(game, f).Reserve);
+        Assert.True(result.Accepted, result.Reason);
+        Assert.Equal(0, Faction(game, f).Reserve);
+        Assert.Equal(50, b.SP);
+    }
+
+    [Fact]
+    public void SUP_028_a_request_above_the_room_moves_the_room()
+    {
+        var (game, f, b) = Setup();
+        b.SP = 100; // room 5
+
+        Assert.True(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 20)).Accepted);
+        Assert.Equal(105, b.SP);
+        Assert.Equal(25, Faction(game, f).Reserve);
+    }
+
+    [Fact]
+    public void SUP_028_a_request_that_fits_both_moves_exactly_the_request()
+    {
+        var (game, f, b) = Setup();
+
+        Assert.True(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 7)).Accepted);
+        Assert.Equal(27, b.SP);
+        Assert.Equal(23, Faction(game, f).Reserve);
+    }
+
+    [Fact]
+    public void SUP_028_a_request_above_both_the_room_and_the_reserve_moves_the_smaller()
+    {
+        var (game, f, b) = Setup();
+        b.SP = 100; // room 5
+        Faction(game, f).Reserve = 3;
+
+        Assert.True(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 50)).Accepted);
+        Assert.Equal(103, b.SP);
+        Assert.Equal(0, Faction(game, f).Reserve);
+    }
+
+    [Fact]
+    public void SUP_028_an_empty_reserve_is_rejected_and_changes_nothing()
+    {
+        var (game, f, b) = Setup();
+        Faction(game, f).Reserve = 0;
+
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
         Assert.Equal(20, b.SP);
-        Assert.Equal(before, game.ComputeHash());
+    }
+
+    [Fact]
+    public void SUP_028_an_amount_above_zero_is_still_rejected_away_from_every_resupply_point()
+    {
+        var (game, f, b) = Setup();
+        b.Position = At(6, 3);
+        Assert.True(b.Position.DistanceTo(Location(game, "hq-" + f).Position) >= 2);
+
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
+    }
+
+    [Fact]
+    public void MAP_015_a_brigade_on_or_next_to_an_owned_major_st_may_be_resupplied()
+    {
+        var major = At(4, 1);
+        var hexes = new List<HexCoord> { major };
+        hexes.AddRange(major.Neighbours());
+        foreach (var hex in hexes)
+        {
+            var (game, f, b) = Setup();
+            Location(game, "major-1").Owner = f;
+            b.Position = hex;
+            Assert.True(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5)).Accepted, hex.ToString());
+        }
+    }
+
+    [Fact]
+    public void SUP_013_a_neutral_or_enemy_major_st_cannot_resupply()
+    {
+        var (game, f, b) = Setup();
+        b.Position = At(4, 1);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5)); // neutral
+        Location(game, "major-1").Owner = Other(f);
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
+    }
+
+    [Fact]
+    public void SUP_027_an_enemy_brigade_on_the_own_hq_blocks_resupply()
+    {
+        var (game, f, b) = Setup();
+        BrigadeOf(game, Other(f)).Position = Location(game, "hq-" + f).Position;
+
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
+    }
+
+    [Theory]
+    [InlineData("supply-1")]
+    [InlineData("major-1")]
+    public void SUP_027_an_enemy_brigade_on_an_owned_supply_or_major_st_blocks_resupply(string id)
+    {
+        var (game, f, b) = Setup();
+        var st = Location(game, id);
+        st.Owner = f;
+        b.Position = st.Position;
+        BrigadeOf(game, Other(f)).Position = st.Position;
+
+        AssertRejected(game, new DistributeSpCommand(f, b.Id, 5));
+    }
+
+    [Fact]
+    public void SUP_027_a_brigade_in_range_of_another_unblocked_resupply_point_is_still_resupplied()
+    {
+        var (game, f, b) = Setup();
+        Location(game, "supply-1").Owner = f;
+        Location(game, "major-1").Owner = f;
+        b.Position = At(3, 1); // next to both supply-1 (2,1) and major-1 (4,1)
+        BrigadeOf(game, Other(f)).Position = At(2, 1); // blocks supply-1 only
+
+        Assert.True(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5)).Accepted);
+    }
+
+    [Fact]
+    public void SUP_027_an_enemy_brigade_next_to_a_resupply_point_does_not_block()
+    {
+        var (game, f, b) = Setup();
+        BrigadeOf(game, Other(f)).Position = Location(game, "hq-" + f).Position.Neighbours().First();
+
+        Assert.True(game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5)).Accepted);
     }
 
     [Theory]
