@@ -60,6 +60,10 @@ namespace WeirdWar.Core.Simulation
             if (sectionTypes == null) throw new ArgumentNullException(nameof(sectionTypes));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
             var startingSize = parameters.GetInt("P-BRG-05");
+            // RES-013, BRG-036, DLV-014: starting values come from the data, never from the map.
+            var startingReserve = StartingValue(parameters, "P-RES-05");
+            var startingCp = StartingValue(parameters, "P-RES-06");
+            var startingBrigadeSp = StartingValue(parameters, "P-BRG-09");
             if (map.Factions.Count == 0) throw new MapFormatException("The map has no Factions, so a game cannot start on it");
             IncomeRules = new IncomeRules(parameters);
             Map = map;
@@ -72,7 +76,7 @@ namespace WeirdWar.Core.Simulation
             var brigades = new List<Brigade>();
             foreach (var setup in map.Setup)
             {
-                factions.Add(new FactionState(setup.FactionId, setup.Reserve));
+                factions.Add(new FactionState(setup.FactionId, startingReserve, startingCp));
                 if (setup.SectionTypeIds.Count != startingSize)
                     throw new MapFormatException("Setup for \"" + setup.FactionId + "\" has " + setup.SectionTypeIds.Count
                         + " Sections; the starting Brigade has " + startingSize + " (P-BRG-05)");
@@ -84,7 +88,7 @@ namespace WeirdWar.Core.Simulation
                     sections.Add(new Section(typeId, type.Health));
                 }
                 var hq = map.Locations.Single(l => l.Type == LocationType.Hq && l.Faction == setup.FactionId);
-                brigades.Add(new Brigade(brigades.Count + 1, setup.FactionId, setup.BrigadeSp, hq.Position, sections));
+                brigades.Add(new Brigade(brigades.Count + 1, setup.FactionId, startingBrigadeSp, hq.Position, sections));
             }
             var locations = new List<LocationState>();
             foreach (var l in map.Locations) locations.Add(new LocationState(l, l.Type == LocationType.Hq ? l.Faction : null));
@@ -96,6 +100,13 @@ namespace WeirdWar.Core.Simulation
             ActiveFaction = factions[Random.NextInt(factions.Count)].Id;
             TurnNumber = 1;
             TurnPhases.BeginTurn(this, ActiveFaction);
+        }
+
+        private static int StartingValue(ParameterTable parameters, string id)
+        {
+            var v = parameters.GetInt(id);
+            if (v < 0) throw new ParameterFormatException(id + " = " + v + " must not be negative.");
+            return v;
         }
 
         private readonly string _parametersDigest = "none";

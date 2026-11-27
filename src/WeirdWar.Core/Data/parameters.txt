@@ -10,10 +10,11 @@ P-SUP-03 = 0.30   # placeholder (proposed): standard march cost, fraction of cap
 P-SUP-04 = 0.20   # placeholder (proposed): battle SP cost, fraction of capacity; design-target tests only (CC1 battles cost no SP)
 P-SUP-10 = 2     # placeholder (open): Slow hexes-per-turn cap, total across split moves
 P-BRG-05 = 3   # Starting Brigade size, Sections (decided)
+P-BRG-09 = 90  # Starting SP of each Faction's starting Brigade (decided)
+P-RES-05 = 5   # Starting SP reserve (decided)
+P-RES-06 = 0   # Starting CP (decided)
 P-RES-01 = 5      # placeholder (open): base SP income per turn
 P-RES-02 = 2      # placeholder (open): base CP income per turn
 P-RES-04 = 1      # placeholder (open): SP / CP bonus per held ST, in each currency its type pays
 P-MAP-02 = minus=1 min=1   # Territory radius: sight minus 1, at least 1 (decided)
 P-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1   # Location sight radius (decided); CC1 uses the HQ and ST rows, FOB is data only
-P-MAP-05 = 5      # placeholder (open): HQ income per turn (SP, CP); data only, the core reads P-RES-01 and P-RES-02 until confirmed
-P-MAP-06 = 1      # placeholder (open): income per ST type; data only, the core reads P-RES-04 until confirmed

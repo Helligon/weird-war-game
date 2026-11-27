@@ -130,8 +130,6 @@ namespace WeirdWar.Core.Maps
             }
             foreach (var f in Setup)
                 sb.Append("\nsetup=").Append(f.FactionId)
-                  .Append(" reserve=").Append(f.Reserve.ToString(CultureInfo.InvariantCulture))
-                  .Append(" sp=").Append(f.BrigadeSp.ToString(CultureInfo.InvariantCulture))
                   .Append(" sections=").Append(string.Join(",", f.SectionTypeIds));
             return sb.ToString();
         }
