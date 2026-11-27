@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Production simulation core: plain C#, no Unity references (TEC-016, DLV-012, TEC-012). -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>9.0</LangVersion>
+    <RootNamespace>WeirdWar.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Data/parameters.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Data/section-types.json" CopyToOutputDirectory="PreserveNewest" />
+    <InternalsVisibleTo Include="WeirdWar.Core.Tests" />
+  </ItemGroup>
+
+</Project>
