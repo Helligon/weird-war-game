@@ -53,6 +53,7 @@ flowchart TD
 - Q-BIN-01 (deferred → working session): Auto-resolve formula and its inputs. To be designed in a dedicated session once Brigades and values exist.
 - Q-BIN-05: When a Brigade makes contact next to several enemy Brigades, which one defends? Decide properly here; BIN-011 (lowest id) is an interim rule (DEC-115).
 - Q-BIN-06: Can a Brigade that is already in a pending battle be drawn into a second battle (for example as reinforcements under BIN-009 or BIN-010, or by another Brigade's contact)? Linked to Q-BIN-01 and TRN-037 (DEC-115).
+- Q-BIN-07: What happens to a pending battle when one of its Brigades is disbanded, for example by transferring away its last Section (BRG-023)? Should the battle be cancelled, or the other side win? Linked to Q-BIN-01 and Q-BIN-06. Also: may a Brigade in a pending battle give or receive Sections (BRG-016), given that TRN-037 only forbids moving and attacking?
 - Q-BIN-02 (answered → BIN-005, BIN-006): Defender chooses Fight / Retreat / Offer auto-resolve.
 - Q-BIN-03 (answered → BIN-009): The defender picks one adjacent friendly Brigade to join.
 - Q-BIN-04 (answered → BIN-010): Yes, the same as the defender.

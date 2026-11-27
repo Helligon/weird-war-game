@@ -113,7 +113,7 @@ The campaign is played on fixed, hand-made hex maps (about 50 wide by 30 tall to
 |---|---|---|---|
 | P-MAP-01 | FOB-capture bonus | ~50% of build cost, in SP + CP | decided |
 | P-MAP-02 | Territory radius: sight minus `minus`, at least `min` (per-type format, TEC-017; keys in the order `minus`, `min`) | minus=1 min=1 | decided |
-| P-MAP-03 | Supply ST→FOB upgrade cost | standard SP + rising CP | decided (values open) |
+| P-MAP-03 | Supply ST→FOB upgrade cost. Keys (TEC-017), in this order: `sp` (standard SP cost), `cp` (CP cost of the first upgrade), `cpStep` (CP added for each upgrade the Faction has made, at least 1) | standard SP + rising CP | decided (values open) |
 | P-MAP-04 | Starting map size | ~50×30 hexes (50 wide, 30 tall) | decided |
 | P-MAP-07 | Major ST bombardment defence | – | open |
 | P-MAP-08 | Defender morale/defence bonus by ST type | – | open |
