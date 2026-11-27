@@ -24,7 +24,7 @@ public class MovementTests
         "\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
         "\"west\":{\"brigade\":{\"sections\":[" + westSections + "]}}}}";
 
-    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
+    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1";
 
     private static GameState NewGame(string westSections = "infantry,infantry,infantry", string parameters = Params)
     {
@@ -341,12 +341,14 @@ public class MovementTests
     private static void PutEastAt(GameState game, HexCoord hex) => East(game).Position = hex;
 
     [Fact]
-    public void TRN_020_a_brigade_cannot_end_its_move_on_a_hex_held_by_an_enemy_brigade()
+    public void TRN_020_a_brigade_never_ends_its_move_on_a_hex_held_by_an_enemy_brigade_contact_stops_it_next_door()
     {
         var game = NewGame();
         PutEastAt(game, At(0, 3));
 
-        Assert.False(Move(game, 3).Accepted);
+        Assert.True(Move(game, 3).Accepted); // contact at (0,2), TRN-008
+        Assert.Equal(At(0, 2), West(game).Position);
+        Assert.Equal(At(0, 3), East(game).Position);
     }
 
     [Fact]
@@ -380,16 +382,18 @@ public class MovementTests
     public void TRN_023_a_hex_held_by_an_enemy_brigade_cannot_be_entered_even_part_way_along_the_path()
     {
         var game = NewGame();
+        // A path that enters a hex next to the enemy stops there at contact (TRN-008), so the enemy hex is only ever
+        // reached from a start next to it.
         PutEastAt(game, At(0, 2));
+        West(game).Position = At(0, 1);
 
         var hash = game.ComputeHash();
-        var result = Move(game, 4);
+        var result = Move(game, 3, 1);
 
         Assert.False(result.Accepted);
         Assert.Contains("enemy", result.Reason);
         Assert.Equal(hash, game.ComputeHash());
-        Assert.False(Move(game, 2).Accepted);
-        Assert.True(Move(game, 1).Accepted); // the hex before the enemy is fine
+        Assert.False(Move(game, 2, 1).Accepted);
     }
 
     [Fact]
@@ -493,7 +497,6 @@ public class MovementTests
         var rejected = new ICommand[]
         {
             new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(0, 2), At(0, 4) }),             // not adjacent, part-way along
-            new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(0, 2), At(0, 3), At(0, 4) }),   // enemy at the end
             new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(1, 0) }),                       // not adjacent to (0,1)
             new MoveBrigadeCommand("west", west, new[] { At(0, 1), new HexCoord(5, 5) }),             // off the map after a good hex
             new MoveBrigadeCommand("west", west, new[] { At(1, 0) }),                                  // mountain
@@ -681,6 +684,6 @@ public class MovementTests
         var game = NewGame();
         Assert.True(Move(game, 2).Accepted);
 
-        Assert.Equal("d439219c9191220fa81b6a0c1fcc83f973b114e7b4d8497ca42f180a57a866c1", game.ComputeHash());
+        Assert.Equal("a430beb08dfb119fe82fb75b687e823617f688a18b766be1d0124fc74f110427", game.ComputeHash());
     }
 }

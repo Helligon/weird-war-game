@@ -170,6 +170,14 @@ namespace WeirdWar.Core.Simulation
         public IReadOnlyList<Brigade> Brigades { get; } = new List<Brigade>();
 
         /// <summary>
+        /// Battles that have started and not been resolved (TRN-003, TRN-008, TRN-036). CC1 only starts them (DEC-103), so
+        /// none ends. In the hash, so replay must reproduce it (TEC-008).
+        /// </summary>
+        public IReadOnlyList<PendingBattle> Battles => _battles;
+        private readonly List<PendingBattle> _battles = new List<PendingBattle>();
+        internal void StartBattle(int attackerId, int defenderId) => _battles.Add(new PendingBattle(attackerId, defenderId));
+
+        /// <summary>
         /// The one random source. All random draws in the simulation MUST come from here (TEC-012).
         /// Internal, so only commands can draw (DLV-013).
         /// </summary>
@@ -278,6 +286,9 @@ namespace WeirdWar.Core.Simulation
                     sb.Append(" moved=").Append(b.MovedTurn.ToString(CultureInfo.InvariantCulture)).Append(':').Append(b.MovedHexes.ToString(CultureInfo.InvariantCulture));
                 sb.Append('\n');
             }
+            // Written only while a battle is pending, so a game with none hashes as before (TRN-008).
+            foreach (var battle in Battles)
+                sb.Append("battle=").Append(battle.AttackerId.ToString(CultureInfo.InvariantCulture)).Append(',').Append(battle.DefenderId.ToString(CultureInfo.InvariantCulture)).Append('\n');
             if (ActiveFaction != null)
                 sb.Append("turn=").Append(TurnNumber.ToString(CultureInfo.InvariantCulture)).Append(" active=").Append(ActiveFaction)
                   .Append(" phase=").Append(Phase.ToString()).Append('\n');
