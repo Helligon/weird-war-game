@@ -72,6 +72,7 @@ namespace WeirdWar.Core.Simulation
             MovementRules = new MovementRules(parameters);
             Territory = new TerritoryRules(parameters);
             BrigadeRules = new BrigadeRules(parameters);
+            FobRules = new FobRules(parameters);
             _parametersDigest = parameters.Digest();
             var factions = new List<FactionState>();
             var brigades = new List<Brigade>();
@@ -161,6 +162,9 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>Brigade size limit (P-BRG-01, BRG-021), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameter is in the digest).</summary>
         public BrigadeRules? BrigadeRules { get; }
+
+        /// <summary>The FOB upgrade cost (P-MAP-03), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameter is in the digest).</summary>
+        public FobRules? FobRules { get; }
 
         /// <summary>The Section types in use, or null when there is no map.</summary>
         public SectionTypeTable? SectionTypes { get; }
@@ -290,11 +294,18 @@ namespace WeirdWar.Core.Simulation
             if (Map != null) sb.Append("parameters=").Append(_parametersDigest).Append('\n');
             sb.Append("sectiontypes=").Append(SectionTypes == null ? "none" : Hex(Sha256(Encoding.UTF8.GetBytes(SectionTypes.CanonicalText())))).Append('\n');
             foreach (var f in Factions)
+            {
                 sb.Append("faction=").Append(f.Id).Append(" reserve=").Append(f.Reserve.ToString(CultureInfo.InvariantCulture))
-                  .Append(" cp=").Append(f.Cp.ToString(CultureInfo.InvariantCulture)).Append('\n');
+                  .Append(" cp=").Append(f.Cp.ToString(CultureInfo.InvariantCulture));
+                // Written only once the Faction has upgraded an FOB, so a game with none hashes as before (MAP-012).
+                if (f.FobUpgrades > 0) sb.Append(" fobupgrades=").Append(f.FobUpgrades.ToString(CultureInfo.InvariantCulture));
+                sb.Append('\n');
+            }
             foreach (var l in Locations)
             {
                 sb.Append("location=").Append(l.Id).Append(" owner=").Append(l.Owner ?? "-");
+                // Written only for an upgraded location (MAP-012), so a game with none hashes as before.
+                if (l.Upgraded) sb.Append(" fob");
                 // Written only while a capture is pending (TRN-009), so a game with none hashes as before.
                 if (l.Capturing != null) sb.Append(" capturing=").Append(l.Capturing).Append(" brigade=").Append(l.CapturingBrigade?.ToString(CultureInfo.InvariantCulture) ?? "-");
                 sb.Append('\n');

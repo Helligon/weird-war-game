@@ -57,7 +57,8 @@ namespace WeirdWar.Core.Simulation
             // this turn is not resolved this turn: it waits for the start of the Faction's next turn. HQs are not STs.
             foreach (var l in state.Locations)
             {
-                if (l.Type == LocationType.Hq || l.Owner == faction) continue;
+                // MAP-010: an FOB is never captured directly.
+                if (l.Type == LocationType.Hq || l.Type == LocationType.Fob || l.Owner == faction) continue;
                 // Safeguard only: TRN-020 means no two Brigades share a hex, so at most one is found. If a bug ever allowed two, the lowest id would start the capture, so the choice is the same on every replay.
                 var starter = state.Brigades.Where(b => b.Faction == faction && b.Position.Equals(l.Position)).OrderBy(b => b.Id).FirstOrDefault();
                 if (starter == null) continue;

@@ -17,6 +17,7 @@ namespace WeirdWar.Core.Simulation
     /// parameter ID (DLV-014), all at construction, so a missing value fails at once with <see cref="MissingParameterException"/>.
     /// Money is whole numbers.
     ///   P-RES-01: base SP per turn. P-RES-02: base CP per turn. Both are paid by the HQ (MAP-024, RES-011).
+    ///   P-MAP-14: SP an FOB pays (MAP-031).
     ///   P-RES-04: the bonus one held ST gives, in each currency its type pays: Supply SP, Command CP, Major both.
     /// Income uses only these three parameters; DEC-106 removed the duplicates P-MAP-05 and P-MAP-06.
     /// </summary>
@@ -25,6 +26,7 @@ namespace WeirdWar.Core.Simulation
         private readonly int _baseSp;
         private readonly int _baseCp;
         private readonly int _stBonus;
+        private readonly int _fobSp;
 
         public IncomeRules(ParameterTable parameters)
         {
@@ -32,6 +34,7 @@ namespace WeirdWar.Core.Simulation
             _baseSp = NonNegative(parameters, "P-RES-01");
             _baseCp = NonNegative(parameters, "P-RES-02");
             _stBonus = NonNegative(parameters, "P-RES-04");
+            _fobSp = NonNegative(parameters, "P-MAP-14");
         }
 
         private static int NonNegative(ParameterTable parameters, string id)
@@ -56,6 +59,8 @@ namespace WeirdWar.Core.Simulation
                 if (l.Owner != faction) continue;
                 if (l.Type == LocationType.Hq) continue;
                 if (state.Brigades.Any(b => b.Faction != faction && b.Position.Equals(l.Position))) continue;
+                // MAP-031: an FOB pays P-MAP-14 SP, in place of (not on top of) the Supply ST bonus it had before the upgrade.
+                if (l.Type == LocationType.Fob) sp += _fobSp;
                 if (l.Type == LocationType.Supply || l.Type == LocationType.Major) sp += _stBonus;
                 if (l.Type == LocationType.Command || l.Type == LocationType.Major) cp += _stBonus;
             }

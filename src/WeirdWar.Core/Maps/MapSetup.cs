@@ -10,6 +10,8 @@ namespace WeirdWar.Core.Maps
         Supply = 1,
         Command = 2,
         Major = 3,
+        /// <summary>Only ever made by upgrading a Supply ST (MAP-012, MAP-046); a map file cannot place one (MAP-021).</summary>
+        Fob = 4,
     }
 
     /// <summary>
@@ -70,6 +72,7 @@ namespace WeirdWar.Core.Maps
             LocationType.Supply => "supply",
             LocationType.Command => "command",
             LocationType.Major => "major",
+            LocationType.Fob => "fob",
             _ => throw new InvalidOperationException("No name for location type " + t),
         };
     }
