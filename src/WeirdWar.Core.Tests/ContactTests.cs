@@ -141,10 +141,29 @@ public class ContactTests
         Assert.True(MoveDown(game, 1).Accepted); // one hex: within the cap of 2, contact stops it there
         Assert.Single(game.Battles);
 
-        var other = EastAt(2, "thrall,thrall,thrall");
-        Assert.False(Move(other, At(0, 1), At(0, 2), At(0, 3)).Accepted); // three hexes ordered: over the cap (answer 2)
+        // A valid 3-hex path, contact on hex 2, the third hex is not the enemy's: over the cap of 2 (answer 2), whatever contact does.
+        var other = EastAt(3, "thrall,thrall,thrall");
+        var otherHash = other.ComputeHash();
+        var beyond = At(0, 2).Neighbours().First(n => n != At(0, 1) && n != At(0, 3) && n != At(1, 0)
+            && n.ToOffset().Column >= 0 && n.ToOffset().Column < 4 && n.ToOffset().Row >= 0 && n.ToOffset().Row < 10);
+        var result = Move(other, At(0, 1), At(0, 2), beyond);
+        Assert.False(result.Accepted);
+        Assert.Contains("P-SUP-10", result.Reason);
         Assert.Empty(other.Battles);
-        Assert.Equal(hash, other.ComputeHash());
+        Assert.Equal(otherHash, other.ComputeHash());
+        Assert.NotEqual(hash, otherHash);
+    }
+
+    [Fact]
+    public void TRN_036_an_attack_counts_as_zero_hexes_so_a_slow_brigade_at_its_cap_can_still_attack()
+    {
+        var game = EastAt(1, "thrall,thrall,thrall");
+        West(game).MovedTurn = game.TurnNumber;
+        West(game).MovedHexes = 2; // the Slow cap (P-SUP-10 = 2) is used up
+
+        Assert.True(Move(game, At(0, 1)).Accepted);
+        Assert.Single(game.Battles);
+        Assert.Equal(2, West(game).HexesMovedIn(game.TurnNumber));
     }
 
     // ---- TRN-008, TRN-020: a friendly-held contact hex
