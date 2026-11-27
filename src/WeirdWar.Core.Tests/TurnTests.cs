@@ -73,12 +73,23 @@ public class TurnTests
 
         Assert.True(game.ApplyCommand(new EndTurnCommand(first)).Accepted);
         Assert.Equal(second, game.ActiveFaction);
-        Assert.Equal(2, game.TurnNumber);
         Assert.True(game.ApplyCommand(new AddToTallyCommand(1, second)).Accepted);
         Assert.False(game.ApplyCommand(new AddToTallyCommand(1, first)).Accepted);
 
         Assert.True(game.ApplyCommand(new EndTurnCommand(second)).Accepted);
         Assert.Equal(first, game.ActiveFaction);
+    }
+
+    [Fact]
+    public void TRN_035_each_faction_turn_adds_one_to_the_turn_number()
+    {
+        var game = NewGame();
+        Assert.Equal(1, game.TurnNumber); // the first player's turn is turn 1
+
+        Assert.True(game.ApplyCommand(new EndTurnCommand(game.ActiveFaction!)).Accepted);
+        Assert.Equal(2, game.TurnNumber); // the second player's turn is turn 2, not a second part of round 1
+
+        Assert.True(game.ApplyCommand(new EndTurnCommand(game.ActiveFaction!)).Accepted);
         Assert.Equal(3, game.TurnNumber);
     }
 
@@ -126,7 +137,7 @@ public class TurnTests
     }
 
     [Fact]
-    public void TRN_005_a_new_game_runs_start_and_income_for_the_first_player_then_rests_in_actions()
+    public void TRN_034_the_first_player_gets_income_on_turn_1_and_the_game_rests_in_actions()
     {
         var seen = new List<(TurnPhase, string)>();
         var game = new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse("P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2"),
@@ -136,6 +147,7 @@ public class TurnTests
         Assert.Equal(new[] { (TurnPhase.StartOfTurn, first), (TurnPhase.Income, first), (TurnPhase.Actions, first) }, seen);
         Assert.Equal(TurnPhase.Actions, game.Phase);
         Assert.Equal(1, game.TurnNumber);
+        Assert.Equal(2, game.Factions.Single(f => f.Id == first).Cp); // P-RES-02 paid on turn 1
     }
 
     [Fact]

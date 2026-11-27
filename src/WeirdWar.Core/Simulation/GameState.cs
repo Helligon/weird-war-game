@@ -259,7 +259,7 @@ namespace WeirdWar.Core.Simulation
             {
                 sb.Append("location=").Append(l.Id).Append(" owner=").Append(l.Owner ?? "-");
                 // Written only while a capture is pending (TRN-009), so a game with none hashes as before.
-                if (l.Capturing != null) sb.Append(" capturing=").Append(l.Capturing);
+                if (l.Capturing != null) sb.Append(" capturing=").Append(l.Capturing).Append(" brigade=").Append(l.CapturingBrigade?.ToString(CultureInfo.InvariantCulture) ?? "-");
                 sb.Append('\n');
             }
             foreach (var b in Brigades)

@@ -34,8 +34,11 @@ namespace WeirdWar.Core.Simulation
             foreach (var l in state.Locations)
             {
                 if (l.Capturing != faction) continue;
+                var starter = l.CapturingBrigade;
                 l.Capturing = null;
-                if (state.Brigades.Any(b => b.Faction == faction && b.Position.Equals(l.Position))) l.Owner = faction;
+                l.CapturingBrigade = null;
+                // Only the Brigade that started the capture completes it (TRN-009); another Brigade of the Faction does not.
+                if (state.Brigades.Any(b => b.Id == starter && b.Faction == faction && b.Position.Equals(l.Position))) l.Owner = faction;
             }
         }
 
@@ -55,7 +58,11 @@ namespace WeirdWar.Core.Simulation
             foreach (var l in state.Locations)
             {
                 if (l.Type == LocationType.Hq || l.Owner == faction) continue;
-                if (state.Brigades.Any(b => b.Faction == faction && b.Position.Equals(l.Position))) l.Capturing = faction;
+                // The Brigade with the lowest id on the hex starts it, so the choice is the same on every replay.
+                var starter = state.Brigades.Where(b => b.Faction == faction && b.Position.Equals(l.Position)).OrderBy(b => b.Id).FirstOrDefault();
+                if (starter == null) continue;
+                l.Capturing = faction;
+                l.CapturingBrigade = starter.Id;
             }
         }
 

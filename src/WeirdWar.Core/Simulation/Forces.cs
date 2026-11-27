@@ -34,6 +34,12 @@ namespace WeirdWar.Core.Simulation
         /// It is resolved, and cleared, at the start of that Faction's next turn. Null when no capture is pending.
         /// </summary>
         public string? Capturing { get; internal set; }
+
+        /// <summary>
+        /// The id of the Brigade that started the pending capture (TRN-009). Only that Brigade completes it. Null exactly
+        /// when <see cref="Capturing"/> is null.
+        /// </summary>
+        public int? CapturingBrigade { get; internal set; }
     }
 
     /// <summary>
