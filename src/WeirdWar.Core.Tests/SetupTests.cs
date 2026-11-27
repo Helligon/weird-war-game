@@ -352,7 +352,7 @@ public class SetupTests
 
     [Theory]
     [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":4,\"capacityContribution\":1,\"consumptionPerHex\":1}}}")]
-    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":0,\"health\":0,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1}}}")]
+    [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":0,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1}}}")]
     [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":1}}}")]
     [InlineData("{\"version\":1,\"sectionTypes\":{\"a\":{\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":1,\"health\":1,\"sight\":1,\"capacityContribution\":1,\"consumptionPerHex\":1,\"sp\":1}}}")]
     [InlineData("{\"version\":1,\"sectionTypes\":{}}")]
@@ -438,7 +438,7 @@ public class SetupTests
     {
         var baseline = NewGame().ComputeHash();
         var otherMap = NewGame(json: MapJson().Replace("[[1,1]]", "[[2,2]]")).ComputeHash();
-        var otherTypes = new GameState(7, MapImporter.Parse(MapJson()), SectionTypeTable.Parse(TypesJson.Replace("\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":10,\"health\":10", "\"class\":\"Infantry\",\"spCost\":10,\"healthPerUnit\":1,\"maxUnits\":11,\"health\":11")), Params()).ComputeHash();
+        var otherTypes = new GameState(7, MapImporter.Parse(MapJson()), SectionTypeTable.Parse(TypesJson.Replace("\"health\":10", "\"health\":11")), Params()).ComputeHash();
 
         Assert.NotEqual(baseline, otherMap);
         Assert.NotEqual(baseline, otherTypes);

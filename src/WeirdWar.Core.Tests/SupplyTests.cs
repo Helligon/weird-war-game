@@ -191,7 +191,7 @@ public class SupplyTests
         var map = MapImporter.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "data", "maps", "sample-20x12.json")));
         var shipped = SectionTypeTable.LoadShipped();
         var game = new GameState(1, map, shipped, Params);
-        var other = new Supply(Types, Params);
+        var other = new Supply(SectionTypeTable.LoadShipped(), Params);
 
         Assert.Throws<ArgumentException>(() => other.StatesOf(game));
         Assert.Equal(game.Brigades.Count, new Supply(shipped, Params).StatesOf(game).Count);
