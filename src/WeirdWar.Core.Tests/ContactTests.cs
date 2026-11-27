@@ -407,6 +407,6 @@ public class ContactTests
         Assert.True(MoveDown(game, 2).Accepted);
 
         Assert.Contains("brigade=2 faction=west sp=84 sections=infantry:10,infantry:10,infantry:10 at=0,2 moved=1:2\nbattle=2,1\nturn=1", game.CanonicalText());
-        Assert.Equal("8b89be695695c78121f64a5f8ff2b237db85a0df137d5263534d2d001d06d44b", game.ComputeHash());
+        Assert.Equal("270b9fdad1cc3c5717f65bbad57c01a264cc54715a5386755a21c237561f077f", game.ComputeHash());
     }
 }

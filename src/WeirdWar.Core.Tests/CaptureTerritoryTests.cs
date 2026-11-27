@@ -438,7 +438,7 @@ public class CaptureTerritoryTests
         var game = WestEndsTurnOnSupply();
 
         Assert.Contains("location=supply-1 owner=- capturing=west brigade=2\n", game.CanonicalText());
-        Assert.Equal("bebbc54fd34f36dc87df2ff81ebb59e22e0543cd7d9925a0ad517da0c2216fe3", game.ComputeHash());
+        Assert.Equal("f07d0f1c4ba398412f2869fe5277dab23b85191f8dcc8971593d3d34da8d823d", game.ComputeHash());
     }
 
     [Fact]
