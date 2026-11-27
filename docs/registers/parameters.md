@@ -3,7 +3,7 @@ id: REG-P
 title: Parameters register
 status: decided
 tags: [register]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Parameters register
@@ -14,13 +14,11 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 |---|---|---|---|---|
 | P-FOW-01 | Sight per Section type | 1–3 hexes | decided (range), open (per type) | [[fog-of-war]] |
 | P-FOW-02 | Recon reveal duration | Current turn + the enemy's next turn | decided | [[fog-of-war]] |
-| P-FOW-03 | Location sight radius | HQ 3, FOB 2, Major ST 2, Command ST 1, Supply ST 1 | decided | [[fog-of-war]] |
+| P-FOW-03 | Location sight radius (per-type format, TEC-017; keys in the order `hq`, `fob`, `major`, `command`, `supply`) | hq=3 fob=2 major=2 command=1 supply=1 | decided | [[fog-of-war]] |
 | P-MAP-01 | FOB-capture bonus | ~50% of build cost, in SP + CP | decided | [[map-and-locations]] |
-| P-MAP-02 | Territory radius | sight − 1, min 1 | decided | [[map-and-locations]] |
+| P-MAP-02 | Territory radius: sight minus `minus`, at least `min` (per-type format, TEC-017; keys in the order `minus`, `min`) | minus=1 min=1 | decided | [[map-and-locations]] |
 | P-MAP-03 | Supply ST→FOB upgrade cost | standard SP + rising CP | decided (values open) | [[map-and-locations]] |
 | P-MAP-04 | Starting map size | ~50×30 hexes (50 wide, 30 tall) | decided | [[map-and-locations]] |
-| P-MAP-05 | HQ income per turn (SP, CP) | – | open | [[map-and-locations]] |
-| P-MAP-06 | Income per ST type | – | open | [[map-and-locations]] |
 | P-MAP-07 | Major ST bombardment defence | – | open | [[map-and-locations]] |
 | P-MAP-08 | Defender morale/defence bonus by ST type | – | open | [[map-and-locations]] |
 | P-MAP-09 | HQ and FOB health | – | open | [[map-and-locations]] |
@@ -33,21 +31,23 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-RES-01 | Base SP income per turn | – | open | [[resources]] |
 | P-RES-02 | Base CP income per turn | – | open | [[resources]] |
 | P-RES-03 | CP cap / decay | – | proposed | [[resources]] |
-| P-RES-04 | SP / CP bonus per ST (by type) | – | open | [[resources]] |
+| P-RES-04 | SP / CP bonus per ST: one bonus for all ST types for now; MAY be split per type later using the per-type format (TEC-017) | – | open | [[resources]] |
+| P-RES-05 | Starting SP reserve | 5 | decided | [[resources]] |
+| P-RES-06 | Starting CP | 0 | decided | [[resources]] |
 | P-SUP-00 | Supply capacity of a **5-Section** Brigade | Enough for 10 hexes of movement + 1 battle (to be tuned once map scale is known) | decided | [[supply]] |
 | P-SUP-09 | Supply profile per Section type (capacity contribution, consumption per hex) | – | open | [[supply]] |
-| P-SUP-10 | Slow movement cap (hexes per turn) | – | open | [[supply]] |
+| P-SUP-10 | Slow movement cap (hexes per turn) | 2 (placeholder) | open | [[supply]] |
 | P-SUP-11 | Undead rot losses per turn | – | open | [[supply]] |
 | P-SUP-12 | Undead grace period (turns without battle before rotting) | 2 | decided | [[supply]] |
 | P-SUP-01 | Well Supplied threshold | 75% | decided | [[supply]] |
-| P-SUP-02 | Low threshold | 25% | decided | [[supply]] |
+| P-SUP-02 | Overextended threshold (fraction of capacity) | 25% | decided | [[supply]] |
 | P-SUP-03 | Standard march cost | ~30% (re-derive from hex costs) | proposed | [[supply]] |
 | P-SUP-04 | Battle SP cost | ~20% | proposed | [[supply]] |
 | P-SUP-05 | Well Supplied bonus (morale, reload) | – | open | [[supply]] |
-| P-SUP-06 | Low penalty | – | open | [[supply]] |
 | P-SUP-07 | Overextended morale penalty | – | open | [[supply]] |
-| P-SUP-08 | Resupply range around Supply ST/FOB/HQ | Same or adjacent hex | decided | [[supply]] |
+| P-SUP-08 | Resupply range around the HQ and owned Supply STs, Major STs and FOBs | Same or adjacent hex | decided | [[supply]] |
 | P-TRN-01 | Extra starting Cards for the second player | 1 | decided | [[turn-structure]] |
+| P-TRN-02 | SP cost of attacking an adjacent enemy hex (TRN-036) | 1 (placeholder) | proposed | [[turn-structure]] |
 | P-UPK-01 | Upkeep inside perimeter | 0 | decided | [[upkeep-and-desertion]] |
 | P-UPK-02 | Upkeep outside perimeter | whole SP per turn by title (e.g. Infantry 1, Artillery 2) | decided (examples), open (full table) | [[upkeep-and-desertion]] |
 | P-UPK-03 | Desertion health loss range | ~15% (bounds TBD) | decided (centre), open (bounds) | [[upkeep-and-desertion]] |
@@ -57,6 +57,7 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-BRG-04 | Major bonus threshold | 4 Sections of the same type | decided | [[brigades]] |
 | P-BRG-05 | Starting Brigade size | 3 Sections | decided | [[brigades]] |
 | P-BRG-07 | Starting supply of a new Brigade | small | decided (principle), open (value) | [[brigades]] |
+| P-BRG-09 | Starting SP of each Faction's starting Brigade | 90 | decided | [[brigades]] |
 | P-BRG-08 | Free re-rolls from the Card | – | open | [[brigades]] |
 | P-BRG-06 | Bonus Section cap (Card or officer bonus) | +1 | decided | [[brigades]] |
 | P-HIE-01 | Max Units per Section, by type | – | open | [[hierarchy]] |
@@ -85,8 +86,7 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-DAI-04 | Hit chance of an uncontrolled officer's shot, rolled on the battle's seeded random source (DAI-005, DEC-102) | 0.5 (Spike 2 placeholder) | proposed | [[default-ai-behaviour]] |
 | P-DEP-01 | Terrain → pattern weights | – | open | [[deployment]] |
 | P-DEP-02 | Max Brigades per side (= 2) | – | decided | [[deployment]] |
-| P-DEP-03 | Low-supply reinforcement timer | – | open | [[deployment]] |
-| P-DEP-04 | Overextended reinforcement timer (> P-DEP-03) | – | open | [[deployment]] |
+| P-DEP-03 | Overextended reinforcement timer (longer than P-DEP-05; DEC-111 removed the separate Low tier and the longest-timer row; its number, 04, is not reused) | – | open | [[deployment]] |
 | P-DEP-05 | Well Supplied / Supplied reinforcement timer (short) | – | open | [[deployment]] |
 | P-DEP-06 | Deployment-zone depth | – | 15–20% of map depth (decided) | [[deployment]] |
 | P-MOR-01 | Default Brigade base morale | – | open | [[morale]] |

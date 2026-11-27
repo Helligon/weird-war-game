@@ -29,5 +29,8 @@ With no orders, Sections behave very simply, so that players are encouraged to g
 | P-DAI-03 | Time between an uncontrolled officer's shots (DAI-005, DEC-102) | 2 s (Spike 2 placeholder) | proposed |
 | P-DAI-04 | Hit chance of an uncontrolled officer's shot, rolled on the battle's seeded random source (DAI-005, DEC-102) | 0.5 (Spike 2 placeholder) | proposed |
 
+## Edge cases
+- **Spike 2 balance (DEC-104, for the SP2-44 learning note):** the AI Officer currently decides battles, because its 80 m rifle outranges a Section's 30 m range. No rule changes. The SP2-44 learning note MUST cover this, with the other spike stand-ins (DEC-099, DEC-102).
+
 ## Open questions
 - Q-DAI-01 (answered → DAI-006): Nearest in range, preferring attackers.

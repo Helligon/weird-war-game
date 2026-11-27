@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [campaign, map]
 related: ["[[map-and-locations]]", "[[cards]]", "[[standard-roster]]"]
-updated: 2026-11-22
+updated: 2026-11-26
 ---
 
 # Fog of war
@@ -31,7 +31,7 @@ The campaign map has fog of war. Terrain is always visible; STs and enemy Brigad
 |---|---|---|---|
 | P-FOW-01 | Sight per Section type | 1–3 hexes | decided (range), open (per type) |
 | P-FOW-02 | Recon reveal duration | Current turn + the enemy's next turn | decided |
-| P-FOW-03 | Location sight radius | HQ 3, FOB 2, Major ST 2, Command ST 1, Supply ST 1 | decided |
+| P-FOW-03 | Location sight radius (per-type format, TEC-017; keys in the order `hq`, `fob`, `major`, `command`, `supply`) | hq=3 fob=2 major=2 command=1 supply=1 | decided |
 
 ## Open questions
 - Q-FOW-01 (answered → FOW-006): The best of its Sections.

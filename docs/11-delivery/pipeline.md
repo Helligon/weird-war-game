@@ -68,7 +68,8 @@ flowchart LR
 | Balance agent | Runs auto-resolve simulations to tune numbers | Proposals only | Later, on demand |
 
 - **DLV-015** (`decided`): Agents MUST be defined as Claude Code subagents in the repo (`.claude/agents/*.md`), each with its own instructions, tools and limits.
-- **DLV-016** (`decided`): No agent MAY merge into `main`.
+- **DLV-016** (`decided`, revised by DEC-109): No agent MAY merge into `main`, except a docs-only PR under DLV-020. Feature branches are always merged by Alex (DLV-007).
+- **DLV-020** (`decided`, DEC-109): An agent MAY merge a PR into `main` when every file it changes is under `docs/` and none is a delivery-process doc (`docs/11-delivery/` or `docs/AGENTS.md`). The `Doc checks` job MUST pass first. The change itself still follows DLV-009: only changes Alex has already discussed.
 - **DLV-017** (`decided`, DEC-089): Agents MAY merge PRs into any branch other than `main`, e.g. a Story PR into its Feature branch once it meets the Definition of Done (DLV-011).
 - **DLV-018** (`decided`, DEC-090): Each agent MUST set its model in its definition's `model:` frontmatter. The Planner and Reviewer use **Opus**; the Ticket Writer, Developer and Design Steward use **Sonnet**.
 
@@ -79,8 +80,8 @@ What exists in the repository today:
 - **Doc check:** `scripts/check_docs.py` checks frontmatter, links, rule IDs and statuses, duplicate and undefined IDs, and stale registers. Its tests are in `scripts/test_check_docs.py`.
 - **CI:** `.github/workflows/ci.yml` runs the doc tests and the doc check (the `Doc checks` job) on every PR and on every push to `main`. Pushes to other branches don't trigger it, so a branch with an open PR is checked once, not twice. The `Campaign core tests` job runs `dotnet test` on the production core in `src/` (TEC-016). The `Core tests` job runs the Spike 1 prototype tests.
 - **Branch protection on `main`** (enforces DLV-007 and DLV-016): changes go through a PR, the `Doc checks` job must pass, and force-pushes and deletion are blocked. This applies to admins too. No approval count is required, because Alex can't approve his own PRs.
-- **Agent permissions:** `.claude/settings.json` blocks pushes to `main`, and runs a hook (`.claude/hooks/block_main_merge.py`) before every shell command. The hook lets agents merge PRs into other branches (DLV-017) but blocks:
-  - any merge into `main` (DLV-016)
+- **Agent permissions:** `.claude/settings.json` blocks pushes to `main`, and runs a hook (`.claude/hooks/block_main_merge.py`) before every shell command. The hook lets agents merge PRs into other branches (DLV-017), and docs-only PRs into `main` (DLV-020), but blocks:
+  - any other merge into `main` (DLV-016), including any PR whose changed files it can't list
   - any merge whose target branch it can't find
   - any command that mentions merging a PR but can't be read as a merge
   - merges through the raw GitHub API

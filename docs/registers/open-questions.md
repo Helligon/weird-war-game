@@ -3,7 +3,7 @@ id: REG-Q
 title: Open questions register
 status: decided
 tags: [register]
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Open questions register
@@ -142,7 +142,7 @@ Generated from the **Open questions** sections of every feature note. The note i
 | Q-VIC-01 | [[victory-and-routing]] | Morale model and rout chance. | answered → [[morale]] |
 | Q-VIC-02 | [[victory-and-routing]] | Yes. | answered → MOR-012 |
 | Q-VIC-03 | [[victory-and-routing]] | Defenders retreat towards the nearest HQ/FOB, attackers fall back, and a Brigade that can't retreat is destroyed. | answered → TRN-010 to TRN-016 |
-| Q-VIC-04 | [[victory-and-routing]] | What happens if both sides' last Units are destroyed at the same moment? Spike 2 calls it a draw as a stand-in (DEC-101). | open |
+| Q-VIC-04 | [[victory-and-routing]] | A draw: neither side wins, and the outcome is `Draw`. | answered → VIC-007 |
 | Q-ARO-01 | [[aro-progression]] | The auto-resolve strength ratio. | answered → ARO-006 |
 | Q-ARO-02 | [[aro-progression]] | Which base stats does "lesson learned" affect, exactly? | open |
 | Q-ARO-03 | [[aro-progression]] | The bonus pool and what an "upgraded" bonus is. | open |

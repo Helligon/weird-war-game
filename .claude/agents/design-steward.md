@@ -29,3 +29,4 @@ Read `docs/AGENTS.md` (status meanings, rule format) and `docs/11-delivery/pipel
 - Never reuse or renumber an ID. Strike removed rules (`~~ID~~`) and add a note saying why.
 - When you edit a note, update its `updated` property to today's date.
 - Commit agreed fixes on the current branch with a message that cites the rule IDs. Never commit to `main` and never push unless told to.
+- When told to, you MAY merge your docs PR into `main` (DLV-020), but only if every changed file is under `docs/`, none is in `docs/11-delivery/` or is `docs/AGENTS.md`, and `Doc checks` has passed. Anything else waits for Alex.

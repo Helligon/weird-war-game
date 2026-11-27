@@ -5,7 +5,7 @@ status: decided
 phase: unassigned
 tags: [battle]
 related: ["[[supply]]", "[[battle-maps]]"]
-updated: 2026-11-21
+updated: 2026-11-27
 ---
 
 # Deployment and reinforcements
@@ -38,8 +38,7 @@ Normally a player chooses where its forces are placed. Overextended Brigades are
 | Supply state | Timer |
 |---|---|
 | Well Supplied / Supplied | Short (P-DEP-05) |
-| Low | Longer (P-DEP-03) |
-| Overextended | Longest (P-DEP-04) |
+| Overextended | Longer (P-DEP-03) |
 
 - ~~DEP-008~~: replaced by DEP-006 (revised). Reinforcements never choose their deployment (DEC-074).
 - **DEP-007** (`decided`): Reinforcements MUST enter from the map edge matching where they are on the campaign map relative to the battle hex.
@@ -49,8 +48,7 @@ Normally a player chooses where its forces are placed. Overextended Brigades are
 |---|---|---|
 | P-DEP-01 | Terrain → pattern weights | open |
 | P-DEP-02 | Max Brigades per side (= 2) | decided |
-| P-DEP-03 | Low-supply reinforcement timer | open |
-| P-DEP-04 | Overextended reinforcement timer (> P-DEP-03) | open |
+| P-DEP-03 | Overextended reinforcement timer (longer than P-DEP-05; DEC-111 removed the separate Low tier and the longest-timer row; its number, 04, is not reused) | open |
 | P-DEP-05 | Well Supplied / Supplied reinforcement timer (short) | open |
 | P-DEP-06 | Deployment-zone depth | 15–20% of map depth (decided) |
 
