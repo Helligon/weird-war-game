@@ -168,7 +168,7 @@ public class SupplyTests
     public void SUP_007_a_brigade_below_P_SUP_02_of_capacity_is_overextended()
     {
         var capacity = Supply.CapacityOf(Infantry(5));
-        var below = (int)Math.Ceiling(0.25 * capacity) - 1;
+        var below = (int)Math.Ceiling(Params.GetDouble("P-SUP-02") * capacity) - 1;
 
         Assert.Equal(SupplyState.Overextended, Supply.StateOf(Infantry(5, below)));
         Assert.Equal(SupplyState.Supplied, Supply.StateOf(Infantry(5, below + 1)));
@@ -177,7 +177,7 @@ public class SupplyTests
     [Fact]
     public void SUP_003_a_missing_P_SUP_02_fails_at_game_start()
     {
-        var withoutIt = string.Join("\n", File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "data", "parameters.txt")).Where(l => !l.StartsWith("P-SUP-02")));
+        var withoutIt = string.Join("\n", File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Data", "parameters.txt")).Where(l => !l.StartsWith("P-SUP-02")));
         var map = MapImporter.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "data", "maps", "sample-20x12.json")));
 
         Assert.Throws<MissingParameterException>(() => new GameState(1, map, Types, ParameterTable.Parse(withoutIt)));
