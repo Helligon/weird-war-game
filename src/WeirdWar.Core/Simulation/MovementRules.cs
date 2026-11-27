@@ -15,7 +15,7 @@ namespace WeirdWar.Core.Simulation
             SlowCap = parameters.GetInt("P-SUP-10");
             if (SlowCap < 1) throw new ParameterFormatException("P-SUP-10 = " + SlowCap + " must be at least 1 (SUP-024).");
             AttackCost = parameters.GetInt("P-TRN-02");
-            if (AttackCost < 0) throw new ParameterFormatException("P-TRN-02 = " + AttackCost + " must not be negative (TRN-036).");
+            if (AttackCost < 1) throw new ParameterFormatException("P-TRN-02 = " + AttackCost + " must be at least 1 (TRN-036).");
         }
 
         /// <summary>SP an attack on an adjacent enemy hex costs (P-TRN-02, TRN-036).</summary>
