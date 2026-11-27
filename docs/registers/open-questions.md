@@ -108,6 +108,7 @@ Generated from the **Open questions** sections of every feature note. The note i
 | Q-BIN-01 | [[battle-initiation]] | Auto-resolve formula and its inputs. To be designed in a dedicated session once Brigades and values exist. | deferred → working session |
 | Q-BIN-05 | [[battle-initiation]] | When a Brigade makes contact next to several enemy Brigades, which one defends? Decide properly here; BIN-011 (lowest id) is an interim rule (DEC-115). | open |
 | Q-BIN-06 | [[battle-initiation]] | Can a Brigade that is already in a pending battle be drawn into a second battle (for example as reinforcements under BIN-009 or BIN-010, or by another Brigade's contact)? Linked to Q-BIN-01 and TRN-037 (DEC-115). | open |
+| Q-BIN-07 | [[battle-initiation]] | What happens to a pending battle when one of its Brigades is disbanded, for example by transferring away its last Section (BRG-023)? Should the battle be cancelled, or the other side win? Linked to Q-BIN-01 and Q-BIN-06. Also: may a Brigade in a pending battle give or receive Sections (BRG-016), given that TRN-037 only forbids moving and attacking? | open |
 | Q-BIN-02 | [[battle-initiation]] | Defender chooses Fight / Retreat / Offer auto-resolve. | answered → BIN-005, BIN-006 |
 | Q-BIN-03 | [[battle-initiation]] | The defender picks one adjacent friendly Brigade to join. | answered → BIN-009 |
 | Q-BIN-04 | [[battle-initiation]] | Yes, the same as the defender. | answered → BIN-010 |

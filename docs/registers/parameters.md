@@ -17,7 +17,7 @@ Every tunable value in one place, generated from the **Parameters** tables in th
 | P-FOW-03 | Location sight radius (per-type format, TEC-017; keys in the order `hq`, `fob`, `major`, `command`, `supply`) | hq=3 fob=2 major=2 command=1 supply=1 | decided | [[fog-of-war]] |
 | P-MAP-01 | FOB-capture bonus | ~50% of build cost, in SP + CP | decided | [[map-and-locations]] |
 | P-MAP-02 | Territory radius: sight minus `minus`, at least `min` (per-type format, TEC-017; keys in the order `minus`, `min`) | minus=1 min=1 | decided | [[map-and-locations]] |
-| P-MAP-03 | Supply ST→FOB upgrade cost | standard SP + rising CP | decided (values open) | [[map-and-locations]] |
+| P-MAP-03 | Supply ST→FOB upgrade cost. Keys (TEC-017), in this order: `sp` (standard SP cost), `cp` (CP cost of the first upgrade), `cpStep` (CP added for each upgrade the Faction has made, at least 1) | standard SP + rising CP | decided (values open) | [[map-and-locations]] |
 | P-MAP-04 | Starting map size | ~50×30 hexes (50 wide, 30 tall) | decided | [[map-and-locations]] |
 | P-MAP-07 | Major ST bombardment defence | – | open | [[map-and-locations]] |
 | P-MAP-08 | Defender morale/defence bonus by ST type | – | open | [[map-and-locations]] |
