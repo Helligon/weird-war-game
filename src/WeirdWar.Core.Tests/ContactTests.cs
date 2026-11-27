@@ -61,7 +61,7 @@ public class ContactTests
     {
         var game = EastAt(3);
 
-        Assert.True(MoveDown(game, 4).Accepted);
+        Assert.True(MoveDown(game, 2).Accepted);
 
         Assert.Equal(At(0, 2), West(game).Position);
         var battle = Assert.Single(game.Battles);
@@ -74,12 +74,30 @@ public class ContactTests
     {
         var game = EastAt(3);
 
-        // The last hex is off the map: it would be rejected if it were walked, but it is after the contact hex.
-        Assert.True(Move(game, At(0, 1), At(0, 2), new HexCoord(5, 5)).Accepted);
+        // A valid hex after the contact hex: it is not walked.
+        var beyond = At(0, 2).Neighbours().First(n => n != At(0, 1) && n != At(0, 3) && n != At(1, 0)
+            && n.ToOffset().Column >= 0 && n.ToOffset().Column < 4 && n.ToOffset().Row >= 0 && n.ToOffset().Row < 10);
+        Assert.True(Move(game, At(0, 1), At(0, 2), beyond).Accepted);
 
         Assert.Equal(At(0, 2), West(game).Position);
         Assert.Equal(90 - 2 * 3, West(game).SP);
         Assert.Equal(2, West(game).HexesMovedIn(game.TurnNumber));
+    }
+
+    [Fact]
+    public void TRN_023_a_bad_hex_after_the_contact_hex_still_rejects_the_whole_order()
+    {
+        var game = EastAt(3);
+        var hash = game.ComputeHash();
+
+        // Off the map, through the enemy hex, and onto the enemy hex: the whole ordered path is checked, then cut at contact.
+        Assert.False(Move(game, At(0, 1), At(0, 2), new HexCoord(5, 5)).Accepted);
+        Assert.False(Move(game, At(0, 1), At(0, 2), At(0, 3), At(0, 4)).Accepted);
+        var onto = Move(game, At(0, 1), At(0, 2), At(0, 3));
+        Assert.False(onto.Accepted);
+        Assert.Contains("TRN-023", onto.Reason);
+        Assert.Equal(hash, game.ComputeHash());
+        Assert.Empty(game.Battles);
     }
 
     [Fact]
@@ -99,7 +117,7 @@ public class ContactTests
     {
         var game = EastAt(3);
 
-        MoveDown(game, 3);
+        MoveDown(game, 2);
 
         Assert.Equal(At(0, 3), East(game).Position); // the defender has not moved
         Assert.Equal(At(0, 2), West(game).Position); // the attacker is on the contact hex
@@ -115,15 +133,18 @@ public class ContactTests
     }
 
     [Fact]
-    public void TRN_008_a_slow_brigade_is_limited_by_the_hexes_walked_when_contact_stops_it()
+    public void SUP_025_a_slow_brigade_is_limited_by_the_whole_ordered_path_even_when_contact_would_stop_it()
     {
         var game = EastAt(2, "thrall,thrall,thrall"); // contact at (0,1) after one hex
+        var hash = game.ComputeHash();
 
-        Assert.True(MoveDown(game, 5).Accepted); // five hexes would break the Slow cap of 2, one walked hex does not
-
-        Assert.Equal(At(0, 1), West(game).Position);
-        Assert.Equal(1, West(game).HexesMovedIn(game.TurnNumber));
+        Assert.True(MoveDown(game, 1).Accepted); // one hex: within the cap of 2, contact stops it there
         Assert.Single(game.Battles);
+
+        var other = EastAt(2, "thrall,thrall,thrall");
+        Assert.False(Move(other, At(0, 1), At(0, 2), At(0, 3)).Accepted); // three hexes ordered: over the cap (answer 2)
+        Assert.Empty(other.Battles);
+        Assert.Equal(hash, other.ComputeHash());
     }
 
     // ---- TRN-008, TRN-020: a friendly-held contact hex
@@ -135,7 +156,7 @@ public class ContactTests
         AddFriend(game, 2); // (0,2) is next to the enemy at (0,3)
         var hash = game.ComputeHash();
 
-        var result = MoveDown(game, 4);
+        var result = MoveDown(game, 2);
 
         Assert.False(result.Accepted);
         Assert.Contains("TRN-020", result.Reason);
@@ -163,7 +184,7 @@ public class ContactTests
         var game = EastAt(4); // contact would be at (0,3)
         West(game).SP = 7;    // two hexes
 
-        Assert.True(MoveDown(game, 4).Accepted);
+        Assert.True(MoveDown(game, 3).Accepted);
 
         Assert.Equal(At(0, 2), West(game).Position);
         Assert.Equal(1, West(game).SP);
@@ -176,7 +197,7 @@ public class ContactTests
         var game = EastAt(3); // contact at (0,2)
         West(game).SP = 6;    // exactly two hexes
 
-        Assert.True(MoveDown(game, 4).Accepted);
+        Assert.True(MoveDown(game, 2).Accepted);
 
         Assert.Equal(At(0, 2), West(game).Position);
         Assert.Equal(0, West(game).SP);
@@ -222,9 +243,10 @@ public class ContactTests
         West(game).Position = At(0, 1); // two hexes away from the enemy
         var hash = game.ComputeHash();
 
-        var result = Move(game, At(0, 3));
+        var result = Move(game, At(0, 2), At(0, 3)); // ends on the enemy hex, but not from next to it
 
         Assert.False(result.Accepted);
+        Assert.Contains("TRN-023", result.Reason);
         Assert.Equal(hash, game.ComputeHash());
         Assert.Empty(game.Battles);
     }
@@ -279,7 +301,7 @@ public class ContactTests
     public void TRN_015_the_attacker_stays_where_contact_stopped_it_and_cannot_move_or_attack_again()
     {
         var game = EastAt(3);
-        MoveDown(game, 3);
+        MoveDown(game, 2);
         var hash = game.ComputeHash();
 
         Assert.False(Move(game, At(0, 1)).Accepted);   // back
@@ -302,7 +324,7 @@ public class ContactTests
     public void TRN_015_the_defender_in_a_pending_battle_does_not_move_either()
     {
         var game = EastAt(3);
-        MoveDown(game, 3);
+        MoveDown(game, 2);
         Assert.True(game.ApplyCommand(new EndTurnCommand("west")).Accepted);
         var hash = game.ComputeHash();
 
@@ -350,9 +372,9 @@ public class ContactTests
     {
         // Pinned value computed independently in Python from the canonical text format, not from this code.
         var game = EastAt(3);
-        Assert.True(MoveDown(game, 3).Accepted);
+        Assert.True(MoveDown(game, 2).Accepted);
 
         Assert.Contains("brigade=2 faction=west sp=84 sections=infantry:10,infantry:10,infantry:10 at=0,2 moved=1:2\nbattle=2,1\nturn=1", game.CanonicalText());
-        Assert.Equal("d878e507c16965521c688401ba6a820c2149503cbaa834c06c58f54802c09174", game.ComputeHash());
+        Assert.Equal("c9a5010688dae7e994fbaf76a6827edc0f39f61b483a44c858046945b7932ad2", game.ComputeHash());
     }
 }

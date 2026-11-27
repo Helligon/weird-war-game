@@ -55,7 +55,7 @@ namespace WeirdWar.Core.Commands
         {
             public Brigade? Brigade;
             public List<Step> Steps = new List<Step>();
-            /// <summary>Hexes of the path that count towards the Slow cap: the whole path, or up to the contact hex.</summary>
+            /// <summary>Hexes that count towards the Slow cap: the whole ordered path, or 0 for an attack (answer 2, TRN-036).</summary>
             public int PathLength;
             /// <summary>The enemy Brigade the battle is against, or null for no battle (TRN-003, TRN-036).</summary>
             public Brigade? Foe;
@@ -85,6 +85,7 @@ namespace WeirdWar.Core.Commands
             var map = state.Map;
             var perHex = state.Supply.CostPerHexOf(mover);
             var from = mover.Position;
+            var contactAt = 0;
             for (var i = 0; i < _path.Length; i++)
             {
                 var hex = _path[i];
@@ -108,9 +109,15 @@ namespace WeirdWar.Core.Commands
                 w.Steps.Add(new Step(hex, perHex * factor.Value));
                 from = hex;
                 // TRN-003: contact is entering a hex next to an enemy Brigade. TRN-008: the move stops there.
-                var foe = state.Brigades.Where(b => b.Faction != mover.Faction && b.Position.DistanceTo(hex) == 1).OrderBy(b => b.Id).FirstOrDefault();
-                if (foe != null) { w.Foe = foe; w.PathLength = i + 1; break; }
+                if (w.Foe == null)
+                {
+                    w.Foe = state.Brigades.Where(b => b.Faction != mover.Faction && b.Position.DistanceTo(hex) == 1).OrderBy(b => b.Id).FirstOrDefault();
+                    if (w.Foe != null) contactAt = w.Steps.Count;
+                }
             }
+
+            // TRN-023 checked the whole ordered path above; TRN-008 only stops it being walked past the contact hex.
+            if (w.Foe != null) w.Steps.RemoveRange(contactAt, w.Steps.Count - contactAt);
 
             // SUP-005, SUP-006: the Brigade stops on the last hex its own SP pays for (SUP-015: never the reserve).
             // The path up to contact is checked above; SP may stop it earlier, and then contact did not happen.

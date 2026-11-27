@@ -341,14 +341,12 @@ public class MovementTests
     private static void PutEastAt(GameState game, HexCoord hex) => East(game).Position = hex;
 
     [Fact]
-    public void TRN_020_a_brigade_never_ends_its_move_on_a_hex_held_by_an_enemy_brigade_contact_stops_it_next_door()
+    public void TRN_020_a_brigade_cannot_end_its_move_on_a_hex_held_by_an_enemy_brigade()
     {
         var game = NewGame();
         PutEastAt(game, At(0, 3));
 
-        Assert.True(Move(game, 3).Accepted); // contact at (0,2), TRN-008
-        Assert.Equal(At(0, 2), West(game).Position);
-        Assert.Equal(At(0, 3), East(game).Position);
+        Assert.False(Move(game, 3).Accepted);
     }
 
     [Fact]
@@ -382,18 +380,16 @@ public class MovementTests
     public void TRN_023_a_hex_held_by_an_enemy_brigade_cannot_be_entered_even_part_way_along_the_path()
     {
         var game = NewGame();
-        // A path that enters a hex next to the enemy stops there at contact (TRN-008), so the enemy hex is only ever
-        // reached from a start next to it.
         PutEastAt(game, At(0, 2));
-        West(game).Position = At(0, 1);
 
         var hash = game.ComputeHash();
-        var result = Move(game, 3, 1);
+        var result = Move(game, 4);
 
         Assert.False(result.Accepted);
         Assert.Contains("enemy", result.Reason);
         Assert.Equal(hash, game.ComputeHash());
-        Assert.False(Move(game, 2, 1).Accepted);
+        Assert.False(Move(game, 2).Accepted);
+        Assert.True(Move(game, 1).Accepted); // the hex before the enemy is fine (contact stops it there)
     }
 
     [Fact]
@@ -497,6 +493,7 @@ public class MovementTests
         var rejected = new ICommand[]
         {
             new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(0, 2), At(0, 4) }),             // not adjacent, part-way along
+            new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(0, 2), At(0, 3), At(0, 4) }),   // enemy at the end
             new MoveBrigadeCommand("west", west, new[] { At(0, 1), At(1, 0) }),                       // not adjacent to (0,1)
             new MoveBrigadeCommand("west", west, new[] { At(0, 1), new HexCoord(5, 5) }),             // off the map after a good hex
             new MoveBrigadeCommand("west", west, new[] { At(1, 0) }),                                  // mountain
