@@ -68,6 +68,14 @@ class CheckDocsTest(unittest.TestCase):
         self.edit(HEROES, "(OFF-009)", "(VET-006)")  # VET-006 is a withdrawn ~~rule~~
         self.assertEqual(check_docs.check(self.docs), [])
 
+    def test_struck_parameter_counts_as_defined(self):
+        self.edit(HEROES, "(OFF-009)", "(~~P-HER-99~~)")  # a removed parameter, no definition left
+        self.assertEqual(check_docs.check(self.docs), [])
+
+    def test_unstruck_undefined_parameter_still_fails(self):
+        self.edit(HEROES, "(OFF-009)", "(P-HER-99)")
+        self.assertError("P-HER-99 referenced but never defined")
+
     def test_stale_register(self):
         self.edit(HEROES, "| P-HER-01 | Max heroes per Brigade | 1 |", "| P-HER-01 | Max heroes per Brigade | 2 |")
         self.assertError("registers/parameters.md is stale")
