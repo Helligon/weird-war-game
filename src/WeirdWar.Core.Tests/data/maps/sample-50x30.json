@@ -17,7 +17,7 @@
     {"id": "major-1", "type": "major", "at": [30, 14]}
   ],
   "setup": {
-    "east": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "artillery"]}},
-    "west": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "recon"]}}
+    "east": {"brigade": {"sections": ["infantry", "infantry", "artillery"]}},
+    "west": {"brigade": {"sections": ["infantry", "infantry", "recon"]}}
   }
 }

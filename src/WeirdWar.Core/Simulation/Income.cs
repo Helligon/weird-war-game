@@ -18,7 +18,7 @@ namespace WeirdWar.Core.Simulation
     /// Money is whole numbers.
     ///   P-RES-01: base SP per turn. P-RES-02: base CP per turn. Both are paid by the HQ (MAP-024, RES-011).
     ///   P-RES-04: the bonus one held ST gives, in each currency its type pays: Supply SP, Command CP, Major both.
-    /// P-MAP-05 and P-MAP-06 are not read: it is not confirmed that they equal P-RES-01/02 and P-RES-04. They stay in the data file only.
+    /// Income uses only these three parameters; DEC-106 removed the duplicates P-MAP-05 and P-MAP-06.
     /// </summary>
     public sealed class IncomeRules
     {

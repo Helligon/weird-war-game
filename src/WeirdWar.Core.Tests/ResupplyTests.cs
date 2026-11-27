@@ -17,10 +17,10 @@ public class ResupplyTests
         "{\"id\":\"supply-1\",\"type\":\"supply\",\"at\":[2,1]}," +
         "{\"id\":\"command-1\",\"type\":\"command\",\"at\":[5,1]}," +
         "{\"id\":\"major-1\",\"type\":\"major\",\"at\":[4,1]}]," +
-        "\"setup\":{\"east\":{\"reserve\":5,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
-        "\"west\":{\"reserve\":6,\"brigade\":{\"sp\":85,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}}";
+        "\"setup\":{\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
+        "\"west\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}}";
 
-    private const string Params = "P-BRG-05 = 3\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
+    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
 
     private static GameState NewGame(string parameters = Params)
         => new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(parameters));
@@ -294,9 +294,10 @@ public class ResupplyTests
     {
         var (game, f, b) = Setup();
         Location(game, "supply-1").Owner = f;
-        b.Position = At(4, 1);
-        Assert.True(b.Position.DistanceTo(At(2, 1)) >= 2);
-        Assert.True(b.Position.DistanceTo(Location(game, "hq-" + f).Position) >= 2);
+        Location(game, "major-1").Owner = f;
+        b.Position = At(4, 3);
+        foreach (var point in game.Locations.Where(l => l.Type is LocationType.Hq or LocationType.Supply or LocationType.Major))
+            Assert.True(b.Position.DistanceTo(point.Position) >= 2, point.Id);
 
         var before = game.ComputeHash();
         var result = game.ApplyCommand(new DistributeSpCommand(f, b.Id, 5));
@@ -458,9 +459,9 @@ public class ResupplyTests
     public void TEC_008_distribute_round_trips_and_replay_reproduces_the_hash_including_a_clamped_distribution()
     {
         // Both Brigades start at 100 of 105 SP, so a request of 8 (within the reserve) is clamped to the room of 5.
-        var mapJson = MapJson.Replace("\"sp\":90", "\"sp\":100").Replace("\"sp\":85", "\"sp\":100");
+        var parameters = Params.Replace("P-BRG-09 = 90", "P-BRG-09 = 100");
         var registry = CommandRegistry.CreateDefault();
-        var game = new GameState(7, MapImporter.Parse(mapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(Params));
+        var game = new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(parameters));
         var f = game.ActiveFaction!;
         var b = BrigadeOf(game, f);
         var reserve = Faction(game, f).Reserve;
@@ -476,7 +477,7 @@ public class ResupplyTests
         Assert.Equal("{\"amount\":8,\"brigade\":" + b.Id + ",\"faction\":\"" + f + "\",\"type\":\"distributeSp\"}", registry.WriteCommand(command));
 
         var run = registry.ReadLog(registry.WriteLog(7, game.Log));
-        var replayed = GameState.Replay(run.Seed, run.Log, MapImporter.Parse(mapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(Params));
+        var replayed = GameState.Replay(run.Seed, run.Log, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(parameters));
         Assert.Equal(game.ComputeHash(), replayed.ComputeHash());
         Assert.Equal(105, BrigadeOf(replayed, f).SP);
     }

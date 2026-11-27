@@ -25,8 +25,8 @@ The file is read with the core's own JSON reader (`WeirdWar.Core.Serialization.J
     {"id": "major-1", "type": "major", "at": [3, 2]}
   ],
   "setup": {
-    "east": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "artillery"]}},
-    "west": {"reserve": 5, "brigade": {"sp": 90, "sections": ["infantry", "infantry", "recon"]}}
+    "east": {"brigade": {"sections": ["infantry", "infantry", "artillery"]}},
+    "west": {"brigade": {"sections": ["infantry", "infantry", "recon"]}}
   }
 }
 ```
@@ -41,7 +41,7 @@ The file is read with the core's own JSON reader (`WeirdWar.Core.Serialization.J
 | `terrain` | object | no | Terrain type name to a list of `[column, row]` hexes. |
 | `factions` | list of text | no | Exactly two Faction ids, or leave out for a terrain-only map (no game can start on it). |
 | `locations` | list of objects | no | HQs and STs, see below. |
-| `setup` | object | with `factions` | Starting reserve and Brigade per Faction, see below. |
+| `setup` | object | with `factions` | The Sections of each Faction's starting Brigade, see below. |
 
 Any other top-level key is an error (it is never silently ignored). The format stays on `version: 1` and
 is extended in place until a map is handed to the design owner to edit; after that, incompatible changes
@@ -86,9 +86,10 @@ else is owned at the start but the HQs (MAP-021). FOBs are built in play and are
 
 ## Starting setup (MAP-021)
 
-`setup` has one entry per Faction, with `reserve` (starting SP reserve) and `brigade` (`sp` and
-`sections`, a list of 1 to 5 Section type ids, BRG-021). The Sections are named, not rolled. The reserve and the Brigade's
-SP are placeholder values with no decided number or parameter ID yet. Section type ids are checked against
+`setup` has one entry per Faction, with `brigade`, which holds `sections`, a list of 1 to 5 Section type ids
+(BRG-021). The Sections are named, not rolled. `setup` carries no numbers: the starting SP reserve, the starting CP
+and the starting Brigade's SP come from P-RES-05, P-RES-06 and P-BRG-09 in `Data/parameters.txt` (RES-013, BRG-036),
+and a map cannot override them. A `reserve` or `sp` key is an unknown key and is rejected. Section type ids are checked against
 the Section type data (`Data/section-types.json`) when a game starts, not at import. The list must then have exactly P-BRG-05 entries (3), and the Brigade starts on its Faction's HQ hex.
 
 ## Coordinates

@@ -21,10 +21,10 @@ public class MovementTests
         "\"locations\":[{\"id\":\"hq-east\",\"type\":\"hq\",\"at\":[3,9],\"faction\":\"east\"}," +
         "{\"id\":\"hq-west\",\"type\":\"hq\",\"at\":[0,0],\"faction\":\"west\"}]," +
         "\"setup\":{" +
-        "\"east\":{\"reserve\":50,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
-        "\"west\":{\"reserve\":50,\"brigade\":{\"sp\":90,\"sections\":[" + westSections + "]}}}}";
+        "\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
+        "\"west\":{\"brigade\":{\"sections\":[" + westSections + "]}}}}";
 
-    private const string Params = "P-BRG-05 = 3\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
+    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
 
     private static GameState NewGame(string westSections = "infantry,infantry,infantry", string parameters = Params)
     {
@@ -681,6 +681,6 @@ public class MovementTests
         var game = NewGame();
         Assert.True(Move(game, 2).Accepted);
 
-        Assert.Equal("36a9de83fc9f4f493df93e3ff346d93ebdaccd07e96f5bfdfc7b5049ccb31d09", game.ComputeHash());
+        Assert.Equal("d439219c9191220fa81b6a0c1fcc83f973b114e7b4d8497ca42f180a57a866c1", game.ComputeHash());
     }
 }

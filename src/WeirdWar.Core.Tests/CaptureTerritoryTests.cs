@@ -20,13 +20,13 @@ public class CaptureTerritoryTests
         "{\"id\":\"supply-1\",\"type\":\"supply\",\"at\":[0,2]}," +
         "{\"id\":\"command-1\",\"type\":\"command\",\"at\":[7,4]}," +
         "{\"id\":\"major-1\",\"type\":\"major\",\"at\":[9,1]}]," +
-        "\"setup\":{\"east\":{\"reserve\":50,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
-        "\"west\":{\"reserve\":50,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}}";
+        "\"setup\":{\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
+        "\"west\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}}";
 
     private const string Sight = "P-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1";
     private const string Radius = "P-MAP-02 = minus=1 min=1";
     private static string Params(string sight = Sight, string radius = Radius)
-        => "P-BRG-05 = 3\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\n" + sight + "\n" + radius + "\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
+        => "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 50\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\n" + sight + "\n" + radius + "\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
 
     private static GameState NewGame(string? parameters = null)
         => new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(parameters ?? Params()));
@@ -344,6 +344,8 @@ public class CaptureTerritoryTests
     [InlineData("hq=3 hq=3 fob=2 major=2 command=1 supply=1")]    // repeated key
     [InlineData("hq=three fob=2 major=2 command=1 supply=1")]     // not a number
     [InlineData("hq=-3 fob=2 major=2 command=1 supply=1")]        // negative
+    [InlineData("fob=2 hq=3 major=2 command=1 supply=1")]         // keys out of order
+    [InlineData("hq=3  fob=2 major=2 command=1 supply=1")]        // double space
     public void DLV_014_a_malformed_sight_parameter_fails_when_the_game_starts(string value)
     {
         Assert.Throws<ParameterFormatException>(() => NewGame(Params("P-FOW-03 = " + value)));
@@ -367,7 +369,7 @@ public class CaptureTerritoryTests
         var game = WestEndsTurnOnSupply();
 
         Assert.Contains("location=supply-1 owner=- capturing=west\n", game.CanonicalText());
-        Assert.Equal("204cad2a30c90fd8ca6352735681258443b3057806db9f2cefa4281c383bda01", game.ComputeHash());
+        Assert.Equal("81f9c432b3a732ecb7083898ad8cb4e098bd2ecac568de1b6009ffdfd3e1a61c", game.ComputeHash());
     }
 
     [Fact]

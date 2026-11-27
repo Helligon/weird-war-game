@@ -195,17 +195,37 @@ public class ParameterTableTests
         Assert.Equal(1, rules.RadiusOf(WeirdWar.Core.Maps.LocationType.Supply));
     }
 
-    [Fact]
-    public void TEC_017_territory_has_no_key_number_parser_of_its_own()
+    [Theory]
+    [InlineData("hq=3\tfob=2")]    // tab between the pairs
+    [InlineData("hq=3\t fob=2")]
+    [InlineData("hq=3 fob=\t2")]   // tab inside the last value
+    [InlineData("hq=\t3 fob=2")]   // whitespace inside a value
+    [InlineData("hq=3\u00a0fob=2")]  // other whitespace
+    public void TEC_017_a_keyed_value_with_a_tab_or_other_whitespace_is_rejected(string value)
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "WeirdWar.Core", "WeirdWar.Core.csproj")))
-            dir = dir.Parent;
-        Assert.NotNull(dir);
-        var text = File.ReadAllText(Path.Combine(dir!.FullName, "WeirdWar.Core", "Simulation", "Territory.cs"));
+        var table = ParameterTable.Parse("P-FOW-03 = " + value + "\n");
 
-        Assert.DoesNotContain("ParseKeys", text);
-        Assert.DoesNotContain("Split('=')", text);
+        Assert.Throws<ParameterFormatException>(() => table.GetKeyedInts("P-FOW-03", "hq", "fob"));
+    }
+
+    [Theory]
+    [InlineData("hq=+3 fob=2")]
+    [InlineData("hq=3 fob=+2")]
+    public void TEC_017_a_keyed_value_with_a_leading_plus_is_rejected(string value)
+    {
+        var table = ParameterTable.Parse("P-FOW-03 = " + value + "\n");
+
+        Assert.Throws<ParameterFormatException>(() => table.GetKeyedInts("P-FOW-03", "hq", "fob"));
+    }
+
+    [Fact]
+    public void TEC_017_a_keyed_value_still_reads_plain_and_negative_whole_numbers()
+    {
+        var table = ParameterTable.Parse("P-FOW-03 = hq=3 fob=-2\n");
+
+        var values = table.GetKeyedInts("P-FOW-03", "hq", "fob");
+        Assert.Equal(3, values["hq"]);
+        Assert.Equal(-2, values["fob"]);
     }
 
     [Fact]

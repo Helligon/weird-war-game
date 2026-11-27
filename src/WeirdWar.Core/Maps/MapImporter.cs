@@ -178,17 +178,15 @@ namespace WeirdWar.Core.Maps
             {
                 var where = "setup \"" + f + "\"";
                 var o = setup.TryGetValue(f, out var fv) ? fv as Dictionary<string, object?> : null;
-                if (o == null) throw new MapFormatException("Missing or bad " + where + ": expected an object with reserve and brigade");
+                if (o == null) throw new MapFormatException("Missing or bad " + where + ": expected an object with brigade");
                 foreach (var key in o.Keys)
-                    if (key != "reserve" && key != "brigade")
-                        throw new MapFormatException("In " + where + ": unknown key \"" + key + "\" (expected reserve, brigade)");
-                var reserve = ReadInt(o, "reserve", 0, 1000000);
+                    if (key != "brigade")
+                        throw new MapFormatException("In " + where + ": unknown key \"" + key + "\" (expected brigade)");
                 var b = o.TryGetValue("brigade", out var bv) ? bv as Dictionary<string, object?> : null;
-                if (b == null) throw new MapFormatException("In " + where + ": \"brigade\" must be an object with sp and sections");
+                if (b == null) throw new MapFormatException("In " + where + ": \"brigade\" must be an object with sections");
                 foreach (var key in b.Keys)
-                    if (key != "sp" && key != "sections")
-                        throw new MapFormatException("In " + where + " brigade: unknown key \"" + key + "\" (expected sp, sections)");
-                var sp = ReadInt(b, "sp", 0, 1000000);
+                    if (key != "sections")
+                        throw new MapFormatException("In " + where + " brigade: unknown key \"" + key + "\" (expected sections)");
                 var sections = b.TryGetValue("sections", out var sv) ? sv as List<object?> : null;
                 if (sections == null || sections.Count == 0 || sections.Count > MaxSectionsPerBrigade)
                     throw new MapFormatException("In " + where + " brigade: \"sections\" must be a list of 1 to " + MaxSectionsPerBrigade + " Section type ids (BRG-021)");
@@ -199,7 +197,7 @@ namespace WeirdWar.Core.Maps
                         throw new MapFormatException("In " + where + " brigade: each Section must be a Section type id (letters, digits, - and _)");
                     ids.Add(sid);
                 }
-                result.Add(new FactionSetup(f, reserve, sp, ids));
+                result.Add(new FactionSetup(f, ids));
             }
             return result;
         }

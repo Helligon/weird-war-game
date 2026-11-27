@@ -36,23 +36,19 @@ namespace WeirdWar.Core.Maps
     }
 
     /// <summary>
-    /// Starting setup of one Faction, read from the map file (MAP-021). The reserve and the Brigade's SP have
-    /// no decided value or parameter ID, so they are placeholders in the file. The Sections are named, not
-    /// rolled (BRG-001's random roll is not built yet).
+    /// Starting setup of one Faction, read from the map file (MAP-021): the Sections of its starting Brigade. They are
+    /// named, not rolled (BRG-001's random roll is not built yet). The starting reserve, CP and Brigade SP are not
+    /// here: they come from P-RES-05, P-RES-06 and P-BRG-09 (RES-013, BRG-036).
     /// </summary>
     public sealed class FactionSetup
     {
-        internal FactionSetup(string factionId, int reserve, int brigadeSp, IReadOnlyList<string> sectionTypeIds)
+        internal FactionSetup(string factionId, IReadOnlyList<string> sectionTypeIds)
         {
             FactionId = factionId;
-            Reserve = reserve;
-            BrigadeSp = brigadeSp;
             SectionTypeIds = sectionTypeIds;
         }
 
         public string FactionId { get; }
-        public int Reserve { get; }
-        public int BrigadeSp { get; }
         public IReadOnlyList<string> SectionTypeIds { get; }
     }
 

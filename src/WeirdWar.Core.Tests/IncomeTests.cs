@@ -16,11 +16,11 @@ public class IncomeTests
         "{\"id\":\"supply-1\",\"type\":\"supply\",\"at\":[2,1]}," +
         "{\"id\":\"command-1\",\"type\":\"command\",\"at\":[3,1]}," +
         "{\"id\":\"major-1\",\"type\":\"major\",\"at\":[4,1]}]," +
-        "\"setup\":{\"east\":{\"reserve\":5,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
-        "\"west\":{\"reserve\":6,\"brigade\":{\"sp\":85,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}}";
+        "\"setup\":{\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
+        "\"west\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}}";
 
     // Base SP 5, base CP 2, ST bonus 3: every amount a test checks has its own value.
-    private const string Params = "P-BRG-05 = 3\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
+    private const string Params = "P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 3\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2";
 
     private static GameState NewGame(string parameters = Params)
         => new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), ParameterTable.Parse(parameters));
@@ -44,9 +44,8 @@ public class IncomeTests
     {
         var game = NewGame();
         var first = game.ActiveFaction!;
-        var setup = first == "west" ? 6 : 5;
 
-        Assert.Equal(setup + 5, Faction(game, first).Reserve);
+        Assert.Equal(5 + 5, Faction(game, first).Reserve);
         Assert.Equal(typeof(int), typeof(FactionState).GetProperty("Reserve")!.PropertyType);
         Assert.Null(typeof(Section).GetProperty("SP")); // Sections hold no SP (BRG-018)
     }
@@ -61,7 +60,7 @@ public class IncomeTests
         // Turn 1: the first player was paid inside the constructor, the other has nothing yet.
         Assert.Equal(2, Faction(game, first).Cp);
         Assert.Equal(0, Faction(game, second).Cp);
-        Assert.Equal(second == "west" ? 6 : 5, Faction(game, second).Reserve);
+        Assert.Equal(5, Faction(game, second).Reserve);
 
         var firstReserve = Faction(game, first).Reserve;
         EndTurn(game);
@@ -69,7 +68,7 @@ public class IncomeTests
         Assert.Equal(firstReserve, Faction(game, first).Reserve);
         Assert.Equal(2, Faction(game, first).Cp);
         Assert.Equal(2, Faction(game, second).Cp);
-        Assert.Equal((second == "west" ? 6 : 5) + 5, Faction(game, second).Reserve);
+        Assert.Equal(5 + 5, Faction(game, second).Reserve);
     }
 
     [Fact]
@@ -292,22 +291,22 @@ public class IncomeTests
     }
 
     [Fact]
-    public void DLV_014_the_core_does_not_read_the_p_map_income_parameters_and_a_negative_value_is_rejected()
+    public void DLV_014_a_negative_income_value_is_rejected()
     {
-        // P-MAP-05 and P-MAP-06 are absent from this table and the game still works.
-        Assert.DoesNotContain("P-MAP-05", ParameterTable.Parse(Params).Ids);
         NewGame();
 
         Assert.Throws<ParameterFormatException>(() => NewGame(Params.Replace("P-RES-04 = 3", "P-RES-04 = -1")));
     }
 
     [Fact]
-    public void DLV_014_the_shipped_income_values_are_placeholders_and_the_p_map_values_are_data_only()
+    public void DLV_014_the_shipped_income_values_are_placeholders_and_the_duplicate_p_map_values_are_gone()
     {
         var shipped = ParameterTable.LoadShipped();
 
-        foreach (var id in new[] { "P-RES-01", "P-RES-02", "P-RES-04", "P-MAP-05", "P-MAP-06" })
+        foreach (var id in new[] { "P-RES-01", "P-RES-02", "P-RES-04" })
             Assert.True(shipped.IsPlaceholder(id), id);
+        Assert.DoesNotContain("P-MAP-05", shipped.Ids);
+        Assert.DoesNotContain("P-MAP-06", shipped.Ids);
         Assert.NotNull(new IncomeRules(shipped));
     }
 

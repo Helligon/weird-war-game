@@ -4,10 +4,10 @@ using WeirdWar.Core.Maps;
 
 namespace WeirdWar.Core.Simulation
 {
-    /// <summary>A Faction in a running game, with its SP reserve (placeholder starting value from the map setup).</summary>
+    /// <summary>A Faction in a running game, with its SP reserve and CP (starting values from P-RES-05 and P-RES-06).</summary>
     public sealed class FactionState
     {
-        internal FactionState(string id, int reserve) { Id = id; Reserve = reserve; }
+        internal FactionState(string id, int reserve, int cp) { Id = id; Reserve = reserve; Cp = cp; }
         public string Id { get; }
 
         /// <summary>The central SP reserve (RES-001). Sections hold no SP.</summary>

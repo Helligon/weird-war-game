@@ -23,14 +23,14 @@ public class SetupTests
         "{\"id\":\"major-1\",\"type\":\"major\",\"at\":[3,1]}";
 
     private const string SetupBlock =
-        "{\"east\":{\"reserve\":5,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"artillery\"]}}," +
-        "\"west\":{\"reserve\":6,\"brigade\":{\"sp\":85,\"sections\":[\"infantry\",\"infantry\",\"recon\"]}}}";
+        "{\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"artillery\"]}}," +
+        "\"west\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"recon\"]}}}";
 
     private static string MapJson(string locations = Hqs + "," + StsBlock, string factions = "[\"east\",\"west\"]", string setup = SetupBlock)
         => "{\"version\":1,\"width\":6,\"height\":4,\"terrain\":{\"mountain\":[[1,1]]},\"factions\":" + factions +
            ",\"locations\":[" + locations + "],\"setup\":" + setup + "}";
 
-    private static ParameterTable Params() => ParameterTable.Parse("P-BRG-05 = 3\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2");
+    private static ParameterTable Params() => ParameterTable.Parse("P-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2");
 
     private static SectionTypeTable Types() => SectionTypeTable.Parse(TypesJson);
 
@@ -84,8 +84,8 @@ public class SetupTests
         // Locations and setup are made to match the list, so the count is the only problem.
         var hqs = factions.Contains("north") ? Hqs + ",{\"id\":\"hq-north\",\"type\":\"hq\",\"at\":[4,3],\"faction\":\"north\"}" : "{\"id\":\"hq-east\",\"type\":\"hq\",\"at\":[5,1],\"faction\":\"east\"}";
         var setup = factions.Contains("north")
-            ? SetupBlock.Substring(0, SetupBlock.Length - 1) + ",\"north\":{\"reserve\":1,\"brigade\":{\"sp\":1,\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}"
-            : "{\"east\":{\"reserve\":5,\"brigade\":{\"sp\":90,\"sections\":[\"infantry\",\"infantry\",\"artillery\"]}}}";
+            ? SetupBlock.Substring(0, SetupBlock.Length - 1) + ",\"north\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}"
+            : "{\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"artillery\"]}}}";
 
         var msg = ImportError(MapJson(hqs, factions, setup));
 
@@ -184,9 +184,9 @@ public class SetupTests
         Assert.Equal(new[] { 10, 10, 6 }, east.Sections.Select(s => s.Health));
         Assert.Equal(new[] { "infantry", "infantry", "recon" }, west.Sections.Select(s => s.TypeId));
         Assert.Equal(90, east.SP);
-        Assert.Equal(85, west.SP);
+        Assert.Equal(90, west.SP);
         Assert.Equal(5, game.Factions.Single(f => f.Id == "east").Reserve);
-        Assert.Equal(11, game.Factions.Single(f => f.Id == "west").Reserve); // 6 from the map setup plus turn 1 income (P-RES-01 = 5)
+        Assert.Equal(10, game.Factions.Single(f => f.Id == "west").Reserve); // P-RES-05 (5) plus turn 1 income (P-RES-01 = 5)
     }
 
     [Fact]
@@ -201,9 +201,8 @@ public class SetupTests
     [Fact]
     public void MAP_021_setup_must_cover_each_faction_and_use_known_section_types()
     {
-        ImportError(MapJson(setup: "{\"east\":{\"reserve\":5,\"brigade\":{\"sp\":10,\"sections\":[\"infantry\"]}}}")); // west missing
-        ImportError(MapJson(setup: SetupBlock.Replace("\"reserve\":5", "\"reserve\":-5")));
-        var unlisted = ImportError(MapJson(setup: SetupBlock.Substring(0, SetupBlock.Length - 1) + ",\"north\":{\"reserve\":1,\"brigade\":{\"sp\":1,\"sections\":[\"infantry\"]}}}"));
+        ImportError(MapJson(setup: "{\"east\":{\"brigade\":{\"sections\":[\"infantry\"]}}}")); // west missing
+        var unlisted = ImportError(MapJson(setup: SetupBlock.Substring(0, SetupBlock.Length - 1) + ",\"north\":{\"brigade\":{\"sections\":[\"infantry\"]}}}"));
         Assert.Contains("\"north\"", unlisted);
         Assert.Contains("not a listed Faction", unlisted);
         ImportError(MapJson(setup: SetupBlock.Replace("[\"infantry\",\"infantry\",\"artillery\"]", "[]")));
@@ -248,7 +247,7 @@ public class SetupTests
         Assert.Equal(3, shipped.GetInt("P-BRG-05"));
         Assert.False(shipped.IsPlaceholder("P-BRG-05"));
         // A different value in the table changes what the game accepts.
-        var two = ParameterTable.Parse("P-BRG-05 = 2\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2");
+        var two = ParameterTable.Parse("P-BRG-05 = 2\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2");
         var json = MapJson(setup: SetupBlock.Replace("[\"infantry\",\"infantry\",\"artillery\"]", "[\"infantry\",\"infantry\"]").Replace("[\"infantry\",\"infantry\",\"recon\"]", "[\"infantry\",\"recon\"]"));
         Assert.Equal(2, new GameState(1, MapImporter.Parse(json), Types(), two).Brigades[0].Sections.Count);
     }
@@ -366,7 +365,7 @@ public class SetupTests
 
     // ---- TEC-008: hash includes the map and the new state
 
-    private const string PinnedMapDigest = "d78a38d94569c43e26b19b6139528ed732a262960b562a5059bf5c49d48fb05b";
+    private const string PinnedMapDigest = "3db8eb55505f1ac257ab99f0d46fc4f371c9470fa033b6591ceea7ef1515b553";
 
     [Fact]
     public void TEC_008_the_map_digest_is_pinned_and_independent_of_file_order()
@@ -387,17 +386,17 @@ public class SetupTests
         Assert.Equal(
             "weirdwar.state.v1\nseed=7\nrandom=11400714819323198492\ntally=0\n" +
             "map=" + PinnedMapDigest + "\n" +
-            "parameters=8b6d495d290123f7da1016a5d979b9ea430f0b05e286cc794ce7dbd937142485\n" +
+            "parameters=fc1facad39c75ff49f8cfc38d79cdd15a3e5743ec9cd89e28f71442bcf564fa5\n" +
             "sectiontypes=3682338fa7adc7ba4e6dad930b4292cd2e583523d2e7c16d432aae993ebbcd99\n" +
-            "faction=east reserve=5 cp=0\nfaction=west reserve=11 cp=2\n" +
+            "faction=east reserve=5 cp=0\nfaction=west reserve=10 cp=2\n" +
             "location=command-1 owner=-\nlocation=hq-east owner=east\nlocation=hq-west owner=west\n" +
             "location=major-1 owner=-\nlocation=supply-1 owner=-\n" +
             "brigade=1 faction=east sp=90 sections=infantry:10,infantry:10,artillery:6 at=5,1\n" +
-            "brigade=2 faction=west sp=85 sections=infantry:10,infantry:10,recon:4 at=0,2\n" +
+            "brigade=2 faction=west sp=90 sections=infantry:10,infantry:10,recon:4 at=0,2\n" +
             "turn=1 active=west phase=Actions\n" +
             "log=0\ndigest=" + new string('0', 64) + "\n",
             game.CanonicalText());
-        Assert.Equal("132d1be7de0c8f21ab1febdc7abb9d0498abcacf1ed0dc5c6de828c7c7c2a313", game.ComputeHash());
+        Assert.Equal("b8c89f825abddba6b1e199e98b3b3035ffb8bc36540420201355fcb038c13911", game.ComputeHash());
     }
 
     [Fact]
@@ -406,7 +405,7 @@ public class SetupTests
         var game = NewGame();
         Assert.True(game.ApplyCommand(new AddToTallyCommand(5, "west")).Accepted);
 
-        Assert.Equal("42b85cadb004ec6f47a59fd0f013a61cc066c51db9a50a7585c91f7d52f56ad9", game.ComputeHash());
+        Assert.Equal("a47b8bbd002f58c9bab090d38c65028742c7ca16a105aaed7aca036462bc3c35", game.ComputeHash());
     }
 
     [Fact]
@@ -417,7 +416,7 @@ public class SetupTests
         Assert.True(game.ApplyCommand(new EndTurnCommand("west")).Accepted);
 
         Assert.Contains("turn=2 active=east phase=Actions\n", game.CanonicalText());
-        Assert.Equal("72b393ddd9bf60150d0a2d5c62bbdcd53c6a8ab8b8684f0bc2d4becfb27906b8", game.ComputeHash());
+        Assert.Equal("7a270e40b7c5916efca2509ab991d9cebcc8c27496dfd5eb9fc3fe93f6a74020", game.ComputeHash());
     }
 
     [Fact]
