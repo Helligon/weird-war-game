@@ -27,11 +27,11 @@ namespace WeirdWar.Core.Simulation
         public int ResupplyRange { get; }
 
         /// <summary>
-        /// The owned location types that resupply (SUP-012, SUP-013, SUP-017, MAP-015): HQ, Supply ST and Major ST.
-        /// Command STs do not. FOBs are not in CC1; the FOB Feature adds one entry here.
+        /// The owned location types that resupply (SUP-012, SUP-013, SUP-017, MAP-015): HQ, Supply ST, Major ST and FOB.
+        /// Command STs do not. FOBs resupply too (MAP-008).
         /// </summary>
         public static readonly IReadOnlyList<Maps.LocationType> ResupplyLocationTypes =
-            new[] { Maps.LocationType.Hq, Maps.LocationType.Supply, Maps.LocationType.Major };
+            new[] { Maps.LocationType.Hq, Maps.LocationType.Supply, Maps.LocationType.Major, Maps.LocationType.Fob };
 
         /// <summary>Reads P-SUP-01 (Well Supplied threshold) and P-SUP-02 (Overextended threshold) from the parameter table (DLV-014).</summary>
         public Supply(SectionTypeTable sectionTypes, ParameterTable parameters)

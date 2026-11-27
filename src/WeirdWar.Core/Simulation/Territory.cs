@@ -11,7 +11,7 @@ namespace WeirdWar.Core.Simulation
     /// location claims nothing) and Brigades never do (CC1 does not model Brigade territory; MAP-028 is proposed).
     /// Terrain does not matter; the map edge clips the area.
     /// Reads its values by parameter ID (DLV-014), all at construction, so a missing or malformed value fails at game start:
-    ///   P-FOW-03: sight radius per location type, as "hq=3 fob=2 major=2 command=1 supply=1". The FOB value is data only in CC1.
+    ///   P-FOW-03: sight radius per location type, as "hq=3 fob=2 major=2 command=1 supply=1".
     ///   P-MAP-02: radius = sight - minus, but at least min, as "minus=1 min=1".
     /// </summary>
     public sealed class TerritoryRules
@@ -32,6 +32,7 @@ namespace WeirdWar.Core.Simulation
             _radius[LocationType.Major] = Radius("major");
             _radius[LocationType.Command] = Radius("command");
             _radius[LocationType.Supply] = Radius("supply");
+            _radius[LocationType.Fob] = Radius("fob");
         }
 
         /// <summary>The territory radius of a location type (MAP-027): its sight minus P-MAP-02's amount, never below the minimum.</summary>

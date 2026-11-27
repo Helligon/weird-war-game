@@ -27,6 +27,7 @@ namespace WeirdWar.Core.Commands
             r.Register(DistributeSpCommand.TypeName, DistributeSpCommand.FromJson);
             r.Register(MoveBrigadeCommand.TypeName, MoveBrigadeCommand.FromJson);
             r.Register(TransferSectionCommand.TypeName, TransferSectionCommand.FromJson);
+            r.Register(UpgradeFobCommand.TypeName, UpgradeFobCommand.FromJson);
             return r;
         }
 

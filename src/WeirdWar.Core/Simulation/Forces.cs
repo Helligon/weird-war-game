@@ -15,6 +15,9 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>Command Points held by the player (RES-005). Spending them on Cards is a later Feature.</summary>
         public int Cp { get; internal set; }
+
+        /// <summary>How many Supply STs this Faction has upgraded to FOBs; the next upgrade costs more CP (MAP-012, MAP-025). In the hash.</summary>
+        public int FobUpgrades { get; internal set; }
     }
 
     /// <summary>A location in a running game with its current owner (MAP-021: only HQs start owned).</summary>
@@ -23,7 +26,10 @@ namespace WeirdWar.Core.Simulation
         internal LocationState(Location location, string? owner) { Location = location; Owner = owner; }
         public Location Location { get; }
         public string Id => Location.Id;
-        public LocationType Type => Location.Type;
+        public LocationType Type => Upgraded ? LocationType.Fob : Location.Type;
+
+        /// <summary>True once a Supply ST here has been upgraded to an FOB (MAP-012). In the hash.</summary>
+        public bool Upgraded { get; internal set; }
         public HexCoord Position => Location.Position;
 
         /// <summary>Faction id of the owner, or null when neutral.</summary>
