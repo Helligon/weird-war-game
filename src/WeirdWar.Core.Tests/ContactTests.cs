@@ -306,6 +306,19 @@ public class ContactTests
     }
 
     [Fact]
+    public void TRN_036_a_zero_p_trn_02_fails_naming_the_parameter()
+    {
+        var ex = Assert.Throws<ParameterFormatException>(() => NewGame(parameters: Params.Replace("P-TRN-02 = 1", "P-TRN-02 = 0")));
+        Assert.Contains("P-TRN-02", ex.Message);
+    }
+
+    [Fact]
+    public void TRN_036_p_trn_02_of_one_loads()
+    {
+        NewGame(parameters: Params);
+    }
+
+    [Fact]
     public void DLV_014_the_shipped_data_has_p_trn_02_as_a_proposed_placeholder()
     {
         var shipped = ParameterTable.LoadShipped();
