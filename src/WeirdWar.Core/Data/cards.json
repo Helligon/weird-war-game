@@ -6,6 +6,7 @@
     "copies": "placeholder (open): P-CRD-08 copies per Card in the deck"
   },
   "cards": {
-    "draw2": { "name": "Draw 2", "pool": "Core", "cpCost": 1, "copies": 2 }
+    "draw2": { "name": "Draw 2", "pool": "Core", "cpCost": 1, "copies": 2 },
+    "extraSection": { "name": "Extra Section", "pool": "Core", "cpCost": 1, "copies": 1 }
   }
 }

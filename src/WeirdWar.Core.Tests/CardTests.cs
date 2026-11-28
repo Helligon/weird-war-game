@@ -17,7 +17,7 @@ public class CardTests
         "\"setup\":{\"east\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}," +
         "\"west\":{\"brigade\":{\"sections\":[\"infantry\",\"infantry\",\"infantry\"]}}}}";
 
-    private const string BaseParams = "P-BRG-01 = 5\nP-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1\nP-MAP-03 = sp=5 cp=1 cpStep=1\nP-MAP-14 = 1\n";
+    private const string BaseParams = "P-BRG-01 = 5\nP-BRG-06 = 1\nP-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1\nP-MAP-03 = sp=5 cp=1 cpStep=1\nP-MAP-14 = 1\n";
 
     private static ParameterTable Params(int hand = 5, int extra = 1, int draw = 1) => ParameterTable.Parse(BaseParams + "P-CRD-01 = " + hand + "\nP-TRN-01 = " + extra + "\nP-CRD-02 = " + draw);
 
@@ -81,12 +81,12 @@ public class CardTests
     }
 
     [Fact]
-    public void CRD_011_CRD_007_the_shipped_card_data_loads_with_Draw_2_as_its_only_card_and_a_game_on_it_deals_it()
+    public void CRD_011_CRD_007_the_shipped_card_data_loads_with_Draw_2_and_Extra_Section_and_a_game_on_it_deals_it()
     {
         var cards = CardTable.LoadShipped();
-        Assert.Equal(new[] { "draw2" }, cards.All.Select(c => c.Id));
+        Assert.Equal(new[] { "draw2", "extraSection" }, cards.All.Select(c => c.Id));
         var game = NewGame(7, null, cards);
-        Assert.All(game.Factions, f => Assert.Equal(2, f.Deck.Count + f.Hand.Count));
+        Assert.All(game.Factions, f => Assert.Equal(3, f.Deck.Count + f.Hand.Count));
     }
 
     [Fact]
@@ -394,7 +394,7 @@ public class CardTests
         "random=9344711191398858092\n" +
         "tally=0\n" +
         "map=9e42203dc85df636af50dbd2072184e378bafb5e4b3c8c8c1f089dcb0262202b\n" +
-        "parameters=511cae24c375517810b1653316d4ea2579f0f42d6bb8d41dc5bbb3846fe2a6e1\n" +
+        "parameters=b08198d6a0c6251c93b78948c27ce3216fd0fc53a843b81cb5f235656bbf2008\n" +
         "sectiontypes=d62a3d929058987d911b05c0502852239ca13f645d632e940f460f219b77ad63\n" +
         "faction=east reserve=5 cp=0\n" +
         "faction=west reserve=10 cp=2\n" +
@@ -409,5 +409,5 @@ public class CardTests
         "turn=1 active=west phase=Actions\n" +
         "log=0\n" +
         "digest=0000000000000000000000000000000000000000000000000000000000000000\n";
-    private const string PinnedHash = "5bd60b1e2f8a486a3704169f9194e6e40286b353d3c825b2cd2c3e92097cdee7";
+    private const string PinnedHash = "a063645118111754824606b545b303015253fd4bb4c6a6a42c3a6dfc78deb1a0";
 }

@@ -96,6 +96,9 @@ namespace WeirdWar.Core.Simulation
         /// </summary>
         public HexCoord Position { get; internal set; }
 
+        /// <summary>Sections added to this Brigade's maximum by Cards (BRG-022). 0 at the start. Written to the hash only when above 0.</summary>
+        public int SectionBonus { get; internal set; }
+
         /// <summary>Hexes moved on the turn <see cref="MovedTurn"/> (TRN-030, SUP-024). Meaningful only when MovedTurn is the current turn.</summary>
         internal int MovedHexes { get; set; }
 
