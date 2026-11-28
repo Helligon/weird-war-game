@@ -79,7 +79,7 @@ public class KnownLocationsTests
         EndTurn(g);
         MoveTo(g, "west", Hex(5, 4));
 
-        Assert.DoesNotContain(Hex(8, 1), new FogOfWar(g.SectionTypes!).VisibleHexes(g, "west"));
+        Assert.DoesNotContain(Hex(8, 1), g.FogOfWar!.VisibleHexes(g, "west"));
         Assert.Equal("east", Known(g, "west", "major-1")!.Owner);
     }
 
