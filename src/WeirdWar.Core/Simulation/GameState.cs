@@ -367,6 +367,8 @@ namespace WeirdWar.Core.Simulation
                 }
                 var (bc, br) = b.Position.ToOffset();
                 sb.Append(" at=").Append(bc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(br.ToString(CultureInfo.InvariantCulture));
+                // Written only once a Card has raised the Brigade's maximum, so a game with none hashes as before (BRG-022).
+                if (b.SectionBonus > 0) sb.Append(" bonus=").Append(b.SectionBonus.ToString(CultureInfo.InvariantCulture));
                 // Written only once the Brigade has moved, so a game with no moves hashes as before (SUP-024 Slow cap).
                 if (b.MovedHexes > 0)
                     sb.Append(" moved=").Append(b.MovedTurn.ToString(CultureInfo.InvariantCulture)).Append(':').Append(b.MovedHexes.ToString(CultureInfo.InvariantCulture));

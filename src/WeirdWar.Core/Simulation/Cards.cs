@@ -69,6 +69,7 @@ namespace WeirdWar.Core.Simulation
         private static readonly Dictionary<string, ICardEffect> Effects = new Dictionary<string, ICardEffect>
         {
             [Draw2Card.CardId] = new Draw2Card(),
+            [ExtraSectionCard.CardId] = new ExtraSectionCard(),
         };
 
         private CardTable(SortedDictionary<string, CardType> cards)

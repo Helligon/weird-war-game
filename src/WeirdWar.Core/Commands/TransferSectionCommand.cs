@@ -11,7 +11,7 @@ namespace WeirdWar.Core.Commands
     /// BRG-017). It costs no SP, and the Section takes none with it (BRG-017, BRG-018): the reserve and both Brigades'
     /// SP are untouched, so a Brigade that now has less capacity keeps its overflow (BRG-019). The Section keeps its health.
     /// The source may drop below 3 Sections (BRG-020), and is disbanded when it has none left (BRG-023). The target may
-    /// not go above P-BRG-01 Sections (BRG-021). Officers stay with their Brigade (OFF-015); none exist in the state yet.
+    /// not go above P-BRG-01 Sections plus its own Card bonus (BRG-021, BRG-022). Officers stay with their Brigade (OFF-015); none exist in the state yet.
     /// Both Brigades must belong to the issuing Faction (an assumption: moving a Section to an enemy Brigade is not described).
     /// </summary>
     public sealed class TransferSectionCommand : ICommand, IEquatable<TransferSectionCommand>
@@ -50,7 +50,7 @@ namespace WeirdWar.Core.Commands
                 return "Brigade " + SourceBrigadeId + " has no Section " + SectionIndex;
             if (source.Position.DistanceTo(target.Position) != 1)
                 return "Brigades " + SourceBrigadeId + " and " + TargetBrigadeId + " are not on adjacent hexes (BRG-017)";
-            var max = state.BrigadeRules.MaxSections;
+            var max = state.BrigadeRules.MaxSections + target.SectionBonus;
             if (target.Sections.Count >= max)
                 return "Brigade " + TargetBrigadeId + " already has " + max + " Sections, the most allowed (BRG-021)";
             return null;
