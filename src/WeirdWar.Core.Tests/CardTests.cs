@@ -311,7 +311,7 @@ public class CardTests
         east._discard.AddRange(Pile);
         var handBefore = east.Hand.Count;
         End(game);
-        // The order is computed independently in Python (scratchpad pin140.py): Fisher-Yates over the pile, seeded source.
+        // The order and the random state are fixed values; pin140.py reproduces the state hash around them but does not compute the reshuffle itself.
         Assert.Equal(new[] { "alpha", "gamma", "gamma" }, east.Deck);
         Assert.Equal(handBefore + 1, east.Hand.Count);
         Assert.Equal("bravo", east.Hand[^1]);

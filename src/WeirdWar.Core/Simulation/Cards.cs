@@ -17,6 +17,19 @@ namespace WeirdWar.Core.Simulation
     /// <summary>The pool a Card is drawn from (CRD-011). Only the shared Core pool is built; Faction-only pools come with their Cards.</summary>
     public enum CardPool { Core }
 
+    /// <summary>
+    /// What a Card does when played (CRD-010). Each Card's own Story supplies one; a Card with none has no play condition and no
+    /// effect. Fixed by Card id in code, so it is not state. <see cref="Apply"/> MUST NOT throw after <see cref="CanPlay"/> returned null.
+    /// </summary>
+    public interface ICardEffect
+    {
+        /// <summary>Null if the Card may be played now with this target (CRD-010), otherwise the reason it may not. MUST NOT change the state.</summary>
+        string? CanPlay(GameState state, FactionState player, string target);
+
+        /// <summary>Carries out the Card's effect. CP has been spent and the Card has left the hand when this runs.</summary>
+        void Apply(GameState state, FactionState player, string target);
+    }
+
     /// <summary>Data for one Card: name, pool (CRD-011), CP cost and copies (P-CRD-08), and the single-use flag. Effects come with each Card's own Story.</summary>
     public sealed class CardType
     {
@@ -36,6 +49,9 @@ namespace WeirdWar.Core.Simulation
         public int Copies { get; }
 
         public bool SingleUse { get; }
+
+        /// <summary>The Card's play condition and effect, or null for none. Set by <see cref="CardTable.SetEffect"/>; not in the data file.</summary>
+        public ICardEffect? Effect { get; internal set; }
     }
 
     /// <summary>
@@ -54,6 +70,13 @@ namespace WeirdWar.Core.Simulation
         public int Count => _cards.Count;
 
         public bool TryGet(string id, out CardType card) => _cards.TryGetValue(id, out card!);
+
+        /// <summary>Gives a Card its play condition and effect (CRD-010). Done once, when the game's Card table is built.</summary>
+        internal void SetEffect(string id, ICardEffect effect)
+        {
+            if (!_cards.TryGetValue(id, out var card)) throw new ArgumentException("There is no Card " + id);
+            card.Effect = effect;
+        }
 
         public static CardTable Parse(string json)
         {
