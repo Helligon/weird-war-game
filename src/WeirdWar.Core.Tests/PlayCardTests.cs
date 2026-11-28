@@ -64,6 +64,31 @@ public class PlayCardTests
         public void Apply(GameState state, FactionState player, string target) { Applied++; SeenTarget = target; }
     }
 
+    private sealed class Spy : ICardEffect
+    {
+        public int? CpSeen;
+        public bool? InHandSeen;
+        public bool? InDiscardSeen;
+        public string? CanPlay(GameState state, FactionState player, string target) => null;
+        public void Apply(GameState state, FactionState player, string target)
+        {
+            CpSeen = player.Cp;
+            InHandSeen = player.Hand.Contains("bravo");
+            InDiscardSeen = player.Discard.Contains("bravo");
+        }
+    }
+
+    [Fact]
+    public void CRD_010_RES_006_CP_is_spent_and_the_card_has_left_the_hand_before_the_effect_runs()
+    {
+        var spy = new Spy();
+        var g = Setup(new[] { "bravo" }, 3, Cards(spy));
+        Assert.True(Play(g, "bravo").Accepted);
+        Assert.Equal(1, spy.CpSeen);
+        Assert.False(spy.InHandSeen);
+        Assert.True(spy.InDiscardSeen);
+    }
+
     [Fact]
     public void TRN_002_the_active_faction_plays_a_card_from_its_hand_in_the_actions_phase()
     {

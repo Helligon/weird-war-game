@@ -58,8 +58,13 @@ namespace WeirdWar.Core.Simulation
             // CRD-005, P-CRD-02, TRN-005: only the active Faction draws, from the top of its deck into its hand. CRD-014: a full
             // hand still draws (the discard down to 8 is CRD-006, a command). No Card data means no Cards.
             if (state.Cards == null) return;
-            var f = state.Factions.Single(x => x.Id == faction);
-            for (var n = 0; n < state.CardsPerTurn; n++)
+            DrawCards(state, state.Factions.Single(x => x.Id == faction), state.CardsPerTurn);
+        }
+
+        /// <summary>Draws <paramref name="count"/> Cards from the top of the deck into the hand, reshuffling the discard pile when the deck runs out (CRD-015). Shared by the Draw step and Draw 2 (CRD-007).</summary>
+        internal static void DrawCards(GameState state, FactionState f, int count)
+        {
+            for (var n = 0; n < count; n++)
             {
                 if (f._deck.Count == 0)
                 {
