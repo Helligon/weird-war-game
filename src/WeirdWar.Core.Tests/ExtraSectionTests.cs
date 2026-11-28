@@ -129,12 +129,14 @@ public class ExtraSectionTests
     }
 
     [Fact]
-    public void BRG_022_playing_it_twice_on_one_Brigade_adds_the_bonus_twice()
+    public void BRG_022_P_BRG_06_a_second_play_on_the_same_Brigade_is_rejected_and_another_Brigade_can_still_take_it()
     {
-        var (g, target, _) = Setup();
+        var (g, target, donor) = Setup();
         Assert.True(Play(g, target.Id).Accepted);
-        Assert.True(Play(g, target.Id).Accepted);
-        Assert.Equal(2, target.SectionBonus);
+        AssertRejectedUnchanged(g, new PlayCardCommand(g.ActiveFaction, "extraSection", target.Id.ToString()));
+        Assert.Equal(1, target.SectionBonus);
+        Assert.True(Play(g, donor.Id).Accepted);
+        Assert.Equal(1, donor.SectionBonus);
     }
 
     [Fact]
