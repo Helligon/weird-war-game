@@ -11,6 +11,7 @@
   <ItemGroup>
     <Content Include="Data/parameters.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Data/section-types.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Data/cards.json" CopyToOutputDirectory="PreserveNewest" />
     <InternalsVisibleTo Include="WeirdWar.Core.Tests" />
   </ItemGroup>
 

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "status": "test-only Cards, not shipped game data",
+  "cards": {
+    "alpha": { "name": "Alpha", "pool": "Core", "cpCost": 1, "copies": 3 },
+    "bravo": { "name": "Bravo", "pool": "Core", "cpCost": 2, "copies": 2 },
+    "gamma": { "name": "Gamma", "pool": "Core", "cpCost": 3, "copies": 4, "singleUse": true }
+  }
+}
