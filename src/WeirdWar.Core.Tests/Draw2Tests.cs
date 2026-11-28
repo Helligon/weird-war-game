@@ -51,7 +51,9 @@ public class Draw2Tests
         Assert.True(cards.TryGet("draw2", out var draw2));
         Assert.Equal("Draw 2", draw2.Name);
         Assert.NotNull(draw2.Effect);
-        Assert.Contains("open", File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "cards.json")));
+        var text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "cards.json"));
+        Assert.Contains("\"cpCost\": \"placeholder (open): P-CRD-08 CP cost per Card\"", text);
+        Assert.Contains("\"copies\": \"placeholder (open): P-CRD-08 copies per Card in the deck\"", text);
     }
 
     [Fact]
@@ -79,18 +81,16 @@ public class Draw2Tests
     {
         var g = Setup(new string[0], new[] { "d1", "d2", "d3", "d4" });
         var f = Active(g);
-        var twin = Setup(new string[0], new[] { "d1", "d2", "d3", "d4", "draw2" }, hand: new string[0]);
-        TurnPhases.DrawCards(twin, Active(twin), 2);
         Assert.True(Play(g).Accepted);
         Assert.Equal(2, f.Hand.Count);
         // The played Card is already in the discard pile, so it is shuffled in with the 4 and the 5 Cards make the new deck.
         Assert.Equal(3, f.Deck.Count);
         Assert.Empty(f.Discard);
         Assert.Equal(new[] { "d1", "d2", "d3", "d4", "draw2" }, f.Hand.Concat(f.Deck).OrderBy(c => c, StringComparer.Ordinal));
-        // Same shuffle as the Draw step's code gives on the same seed and pile.
-        Assert.Equal(Active(twin).Hand, f.Hand);
-        Assert.Equal(Active(twin).Deck, f.Deck);
-        Assert.Equal(twin.CanonicalText().Split('\n').Single(l => l.StartsWith("random=")), g.CanonicalText().Split('\n').Single(l => l.StartsWith("random=")));
+        // Fixed values from an independent Python model of the seeded source and the shuffle (not from the Draw step's code).
+        Assert.Equal(new[] { "draw2", "d2" }, f.Hand);
+        Assert.Equal(new[] { "d3", "d4", "d1" }, f.Deck);
+        Assert.Contains("random=3962023812499842538\n", g.CanonicalText());
     }
 
     [Fact]
