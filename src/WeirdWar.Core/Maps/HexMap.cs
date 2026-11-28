@@ -30,8 +30,10 @@ namespace WeirdWar.Core.Maps
         public int Height { get; }
 
         internal HexMap(int width, int height, TerrainType[] cells,
-            IReadOnlyList<string> factions, IReadOnlyList<Location> locations, IReadOnlyList<FactionSetup> setup)
+            IReadOnlyList<string> factions, IReadOnlyList<Location> locations, IReadOnlyList<FactionSetup> setup,
+            IReadOnlyList<HexCoord>? bridges = null)
         {
+            Bridges = bridges ?? new List<HexCoord>();
             Width = width;
             Height = height;
             _cells = cells;
@@ -48,6 +50,12 @@ namespace WeirdWar.Core.Maps
 
         /// <summary>Starting setup, one per Faction, sorted by Faction id (MAP-021).</summary>
         public IReadOnlyList<FactionSetup> Setup { get; }
+
+        /// <summary>
+        /// Bridges the map file starts with, sorted by column then row (MAP-054). A bridge is terrain, not a location: it is
+        /// never in <see cref="Locations"/>. Bridges built in play are in the game state, not here (the map is immutable).
+        /// </summary>
+        public IReadOnlyList<HexCoord> Bridges { get; }
 
         public bool Contains(int column, int row)
             => column >= 0 && column < Width && row >= 0 && row < Height;
@@ -81,7 +89,7 @@ namespace WeirdWar.Core.Maps
 
         /// <summary>
         /// True when the terrain lets ground Brigades enter the hex: on the map and open (TRN-024).
-        /// Terrain only: enemy occupation (TRN-023) and bridges are not included and are checked elsewhere.
+        /// Terrain only: enemy occupation (TRN-023) and bridges (MAP-054, which the game state holds) are not included and are checked elsewhere.
         /// </summary>
         public bool IsPassable(HexCoord hex) => Contains(hex) && TerrainAt(hex) == TerrainType.Open;
 
@@ -131,6 +139,12 @@ namespace WeirdWar.Core.Maps
             foreach (var f in Setup)
                 sb.Append("\nsetup=").Append(f.FactionId)
                   .Append(" sections=").Append(string.Join(",", f.SectionTypeIds));
+            // Written only when the map has bridges, so a map with none has the digest it had before (MAP-054).
+            foreach (var b in Bridges)
+            {
+                var (bc, br) = b.ToOffset();
+                sb.Append("\nbridge=").Append(bc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(br.ToString(CultureInfo.InvariantCulture));
+            }
             return sb.ToString();
         }
 

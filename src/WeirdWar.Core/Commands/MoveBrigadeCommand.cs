@@ -91,7 +91,7 @@ namespace WeirdWar.Core.Commands
                 var hex = _path[i];
                 if (from.DistanceTo(hex) != 1) return "Hex " + hex + " is not next to " + from;
                 if (!map.Contains(hex)) return "Hex " + hex + " is beyond the map edge (TRN-023)";
-                var factor = map.TerrainCostFactor(hex);
+                var factor = state.TerrainCostFactor(hex);
                 if (factor == null) return "Hex " + hex + " is impassable " + map.TerrainAt(hex).ToString().ToLowerInvariant() + " (TRN-023, TRN-024)";
                 var holder = state.Brigades.FirstOrDefault(b => b.Id != mover.Id && b.Position == hex);
                 if (holder != null && holder.Faction != mover.Faction)

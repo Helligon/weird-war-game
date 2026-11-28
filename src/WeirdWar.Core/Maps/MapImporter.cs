@@ -37,8 +37,8 @@ namespace WeirdWar.Core.Maps
             keys.Sort(StringComparer.Ordinal);
             foreach (var key in keys)
                 if (key != "version" && key != "width" && key != "height" && key != "terrain"
-                    && key != "factions" && key != "locations" && key != "setup")
-                    throw new MapFormatException("Unknown key \"" + key + "\" (expected version, width, height, terrain, factions, locations, setup)");
+                    && key != "factions" && key != "locations" && key != "setup" && key != "bridges")
+                    throw new MapFormatException("Unknown key \"" + key + "\" (expected version, width, height, terrain, factions, locations, setup, bridges)");
 
             var version = ReadInt(obj, "version", 1, int.MaxValue);
             if (version != CurrentVersion)
@@ -87,7 +87,32 @@ namespace WeirdWar.Core.Maps
             var factions = ReadFactions(obj);
             var locations = ReadLocations(obj, width, height, cells, factions);
             var setup = ReadSetup(obj, factions);
-            return new HexMap(width, height, cells, factions, locations, setup);
+            var bridges = ReadBridges(obj, width, height, cells);
+            return new HexMap(width, height, cells, factions, locations, setup, bridges);
+        }
+
+        private static List<HexCoord> ReadBridges(Dictionary<string, object?> obj, int width, int height, TerrainType[] cells)
+        {
+            var result = new List<HexCoord>();
+            if (!obj.TryGetValue("bridges", out var v)) return result;
+            var list = v as List<object?> ?? throw new MapFormatException("\"bridges\" must be a list of [column,row] hexes");
+            var seen = new HashSet<long>();
+            for (var i = 0; i < list.Count; i++)
+            {
+                var where = "bridge " + i;
+                if (!(list[i] is List<object?> pair) || pair.Count != 2 || !(pair[0] is long c) || !(pair[1] is long r))
+                    throw new MapFormatException("In " + where + ": expected [column,row] with two whole numbers");
+                if (c < 0 || c >= width || r < 0 || r >= height)
+                    throw new MapFormatException("In " + where + ": hex [" + c + "," + r + "] is outside the " + width + "x" + height + " grid");
+                var terrainHere = cells[(int)r * width + (int)c];
+                if (terrainHere != TerrainType.River)
+                    throw new MapFormatException("In " + where + ": hex [" + c + "," + r + "] is " + terrainHere.ToString().ToLowerInvariant() + ", not river; a bridge sits on a river hex (MAP-054)");
+                if (!seen.Add(c * 100000 + r))
+                    throw new MapFormatException("In " + where + ": hex [" + c + "," + r + "] is listed more than once");
+                result.Add(HexCoord.FromOffset((int)c, (int)r));
+            }
+            result.Sort((a, b) => { var (ac, ar) = a.ToOffset(); var (bc, br) = b.ToOffset(); return ac != bc ? ac.CompareTo(bc) : ar.CompareTo(br); });
+            return result;
         }
 
         private static List<string> ReadFactions(Dictionary<string, object?> obj)
