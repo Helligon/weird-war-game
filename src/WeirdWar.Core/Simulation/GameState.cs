@@ -71,6 +71,7 @@ namespace WeirdWar.Core.Simulation
             Supply = new Supply(sectionTypes, parameters);
             MovementRules = new MovementRules(parameters);
             Territory = new TerritoryRules(parameters);
+            LocationSight = new LocationSight(parameters);
             BrigadeRules = new BrigadeRules(parameters);
             FobRules = new FobRules(parameters);
             _parametersDigest = parameters.Digest();
@@ -159,6 +160,9 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>Territory radii (MAP-016, MAP-027), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameters are in the digest).</summary>
         public TerritoryRules? Territory { get; }
+
+        /// <summary>Sight from owned locations (FOW-007, P-FOW-03), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameter is in the digest).</summary>
+        public LocationSight? LocationSight { get; }
 
         /// <summary>Brigade size limit (P-BRG-01, BRG-021), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameter is in the digest).</summary>
         public BrigadeRules? BrigadeRules { get; }
