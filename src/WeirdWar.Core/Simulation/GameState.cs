@@ -117,6 +117,7 @@ namespace WeirdWar.Core.Simulation
             var handSize = StartingValue(parameters, "P-CRD-01");
             var extra = StartingValue(parameters, "P-TRN-01");
             _cards = cards;
+            _cardsPerTurn = StartingValue(parameters, "P-CRD-02");
             var second = NextFaction(ActiveFaction!);
             foreach (var f in factions)
             {
@@ -136,6 +137,10 @@ namespace WeirdWar.Core.Simulation
         /// <summary>The Card data, or null for a game without Cards. Fixed for a game; enters the hash as a digest.</summary>
         internal CardTable? Cards => _cards;
         private CardTable? _cards;
+
+        /// <summary>Cards each Faction draws in its Draw step (P-CRD-02). Fixed for a game; its parameter is in the digest.</summary>
+        internal int CardsPerTurn => _cardsPerTurn;
+        private int _cardsPerTurn;
 
         private static int StartingValue(ParameterTable parameters, string id)
         {

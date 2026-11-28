@@ -258,7 +258,7 @@ public class CaptureTerritoryTests
         EndTurn(game);
 
         // The owner is still "-" when StartOfTurn is entered, and "west" by the time Income is entered.
-        Assert.Equal(new[] { (TurnPhase.StartOfTurn, "-"), (TurnPhase.Income, "west"), (TurnPhase.Actions, "west") }, seen);
+        Assert.Equal(new[] { (TurnPhase.StartOfTurn, "-"), (TurnPhase.Income, "west"), (TurnPhase.Draw, "west"), (TurnPhase.Actions, "west") }, seen);
     }
 
     // ---- MAP-001
