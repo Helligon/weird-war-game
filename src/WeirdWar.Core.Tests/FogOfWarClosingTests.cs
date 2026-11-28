@@ -200,6 +200,9 @@ public class FogOfWarClosingTests
         AssertSame(g, replayed);
     }
 
+    // Known leak, out of scope (design gap 1 for Alex): TRN-023 (DEC-104) rejects a move whose path crosses an enemy Brigade,
+    // even one the mover cannot see, so a rejected move tells the mover where a hidden enemy stands. The core checks the path
+    // against the truth, not against the view. No Story changes this; the rule stays as it is.
     private static GameState WithEastAt(HexCoord eastAt)
     {
         var g = NewGame();
