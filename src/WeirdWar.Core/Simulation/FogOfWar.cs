@@ -18,7 +18,7 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>
         /// A Brigade's sight in hexes: the best <see cref="SectionType.Sight"/> among its current Sections (FOW-006).
-        /// 0 for a Brigade with no Sections (it has nothing to see with).
+        /// Returns 0 for a Brigade with no Sections. That case cannot happen in play, because BRG-023 disbands an empty Brigade.
         /// </summary>
         public int BrigadeSight(Brigade brigade)
         {
