@@ -131,7 +131,7 @@ public class TurnTests
 
         Assert.Equal(new[]
         {
-            (TurnPhase.EndOfTurn, first), (TurnPhase.StartOfTurn, second), (TurnPhase.Income, second), (TurnPhase.Actions, second),
+            (TurnPhase.EndOfTurn, first), (TurnPhase.StartOfTurn, second), (TurnPhase.Income, second), (TurnPhase.Draw, second), (TurnPhase.Actions, second),
         }, seen);
         Assert.Equal(TurnPhase.Actions, game.Phase);
     }
@@ -144,7 +144,7 @@ public class TurnTests
             (p, f) => seen.Add((p, f)));
         var first = game.ActiveFaction!;
 
-        Assert.Equal(new[] { (TurnPhase.StartOfTurn, first), (TurnPhase.Income, first), (TurnPhase.Actions, first) }, seen);
+        Assert.Equal(new[] { (TurnPhase.StartOfTurn, first), (TurnPhase.Income, first), (TurnPhase.Draw, first), (TurnPhase.Actions, first) }, seen);
         Assert.Equal(TurnPhase.Actions, game.Phase);
         Assert.Equal(1, game.TurnNumber);
         Assert.Equal(2, game.Factions.Single(f => f.Id == first).Cp); // P-RES-02 paid on turn 1

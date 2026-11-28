@@ -85,11 +85,14 @@ namespace WeirdWar.Core.Simulation
                         throw new CardFormatException("Unknown key \"" + key + "\" in Card \"" + kv.Key + "\"");
                 if (!o.TryGetValue("name", out var nv) || !(nv is string name) || name.Length == 0)
                     throw new CardFormatException("Card \"" + kv.Key + "\": missing \"name\"");
+                if (name.IndexOf('\n') >= 0 || name.IndexOf('\r') >= 0 || name.Contains(" pool="))
+                    throw new CardFormatException("Card \"" + kv.Key + "\": the name must not contain a line break or the text \" pool=\"");
                 if (!o.TryGetValue("pool", out var pv) || !(pv is string pool))
                     throw new CardFormatException("Card \"" + kv.Key + "\": missing \"pool\" (Core, CRD-011)");
                 if (pool != "Core")
                     throw new CardFormatException("Card \"" + kv.Key + "\": unknown pool \"" + pool + "\" (only Core is built, CRD-011)");
                 var cpCost = Num(o, kv.Key, "cpCost");
+                if (cpCost < 1) throw new CardFormatException("Card \"" + kv.Key + "\": cpCost must be at least 1 (CRD-001: playing a Card costs CP)");
                 var copies = Num(o, kv.Key, "copies");
                 if (copies < 1) throw new CardFormatException("Card \"" + kv.Key + "\": copies must be at least 1 (P-CRD-08)");
                 var singleUse = false;

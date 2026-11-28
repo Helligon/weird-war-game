@@ -5,15 +5,16 @@ using WeirdWar.Core.Maps;
 namespace WeirdWar.Core.Simulation
 {
     /// <summary>
-    /// The phases of one Faction's turn that CC1 builds (TRN-005). The Draw step, timers, upkeep and the undead rot
+    /// The phases of one Faction's turn that CC1 builds (TRN-005). Timers, upkeep and the undead rot
     /// check are not built yet; their Stories add a phase or a step in the hook below.
     /// </summary>
     public enum TurnPhase
     {
         StartOfTurn = 0,
         Income = 1,
-        Actions = 2,
-        EndOfTurn = 3,
+        Draw = 2,
+        Actions = 3,
+        EndOfTurn = 4,
     }
 
     /// <summary>
@@ -23,6 +24,7 @@ namespace WeirdWar.Core.Simulation
     /// A later Story adds its rule by adding a call inside the matching method, and nothing else:
     ///   StartOfTurn: resolve captures (TRN-009, CC1-75).
     ///   Income: SP to the reserve (CC1-70). Resupply (CC1-74) is a player action, so it is a command in Actions.
+    ///   Draw: the active Faction draws P-CRD-02 Cards (CD1-140).
     ///   EndOfTurn: may record capture candidates (TRN-009: ending your own turn on the ST, CC1-75); upkeep and rot are later Features.
     /// </summary>
     internal static class TurnPhases
@@ -51,6 +53,32 @@ namespace WeirdWar.Core.Simulation
             f.Cp += income.Cp;
         }
 
+        internal static void Draw(GameState state, string faction)
+        {
+            // CRD-005, P-CRD-02, TRN-005: only the active Faction draws, from the top of its deck into its hand. CRD-014: a full
+            // hand still draws (the discard down to 8 is CRD-006, a command). No Card data means no Cards.
+            if (state.Cards == null) return;
+            var f = state.Factions.Single(x => x.Id == faction);
+            for (var n = 0; n < state.CardsPerTurn; n++)
+            {
+                if (f._deck.Count == 0)
+                {
+                    // CRD-015: the discard pile is shuffled, from the state's seeded source, to make the new deck.
+                    // Assumed (Alex to confirm): with deck and discard both empty, nothing is drawn and the turn goes on.
+                    if (f._discard.Count == 0) return;
+                    f._deck.AddRange(f._discard);
+                    f._discard.Clear();
+                    for (var i = f._deck.Count - 1; i > 0; i--)
+                    {
+                        var j = state.Random.NextInt(i + 1);
+                        var t = f._deck[i]; f._deck[i] = f._deck[j]; f._deck[j] = t;
+                    }
+                }
+                f._hand.Add(f._deck[0]);
+                f._deck.RemoveAt(0);
+            }
+        }
+
         internal static void EndOfTurn(GameState state, string faction)
         {
             // TRN-009: a Brigade that ends its owner's turn on an ST it does not own starts a capture. A capture started
@@ -67,13 +95,15 @@ namespace WeirdWar.Core.Simulation
             }
         }
 
-        /// <summary>Runs the start-of-turn and income phases for <paramref name="faction"/>, then rests in Actions.</summary>
+        /// <summary>Runs the start-of-turn, income and draw phases for <paramref name="faction"/>, then rests in Actions.</summary>
         internal static void BeginTurn(GameState state, string faction)
         {
             Enter(state, TurnPhase.StartOfTurn, faction);
             StartOfTurn(state, faction);
             Enter(state, TurnPhase.Income, faction);
             Income(state, faction);
+            Enter(state, TurnPhase.Draw, faction);
+            Draw(state, faction);
             Enter(state, TurnPhase.Actions, faction);
         }
 

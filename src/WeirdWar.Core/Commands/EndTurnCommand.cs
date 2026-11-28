@@ -6,7 +6,7 @@ namespace WeirdWar.Core.Commands
 {
     /// <summary>
     /// Ends the active Faction's turn (TRN-007, TRN-005): runs its end-of-turn phase, hands the turn to the next
-    /// Faction, and runs that Faction's start-of-turn and income phases, so it is ready to act.
+    /// Faction, and runs that Faction's start-of-turn, income and draw phases, so it is ready to act.
     /// Only the active Faction may send it (TRN-006), and only in the Actions phase.
     /// </summary>
     public sealed class EndTurnCommand : ICommand, IEquatable<EndTurnCommand>

@@ -19,7 +19,7 @@ public class CardTests
 
     private const string BaseParams = "P-BRG-01 = 5\nP-BRG-05 = 3\nP-BRG-09 = 90\nP-RES-05 = 5\nP-RES-06 = 0\nP-RES-01 = 5\nP-RES-02 = 2\nP-RES-04 = 1\nP-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1\nP-MAP-02 = minus=1 min=1\nP-SUP-01 = 0.75\nP-SUP-02 = 0.25\nP-SUP-08 = 1\nP-SUP-10 = 2\nP-TRN-02 = 1\nP-MAP-03 = sp=5 cp=1 cpStep=1\nP-MAP-14 = 1\n";
 
-    private static ParameterTable Params(int hand = 5, int extra = 1) => ParameterTable.Parse(BaseParams + "P-CRD-01 = " + hand + "\nP-TRN-01 = " + extra);
+    private static ParameterTable Params(int hand = 5, int extra = 1, int draw = 1) => ParameterTable.Parse(BaseParams + "P-CRD-01 = " + hand + "\nP-TRN-01 = " + extra + "\nP-CRD-02 = " + draw);
 
     private static CardTable TestCards() => CardTable.Load(Path.Combine(AppContext.BaseDirectory, "data", "test-cards.json"));
 
@@ -104,21 +104,21 @@ public class CardTests
         foreach (var seed in Seeds)
         {
             var game = NewGame(seed);
-            Assert.Equal(5, Of(game, game.ActiveFaction!).Hand.Count);
+            Assert.Equal(5 + 1, Of(game, game.ActiveFaction!).Hand.Count); // the first player also draws on turn 1 (CRD-005)
         }
         var three = NewGame(7, Params(hand: 3));
-        Assert.Equal(3, Of(three, three.ActiveFaction!).Hand.Count);
+        Assert.Equal(3 + 1, Of(three, three.ActiveFaction!).Hand.Count);
     }
 
     [Fact]
     public void CRD_018_P_TRN_01_the_second_player_starts_with_extra_cards()
     {
         var game = NewGame();
-        Assert.Equal(5, Of(game, game.ActiveFaction!).Hand.Count);
-        Assert.Equal(6, Of(game, Second(game)).Hand.Count);
+        Assert.Equal(5 + 1, Of(game, game.ActiveFaction!).Hand.Count); // 5 dealt, 1 drawn on turn 1 (CRD-005)
+        Assert.Equal(6, Of(game, Second(game)).Hand.Count); // 5 dealt, 1 extra, not yet drawn
         var two = NewGame(7, Params(extra: 2));
         Assert.Equal(7, Of(two, Second(two)).Hand.Count);
-        Assert.Equal(5, Of(two, two.ActiveFaction!).Hand.Count);
+        Assert.Equal(5 + 1, Of(two, two.ActiveFaction!).Hand.Count);
     }
 
     [Fact]
@@ -129,8 +129,8 @@ public class CardTests
         {
             var game = NewGame(seed);
             firsts.Add(game.ActiveFaction!);
-            Assert.Equal(5, Of(game, game.ActiveFaction!).Hand.Count);
-            Assert.Equal(6, Of(game, Second(game)).Hand.Count);
+            Assert.Equal(5 + 1, Of(game, game.ActiveFaction!).Hand.Count); // dealt 5, drew 1
+            Assert.Equal(5 + 1, Of(game, Second(game)).Hand.Count); // dealt 5 plus the extra Card
         }
         Assert.Equal(2, firsts.Count);
     }
@@ -169,6 +169,16 @@ public class CardTests
     }
 
     [Fact]
+    public void DLV_014_a_missing_cards_per_turn_parameter_fails_the_load_naming_it()
+    {
+        var none = ParameterTable.Parse(BaseParams + "P-CRD-01 = 5\nP-TRN-01 = 1");
+        Assert.Contains("P-CRD-02", Assert.Throws<MissingParameterException>(() => NewGame(7, none)).Message);
+        var shipped = ParameterTable.LoadShipped();
+        Assert.Equal(1, shipped.GetInt("P-CRD-02"));
+        Assert.False(shipped.IsPlaceholder("P-CRD-02"));
+    }
+
+    [Fact]
     public void DLV_014_a_card_with_no_copies_or_no_cp_cost_is_a_load_error_naming_it()
     {
         var noCopies = Assert.Throws<CardFormatException>(() => CardTable.Parse("{\"version\":1,\"cards\":{\"x\":{\"name\":\"X\",\"pool\":\"Core\",\"cpCost\":1}}}"));
@@ -176,6 +186,24 @@ public class CardTests
         var noCost = Assert.Throws<CardFormatException>(() => CardTable.Parse("{\"version\":1,\"cards\":{\"x\":{\"name\":\"X\",\"pool\":\"Core\",\"copies\":1}}}"));
         Assert.Contains("\"cpCost\"", noCost.Message);
         Assert.Throws<CardFormatException>(() => CardTable.Parse("{\"version\":1,\"cards\":{\"x\":{\"name\":\"X\",\"pool\":\"Core\",\"cpCost\":1,\"copies\":0}}}"));
+    }
+
+    [Fact]
+    public void CRD_001_a_card_with_a_cp_cost_below_1_is_a_load_error()
+    {
+        var e = Assert.Throws<CardFormatException>(() => CardTable.Parse("{\"version\":1,\"cards\":{\"x\":{\"name\":\"X\",\"pool\":\"Core\",\"cpCost\":0,\"copies\":1}}}"));
+        Assert.Contains("cpCost must be at least 1", e.Message);
+        Assert.Equal(1, CardTable.Parse("{\"version\":1,\"cards\":{\"x\":{\"name\":\"X\",\"pool\":\"Core\",\"cpCost\":1,\"copies\":1}}}").Count);
+    }
+
+    [Theory]
+    [InlineData("A\\nB")]
+    [InlineData("A\\rB")]
+    [InlineData("A pool=Core")]
+    public void TEC_008_a_card_name_with_a_line_break_or_a_pool_marker_is_a_load_error(string escapedName)
+    {
+        var json = "{\"version\":1,\"cards\":{\"x\":{\"name\":\"" + escapedName + "\",\"pool\":\"Core\",\"cpCost\":1,\"copies\":1}}}";
+        Assert.Contains("name must not contain", Assert.Throws<CardFormatException>(() => CardTable.Parse(json)).Message);
     }
 
     [Fact]
@@ -207,19 +235,172 @@ public class CardTests
         Assert.Equal(PinnedHash, game.ComputeHash());
     }
 
+    // ---- Draw step (CD1-140)
+
+    private static void End(GameState g) => Assert.True(g.ApplyCommand(new EndTurnCommand(g.ActiveFaction!)).Accepted);
+
+    private static readonly string[] Pile = { "alpha", "bravo", "gamma", "gamma" };
+
+    [Fact]
+    public void TRN_005_the_phases_run_start_of_turn_income_draw_actions_with_cards()
+    {
+        var seen = new List<TurnPhase>();
+        var game = new GameState(7, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), Params(), (p, f) => seen.Add(p), TestCards());
+        Assert.Equal(new[] { TurnPhase.StartOfTurn, TurnPhase.Income, TurnPhase.Draw, TurnPhase.Actions }, seen);
+        seen.Clear();
+        End(game);
+        Assert.Equal(new[] { TurnPhase.EndOfTurn, TurnPhase.StartOfTurn, TurnPhase.Income, TurnPhase.Draw, TurnPhase.Actions }, seen);
+    }
+
+    [Fact]
+    public void CRD_005_P_CRD_02_a_faction_draws_one_card_from_the_top_of_its_deck_into_its_hand()
+    {
+        var game = NewGame(7);
+        var next = Of(game, Second(game));
+        var top = next.Deck[0];
+        var deckBefore = next.Deck.Count;
+        var handBefore = next.Hand.ToList();
+        End(game);
+        Assert.Equal(deckBefore - 1, next.Deck.Count);
+        Assert.Equal(handBefore.Append(top), next.Hand);
+    }
+
+    [Fact]
+    public void CRD_005_P_CRD_02_two_cards_are_drawn_when_the_data_says_2()
+    {
+        var game = NewGame(7, Params(draw: 2));
+        Assert.Equal(5 + 2, Of(game, game.ActiveFaction!).Hand.Count); // turn 1 draws too
+        var next = Of(game, Second(game));
+        var top = next.Deck.Take(2).ToList();
+        var handBefore = next.Hand.ToList();
+        End(game);
+        Assert.Equal(handBefore.Concat(top), next.Hand);
+    }
+
+    [Fact]
+    public void CRD_005_the_first_player_draws_on_turn_1_under_each_seed()
+    {
+        foreach (var seed in Seeds)
+        {
+            var game = NewGame(seed);
+            var first = Of(game, game.ActiveFaction!);
+            Assert.Equal(1, game.TurnNumber);
+            Assert.Equal(5 + 1, first.Hand.Count);
+            Assert.Equal(9 - 5 - 1, first.Deck.Count);
+        }
+    }
+
+    [Fact]
+    public void TRN_005_only_the_active_faction_draws()
+    {
+        var game = NewGame(7);
+        var waiting = Of(game, Second(game));
+        var (deck, hand) = (waiting.Deck.ToList(), waiting.Hand.ToList());
+        TurnPhases.Draw(game, game.ActiveFaction!);
+        Assert.Equal(deck, waiting.Deck);
+        Assert.Equal(hand, waiting.Hand);
+    }
+
+    [Fact]
+    public void CRD_015_an_empty_deck_is_made_from_the_shuffled_discard_pile_and_one_card_is_drawn()
+    {
+        var game = NewGame(7);
+        var east = Of(game, "east"); // east goes second under seed 7
+        Assert.Equal("west", game.ActiveFaction);
+        east._deck.Clear();
+        east._discard.AddRange(Pile);
+        var handBefore = east.Hand.Count;
+        End(game);
+        // The order is computed independently in Python (scratchpad pin140.py): Fisher-Yates over the pile, seeded source.
+        Assert.Equal(new[] { "alpha", "gamma", "gamma" }, east.Deck);
+        Assert.Equal(handBefore + 1, east.Hand.Count);
+        Assert.Equal("bravo", east.Hand[^1]);
+        Assert.Empty(east.Discard);
+        Assert.Contains("random=6653367501949350315\n", game.CanonicalText());
+    }
+
+    [Fact]
+    public void CRD_015_the_discard_pile_is_left_alone_while_the_deck_has_cards()
+    {
+        var game = NewGame(7);
+        var east = Of(game, "east");
+        east._discard.Add("alpha");
+        var random = game.CanonicalText().Split('\n').Single(l => l.StartsWith("random="));
+        End(game);
+        Assert.Equal(new[] { "alpha" }, east.Discard);
+        Assert.Contains(random + "\n", game.CanonicalText());
+    }
+
+    private static string RunReshuffle(ulong seed)
+    {
+        var g = NewGame(seed);
+        var next = Of(g, Second(g));
+        next._deck.Clear();
+        next._discard.AddRange(Pile);
+        End(g);
+        return g.ComputeHash() + string.Join(",", next.Deck) + next.Hand[^1];
+    }
+
+    [Fact]
+    public void CRD_015_TEC_008_the_same_seed_and_commands_give_the_same_reshuffle_and_hash()
+    {
+        Assert.Equal(RunReshuffle(7), RunReshuffle(7));
+        Assert.True(Seeds.Select(RunReshuffle).Distinct().Count() > 1, "different seeds should differ");
+    }
+
+    [Fact]
+    public void CRD_014_a_hand_of_8_still_draws_and_holds_9()
+    {
+        var game = NewGame(7);
+        var east = Of(game, "east");
+        east._deck.AddRange(east._hand);
+        east._hand.Clear();
+        east._hand.AddRange(east._deck.GetRange(east._deck.Count - 8, 8));
+        east._deck.RemoveRange(east._deck.Count - 8, 8);
+        Assert.Equal(8, east.Hand.Count);
+        End(game);
+        Assert.Equal(9, east.Hand.Count);
+    }
+
+    [Fact]
+    public void CRD_005_with_deck_and_discard_both_empty_nothing_is_drawn_and_the_turn_goes_on()
+    {
+        // Not specified by any rule; assumed here, Alex to confirm.
+        var game = NewGame(7);
+        var east = Of(game, "east");
+        east._deck.Clear();
+        var before = east.Hand.ToList();
+        var random = game.CanonicalText().Split('\n').Single(l => l.StartsWith("random="));
+        End(game);
+        Assert.Equal(before, east.Hand);
+        Assert.Equal("east", game.ActiveFaction);
+        Assert.Equal(TurnPhase.Actions, game.Phase);
+        Assert.Contains(random + "\n", game.CanonicalText());
+    }
+
+    [Fact]
+    public void DLV_013_a_game_replayed_from_its_seed_and_log_has_the_same_draws_and_hash()
+    {
+        var game = NewGame(7);
+        for (var i = 0; i < 5; i++) End(game);
+        var replayed = GameState.Replay(7, game.Log, MapImporter.Parse(MapJson), SectionTypeTable.Parse(TypesJson), Params(), TestCards());
+        Assert.Equal(game.ComputeHash(), replayed.ComputeHash());
+        Assert.Equal(game.Factions.Select(f => string.Join(",", f.Hand)), replayed.Factions.Select(f => string.Join(",", f.Hand)));
+    }
+
     private const string PinnedText =
         "weirdwar.state.v1\n" +
         "seed=7\n" +
         "random=9344711191398858092\n" +
         "tally=0\n" +
         "map=9e42203dc85df636af50dbd2072184e378bafb5e4b3c8c8c1f089dcb0262202b\n" +
-        "parameters=49fe299e181f4ce6076e8e7ae96eb7a08780bb6af63fab437f876e1450e8e4e1\n" +
+        "parameters=511cae24c375517810b1653316d4ea2579f0f42d6bb8d41dc5bbb3846fe2a6e1\n" +
         "sectiontypes=d62a3d929058987d911b05c0502852239ca13f645d632e940f460f219b77ad63\n" +
         "faction=east reserve=5 cp=0\n" +
         "faction=west reserve=10 cp=2\n" +
         "cards=f124f0993e5806815a9423432390938e4fe4e65d7b7880c4bcefe64c1b6e7327\n" +
         "cardstate=east deck=bravo,alpha,gamma hand=gamma,alpha,gamma,gamma,alpha,bravo discard=\n" +
-        "cardstate=west deck=alpha,alpha,bravo,gamma hand=gamma,gamma,gamma,alpha,bravo discard=\n" +
+        "cardstate=west deck=alpha,bravo,gamma hand=gamma,gamma,gamma,alpha,bravo,alpha discard=\n" +
         "location=hq-east owner=east\n" +
         "location=hq-west owner=west\n" +
         "nextbrigade=3\n" +
@@ -228,5 +409,5 @@ public class CardTests
         "turn=1 active=west phase=Actions\n" +
         "log=0\n" +
         "digest=0000000000000000000000000000000000000000000000000000000000000000\n";
-    private const string PinnedHash = "31a7ea7261add6f2c08a2fb434ff5bc284ed52309d99e2fc9dbeb9ad7e605100";
+    private const string PinnedHash = "5bd60b1e2f8a486a3704169f9194e6e40286b353d3c825b2cd2c3e92097cdee7";
 }
