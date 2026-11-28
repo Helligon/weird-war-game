@@ -391,13 +391,17 @@ public class SetupTests
             "faction=east reserve=5 cp=0\nfaction=west reserve=10 cp=2\n" +
             "location=command-1 owner=-\nlocation=hq-east owner=east\nlocation=hq-west owner=west\n" +
             "location=major-1 owner=-\nlocation=supply-1 owner=-\n" +
+            "known=east command-1 owner=- type=Command\nknown=east hq-east owner=east type=Hq\n" +
+            "known=east major-1 owner=- type=Major\nknown=east supply-1 owner=- type=Supply\n" +
+            "known=west command-1 owner=- type=Command\nknown=west hq-west owner=west type=Hq\n" +
+            "known=west major-1 owner=- type=Major\nknown=west supply-1 owner=- type=Supply\n" +
             "nextbrigade=3\n" +
             "brigade=1 faction=east sp=90 sections=infantry:10,infantry:10,artillery:6 at=5,1\n" +
             "brigade=2 faction=west sp=90 sections=infantry:10,infantry:10,recon:4 at=0,2\n" +
             "turn=1 active=west phase=Actions\n" +
             "log=0\ndigest=" + new string('0', 64) + "\n",
             game.CanonicalText());
-        Assert.Equal("5c1ef0d20b47b8d0e88e33fca3ea294ca702c17d950395f21dd384d0c6a392c3", game.ComputeHash());
+        Assert.Equal("1093a41d6cc8c115a57bb1a2497e9d12eb26c811ddeca7971d9b0cea6ae6a11c", game.ComputeHash());
     }
 
     [Fact]
@@ -406,7 +410,7 @@ public class SetupTests
         var game = NewGame();
         Assert.True(game.ApplyCommand(new AddToTallyCommand(5, "west")).Accepted);
 
-        Assert.Equal("4e25de81b50b45c1dd196d470def1c26b7dcb58260fb930c1697cf2bbfdc7564", game.ComputeHash());
+        Assert.Equal("2d8f90038719368441ae9e70e3bd53f3da47b8c8d1e119d9b2ccedd084b6590c", game.ComputeHash());
     }
 
     [Fact]
@@ -417,7 +421,7 @@ public class SetupTests
         Assert.True(game.ApplyCommand(new EndTurnCommand("west")).Accepted);
 
         Assert.Contains("turn=2 active=east phase=Actions\n", game.CanonicalText());
-        Assert.Equal("de410cce6ceb2e9f1d641025e90b9f525ae02bbf224ee887366a5d401943e509", game.ComputeHash());
+        Assert.Equal("31c6122137560a30e40d6c6b0f2f468abf0090bd91a4c70ebfc839b84ce9d495", game.ComputeHash());
     }
 
     [Fact]

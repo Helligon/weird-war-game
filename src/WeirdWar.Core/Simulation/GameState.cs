@@ -72,6 +72,7 @@ namespace WeirdWar.Core.Simulation
             MovementRules = new MovementRules(parameters);
             Territory = new TerritoryRules(parameters);
             LocationSight = new LocationSight(parameters);
+            FogOfWar = new FogOfWar(sectionTypes);
             BrigadeRules = new BrigadeRules(parameters);
             FobRules = new FobRules(parameters);
             _parametersDigest = parameters.Digest();
@@ -104,6 +105,7 @@ namespace WeirdWar.Core.Simulation
             ActiveFaction = factions[Random.NextInt(factions.Count)].Id;
             TurnNumber = 1;
             TurnPhases.BeginTurn(this, ActiveFaction);
+            UpdateKnowledge();
         }
 
         private static int StartingValue(ParameterTable parameters, string id)
@@ -163,6 +165,9 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>Sight from owned locations (FOW-007, P-FOW-03), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameter is in the digest).</summary>
         public LocationSight? LocationSight { get; }
+
+        /// <summary>Fog of war queries (FOW-004), built once at game start, or null when there is no map. Fixed for a game; not hashed.</summary>
+        public FogOfWar? FogOfWar { get; }
 
         /// <summary>Brigade size limit (P-BRG-01, BRG-021), built once at game start, or null when there is no map. Fixed for a game; not hashed (its parameter is in the digest).</summary>
         public BrigadeRules? BrigadeRules { get; }
@@ -242,9 +247,26 @@ namespace WeirdWar.Core.Simulation
             if (reason != null) return CommandResult.Reject(reason);
             var canonical = Encoding.UTF8.GetBytes(CommandJson.Canonical(command));
             command.Apply(this);
+            UpdateKnowledge();
             Log.Append(command);
             LogDigest = Sha256(LogDigest, canonical);
             return CommandResult.Accept();
+        }
+
+        /// <summary>
+        /// FOW-009, FOW-010: every Faction records the current owner and type of each location in its visible hexes, and
+        /// leaves the others as last seen. Runs at game start and after every accepted command, so after the start-of-turn
+        /// income and capture that EndTurn runs. Brigades are not remembered (FOW-003).
+        /// </summary>
+        private void UpdateKnowledge()
+        {
+            if (Map == null || FogOfWar == null) return;
+            foreach (var f in Factions)
+            {
+                var visible = new HashSet<HexCoord>(FogOfWar.VisibleHexes(this, f.Id));
+                foreach (var l in Locations)
+                    if (visible.Contains(l.Position)) f.Remember(l.Id, l.Owner, l.Type);
+            }
         }
 
         /// <summary>
@@ -314,6 +336,11 @@ namespace WeirdWar.Core.Simulation
                 if (l.Capturing != null) sb.Append(" capturing=").Append(l.Capturing).Append(" brigade=").Append(l.CapturingBrigade?.ToString(CultureInfo.InvariantCulture) ?? "-");
                 sb.Append('\n');
             }
+            // FOW-009: what each Faction has spotted, Factions by id then locations by id. Integers and text only (TEC-019).
+            foreach (var f in Factions)
+                foreach (var l in Locations)
+                    if (f.KnownLocations.TryGetValue(l.Id, out var k))
+                        sb.Append("known=").Append(f.Id).Append(' ').Append(l.Id).Append(" owner=").Append(k.Owner ?? "-").Append(" type=").Append(k.Type.ToString()).Append('\n');
             if (Map != null) sb.Append("nextbrigade=").Append(_nextBrigadeId.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (var b in Brigades)
             {

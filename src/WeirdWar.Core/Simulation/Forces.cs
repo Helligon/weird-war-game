@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using WeirdWar.Core.Maps;
@@ -18,6 +19,22 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>How many Supply STs this Faction has upgraded to FOBs; the next upgrade costs more CP (MAP-012, MAP-025). In the hash.</summary>
         public int FobUpgrades { get; internal set; }
+
+        /// <summary>
+        /// What this Faction last saw of each location it has spotted, by location id (FOW-009, FOW-010). A location never in
+        /// sight has no entry (FOW-003). Only this Faction's own sight writes here (MUL-014). In the hash.
+        /// </summary>
+        public IReadOnlyDictionary<string, KnownLocation> KnownLocations => _known;
+        private readonly Dictionary<string, KnownLocation> _known = new Dictionary<string, KnownLocation>(StringComparer.Ordinal);
+        internal void Remember(string locationId, string? owner, LocationType type) => _known[locationId] = new KnownLocation(owner, type);
+    }
+
+    /// <summary>A location as a Faction last saw it: its owner (null for neutral) and its type then (an upgrade out of sight is not shown).</summary>
+    public sealed class KnownLocation
+    {
+        internal KnownLocation(string? owner, LocationType type) { Owner = owner; Type = type; }
+        public string? Owner { get; }
+        public LocationType Type { get; }
     }
 
     /// <summary>A location in a running game with its current owner (MAP-021: only HQs start owned).</summary>

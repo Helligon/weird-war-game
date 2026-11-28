@@ -681,7 +681,7 @@ public class MovementTests
         var game = NewGame();
         Assert.True(Move(game, 2).Accepted);
 
-        Assert.Equal("9af565071563c6803c55e93c5ee414670678623e8afcfa3a6b42e0812e9929f7", game.ComputeHash());
+        Assert.Equal("4fbe66c16bd8ff5c89e483956cf4a94c442ec295677ffdd9f9df257add3c3b7b", game.ComputeHash());
     }
 
     // ---- Carried from the PR 98 review
