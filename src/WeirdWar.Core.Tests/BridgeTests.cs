@@ -74,9 +74,13 @@ public class BridgeTests
     {
         var game = NewGame();
         West(game).Position = At(0, 1);
+        var hash = game.ComputeHash();
         Assert.False(Move(game, At(1, 1)).Accepted);
+        Assert.Equal(hash, game.ComputeHash());
         West(game).Position = At(0, 0);
+        hash = game.ComputeHash();
         Assert.False(Move(game, At(1, 0)).Accepted);
+        Assert.Equal(hash, game.ComputeHash());
 
         Assert.Throws<MapFormatException>(() => MapImporter.Parse(MapJson("[[1,0]]")));
         Assert.Throws<MapFormatException>(() => MapImporter.Parse(MapJson("[[1,1]]")));
@@ -116,7 +120,9 @@ public class BridgeTests
     {
         var game = NewGame();
         West(game).Position = At(0, 6);
+        var hash = game.ComputeHash();
         Assert.False(Move(game, At(0, 7)).Accepted);
+        Assert.Equal(hash, game.ComputeHash());
 
         Assert.True(game.ApplyCommand(new BuildBridgeCommand(At(0, 7))).Accepted);
 
