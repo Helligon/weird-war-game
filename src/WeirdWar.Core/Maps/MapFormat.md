@@ -41,6 +41,7 @@ The file is read with the core's own JSON reader (`WeirdWar.Core.Serialization.J
 | `terrain` | object | no | Terrain type name to a list of `[column, row]` hexes. |
 | `factions` | list of text | no | Exactly two Faction ids, or leave out for a terrain-only map (no game can start on it). |
 | `locations` | list of objects | no | HQs and STs, see below. |
+| `bridges` | list of `[column, row]` | no | Bridges (MAP-054), see below. |
 | `setup` | object | with `factions` | The Sections of each Faction's starting Brigade, see below. |
 
 Any other top-level key is an error (it is never silently ignored). The format stays on `version: 1` and
@@ -64,10 +65,18 @@ Every hex not listed is `open`.
 | `open` | yes | terrain factor 1, the same on every open hex (SP per hex comes from the Brigade, SUP-021) |
 | `mountain` | no (TRN-024) | none |
 | `sea` | no (TRN-024) | none |
-| `river` | no (TRN-024) | none |
+| `river` | no (TRN-024), unless it has a bridge (MAP-054) | none; with a bridge, terrain factor 1 |
 
 `open` may also be listed explicitly. Terrain costs for other types (SUP-011, TRN-025, TRN-026) are not
 decided and are not part of this format.
+
+## Bridges (MAP-054, TRN-024)
+
+`bridges` lists `[column, row]` hexes. A bridge is a terrain feature, not a location: it is not in `locations`, pays
+no income, cannot be captured, resupplies nobody and gives no sight or territory. A river hex with a bridge is
+passable to ground Brigades; mountain and sea are never passable. Every bridge must be on a `river` hex: a bridge
+on any other hex, outside the grid or listed twice is an error. The Bridgelayer Card (CRD-019) adds bridges in play;
+those are kept in the game state, not in the map.
 
 ## Locations (MAP-003, MAP-015, MAP-022)
 
@@ -116,7 +125,7 @@ Import throws `MapFormatException` with a message naming the problem, and return
 invalid JSON (with line and column), top level not an object, unknown key, missing or non-numeric
 `version`/`width`/`height`, unsupported version, size out of range, unknown terrain type, a bad hex
 entry, a hex outside the grid, a hex listed twice, a Faction count other than two, a Faction without
-exactly one HQ, an unknown location type, a duplicate location id, a location outside the grid, an ST with
+exactly one HQ, an unknown location type, a duplicate location id, a location outside the grid, a bridge that is not on a river hex, an ST with
 a faction, and a missing or unknown entry in `setup`.
 
 ## Determinism

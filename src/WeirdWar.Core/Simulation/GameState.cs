@@ -98,6 +98,7 @@ namespace WeirdWar.Core.Simulation
             Factions = factions;
             Locations = locations;
             _brigades = brigades;
+            _bridges.AddRange(map.Bridges);
             _nextBrigadeId = brigades.Count + 1;
             // TRN-033: the first player comes from the state's seeded source, so the same seed gives the same one.
             // Drawn here, as part of making the new game; replay rebuilds the state the same way.
@@ -211,6 +212,45 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>Locations sorted by id.</summary>
         public IReadOnlyList<LocationState> Locations { get; } = new List<LocationState>();
+
+        /// <summary>
+        /// Bridges, sorted by column then row (MAP-054): the map's own plus any built in play. A bridge is terrain, not a location, so it
+        /// is not in <see cref="Locations"/>. In the hash, only when there is one.
+        /// </summary>
+        public IReadOnlyList<HexCoord> Bridges => _bridges;
+        private readonly List<HexCoord> _bridges = new List<HexCoord>();
+
+        public bool HasBridge(HexCoord hex) => _bridges.Contains(hex);
+
+        /// <summary>
+        /// Terrain factor for a Brigade entering the hex, or null when impassable (TRN-024): as <see cref="HexMap.TerrainCostFactor"/>,
+        /// except a river hex with a bridge is passable at factor 1 (MAP-054). Enemy occupation (TRN-023) is checked elsewhere.
+        /// </summary>
+        public int? TerrainCostFactor(HexCoord hex)
+        {
+            if (Map == null) return null;
+            if (Map.Contains(hex) && Map.TerrainAt(hex) == TerrainType.River && HasBridge(hex)) return 1;
+            return Map.TerrainCostFactor(hex);
+        }
+
+        /// <summary>Why a bridge cannot be added on this hex, or null when it can (MAP-054): the hex must be a river hex without a bridge.</summary>
+        internal string? CheckBridge(HexCoord hex)
+        {
+            if (Map == null) return "There is no map to build a bridge on";
+            if (!Map.Contains(hex)) return "Hex " + hex + " is beyond the map edge";
+            if (Map.TerrainAt(hex) != TerrainType.River) return "Hex " + hex + " is not a river hex (MAP-054)";
+            if (HasBridge(hex)) return "Hex " + hex + " already has a bridge";
+            return null;
+        }
+
+        /// <summary>Adds a bridge (MAP-054). May only be called from inside a command's Apply after <see cref="CheckBridge"/> passed (DLV-013); throws otherwise.</summary>
+        internal void AddBridge(HexCoord hex)
+        {
+            var problem = CheckBridge(hex);
+            if (problem != null) throw new InvalidOperationException(problem);
+            _bridges.Add(hex);
+            _bridges.Sort((a, b) => { var (ac, ar) = a.ToOffset(); var (bc, br) = b.ToOffset(); return ac != bc ? ac.CompareTo(bc) : ar.CompareTo(br); });
+        }
 
         /// <summary>Brigades sorted by id. Ids start at 1.</summary>
         public IReadOnlyList<Brigade> Brigades => _brigades;
@@ -354,6 +394,12 @@ namespace WeirdWar.Core.Simulation
                 // Written only while a capture is pending (TRN-009), so a game with none hashes as before.
                 if (l.Capturing != null) sb.Append(" capturing=").Append(l.Capturing).Append(" brigade=").Append(l.CapturingBrigade?.ToString(CultureInfo.InvariantCulture) ?? "-");
                 sb.Append('\n');
+            }
+            // Written only when there is a bridge, so a game with none hashes as before (MAP-054).
+            foreach (var bridge in _bridges)
+            {
+                var (xc, xr) = bridge.ToOffset();
+                sb.Append("bridge=").Append(xc.ToString(CultureInfo.InvariantCulture)).Append(',').Append(xr.ToString(CultureInfo.InvariantCulture)).Append('\n');
             }
             if (Map != null) sb.Append("nextbrigade=").Append(_nextBrigadeId.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (var b in Brigades)
