@@ -81,12 +81,12 @@ public class CardTests
     }
 
     [Fact]
-    public void CRD_011_the_shipped_card_data_loads_with_no_cards_and_a_game_on_it_has_empty_hands()
+    public void CRD_011_CRD_007_the_shipped_card_data_loads_with_Draw_2_as_its_only_card_and_a_game_on_it_deals_it()
     {
         var cards = CardTable.LoadShipped();
-        Assert.Equal(0, cards.Count);
+        Assert.Equal(new[] { "draw2" }, cards.All.Select(c => c.Id));
         var game = NewGame(7, null, cards);
-        Assert.All(game.Factions, f => { Assert.Empty(f.Deck); Assert.Empty(f.Hand); });
+        Assert.All(game.Factions, f => Assert.Equal(2, f.Deck.Count + f.Hand.Count));
     }
 
     [Fact]

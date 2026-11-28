@@ -66,7 +66,10 @@ namespace WeirdWar.Core.Simulation
         /// The effect of each Card, fixed by Card id in code (CRD-010, TEC-008), so a game and its replay cannot be given different
         /// effects. Each Card's own Story adds its entry. A Card with no entry has no play condition and no effect.
         /// </summary>
-        private static readonly Dictionary<string, ICardEffect> Effects = new Dictionary<string, ICardEffect>();
+        private static readonly Dictionary<string, ICardEffect> Effects = new Dictionary<string, ICardEffect>
+        {
+            [Draw2Card.CardId] = new Draw2Card(),
+        };
 
         private CardTable(SortedDictionary<string, CardType> cards)
         {
