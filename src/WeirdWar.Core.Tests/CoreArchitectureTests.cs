@@ -168,4 +168,22 @@ public class CoreArchitectureTests
         Assert.Contains("WeirdWar.Core.csproj", files);
         Assert.Contains("WeirdWar.Core.Tests.csproj", files);
     }
+
+    [Fact]
+    public void DLV_012_the_fog_of_war_code_uses_no_unity_wall_clock_random_or_hash_order_source()
+    {
+        var files = new[] { "FogOfWar.cs", "FactionView.cs", "LocationSight.cs", "Forces.cs" };
+        var banned = new[] { "UnityEngine", "DateTime", "Stopwatch", "Environment.Tick", "System.Random", "new Random(", "Guid.NewGuid", "GetHashCode", "RuntimeHelpers", "Parallel", "ConcurrentDictionary" };
+        var simulation = Path.Combine(SrcDirectory(), "WeirdWar.Core", "Simulation");
+        foreach (var name in files)
+        {
+            var text = File.ReadAllText(Path.Combine(simulation, name));
+            foreach (var word in banned) Assert.False(text.Contains(word, StringComparison.Ordinal), name + " uses " + word);
+        }
+        // The one hash set in the fog code is sorted before it leaves the method, never enumerated as it is.
+        var fog = File.ReadAllText(Path.Combine(simulation, "FogOfWar.cs"));
+        Assert.Contains("result.Sort(", fog);
+        Assert.DoesNotContain("foreach (var h in seen", fog);
+        Assert.DoesNotContain("foreach (var hex in seen", fog);
+    }
 }
