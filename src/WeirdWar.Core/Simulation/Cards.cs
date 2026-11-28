@@ -50,7 +50,7 @@ namespace WeirdWar.Core.Simulation
 
         public bool SingleUse { get; }
 
-        /// <summary>The Card's play condition and effect, or null for none. Set by <see cref="CardTable.SetEffect"/>; not in the data file.</summary>
+        /// <summary>The Card's play condition and effect, or null for none. Attached from the fixed table when the Card table is built; not in the data file.</summary>
         public ICardEffect? Effect { get; internal set; }
     }
 
@@ -62,7 +62,18 @@ namespace WeirdWar.Core.Simulation
     {
         private readonly SortedDictionary<string, CardType> _cards;
 
-        private CardTable(SortedDictionary<string, CardType> cards) { _cards = cards; }
+        /// <summary>
+        /// The effect of each Card, fixed by Card id in code (CRD-010, TEC-008), so a game and its replay cannot be given different
+        /// effects. Each Card's own Story adds its entry. A Card with no entry has no play condition and no effect.
+        /// </summary>
+        private static readonly Dictionary<string, ICardEffect> Effects = new Dictionary<string, ICardEffect>();
+
+        private CardTable(SortedDictionary<string, CardType> cards)
+        {
+            _cards = cards;
+            foreach (var card in cards.Values)
+                if (Effects.TryGetValue(card.Id, out var effect)) card.Effect = effect;
+        }
 
         /// <summary>Cards sorted by id (ordinal).</summary>
         public IEnumerable<CardType> All => _cards.Values;
@@ -71,7 +82,7 @@ namespace WeirdWar.Core.Simulation
 
         public bool TryGet(string id, out CardType card) => _cards.TryGetValue(id, out card!);
 
-        /// <summary>Gives a Card its play condition and effect (CRD-010). Done once, when the game's Card table is built.</summary>
+        /// <summary>Test only: replaces a Card's effect. Game code gets its effects from the fixed table when the Card table is built.</summary>
         internal void SetEffect(string id, ICardEffect effect)
         {
             if (!_cards.TryGetValue(id, out var card)) throw new ArgumentException("There is no Card " + id);
