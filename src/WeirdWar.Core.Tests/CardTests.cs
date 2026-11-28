@@ -189,6 +189,24 @@ public class CardTests
     }
 
     [Fact]
+    public void CRD_001_a_card_with_a_cp_cost_below_1_is_a_load_error()
+    {
+        var e = Assert.Throws<CardFormatException>(() => CardTable.Parse("{\"version\":1,\"cards\":{\"x\":{\"name\":\"X\",\"pool\":\"Core\",\"cpCost\":0,\"copies\":1}}}"));
+        Assert.Contains("cpCost must be at least 1", e.Message);
+        Assert.Equal(1, CardTable.Parse("{\"version\":1,\"cards\":{\"x\":{\"name\":\"X\",\"pool\":\"Core\",\"cpCost\":1,\"copies\":1}}}").Count);
+    }
+
+    [Theory]
+    [InlineData("A\\nB")]
+    [InlineData("A\\rB")]
+    [InlineData("A pool=Core")]
+    public void TEC_008_a_card_name_with_a_line_break_or_a_pool_marker_is_a_load_error(string escapedName)
+    {
+        var json = "{\"version\":1,\"cards\":{\"x\":{\"name\":\"" + escapedName + "\",\"pool\":\"Core\",\"cpCost\":1,\"copies\":1}}}";
+        Assert.Contains("name must not contain", Assert.Throws<CardFormatException>(() => CardTable.Parse(json)).Message);
+    }
+
+    [Fact]
     public void DLV_014_the_shipped_hand_size_and_extra_card_are_decided_values_without_a_placeholder_marker()
     {
         var shipped = ParameterTable.LoadShipped();
