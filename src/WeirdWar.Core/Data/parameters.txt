@@ -21,4 +21,6 @@ P-MAP-02 = minus=1 min=1   # Territory radius: sight minus 1, at least 1 (decide
 P-FOW-03 = hq=3 fob=2 major=2 command=1 supply=1   # Location sight radius (decided)
 P-MAP-03 = sp=5 cp=1 cpStep=1   # placeholder (open): FOB upgrade cost, standard SP, CP for the first upgrade, CP added per earlier upgrade
 P-MAP-14 = 1   # placeholder (proposed): SP an FOB pays per turn, equal to the Supply ST bonus
+P-CRD-01 = 5   # Starting hand size, Cards (decided)
+P-TRN-01 = 1   # Extra starting Cards for the second player (decided)
 P-TRN-02 = 1   # placeholder (proposed)

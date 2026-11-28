@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "status": "No Cards yet: each Card is added by the Story that builds its effect (CD1). The CP cost and copies of every Card are placeholders until P-CRD-08 is decided",
+  "placeholders": {
+    "cpCost": "placeholder (open): P-CRD-08 CP cost per Card",
+    "copies": "placeholder (open): P-CRD-08 copies per Card in the deck"
+  },
+  "cards": {}
+}

@@ -44,16 +44,17 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>
         /// Starts a new game on a map (MAP-021): each Faction has only its HQ (owned) and its starting Brigade, every
-        /// ST is neutral (MAP-015) and there are no FOBs. Throws <see cref="MapFormatException"/> when the map has no
+        /// ST is neutral (MAP-015) and there are no FOBs. With <paramref name="cards"/> each Faction gets its deck and starting
+        /// hand (CRD-003, CRD-004, CRD-016, CRD-018); without it the state has no Cards. Throws <see cref="MapFormatException"/> when the map has no
         /// Factions or the setup names a Section type that is not in <paramref name="sectionTypes"/>.
         /// </summary>
-        public GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters)
-            : this(seed, map, sectionTypes, parameters, null)
+        public GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters, CardTable? cards = null)
+            : this(seed, map, sectionTypes, parameters, null, cards)
         {
         }
 
         /// <summary>As the public constructor, with a phase observer attached before the first turn begins (tests only).</summary>
-        internal GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters, Action<TurnPhase, string>? phaseObserver) : this(seed)
+        internal GameState(ulong seed, HexMap map, SectionTypeTable sectionTypes, ParameterTable parameters, Action<TurnPhase, string>? phaseObserver, CardTable? cards = null) : this(seed)
         {
             PhaseObserver = phaseObserver;
             if (map == null) throw new ArgumentNullException(nameof(map));
@@ -101,9 +102,40 @@ namespace WeirdWar.Core.Simulation
             // TRN-033: the first player comes from the state's seeded source, so the same seed gives the same one.
             // Drawn here, as part of making the new game; replay rebuilds the state the same way.
             ActiveFaction = factions[Random.NextInt(factions.Count)].Id;
+            if (cards != null) DealStartingHands(cards, parameters, factions);
             TurnNumber = 1;
             TurnPhases.BeginTurn(this, ActiveFaction);
         }
+
+        /// <summary>
+        /// CRD-016: each Faction's deck holds every listed Card, with its listed copies, shuffled from the seeded source in
+        /// Faction order (TEC-008). CRD-004, P-CRD-01: the top Cards go to the hand. TRN-033, CRD-018, P-TRN-01: the Faction that
+        /// goes second takes extra. A deck smaller than the hand leaves a smaller hand (CD1 has no Cards in the shipped data).
+        /// </summary>
+        private void DealStartingHands(CardTable cards, ParameterTable parameters, List<FactionState> factions)
+        {
+            var handSize = StartingValue(parameters, "P-CRD-01");
+            var extra = StartingValue(parameters, "P-TRN-01");
+            _cards = cards;
+            var second = NextFaction(ActiveFaction!);
+            foreach (var f in factions)
+            {
+                foreach (var card in cards.All)
+                    for (var i = 0; i < card.Copies; i++) f._deck.Add(card.Id);
+                for (var i = f._deck.Count - 1; i > 0; i--)
+                {
+                    var j = Random.NextInt(i + 1);
+                    var t = f._deck[i]; f._deck[i] = f._deck[j]; f._deck[j] = t;
+                }
+                var n = Math.Min(f._deck.Count, handSize + (f.Id == second && second != ActiveFaction ? extra : 0));
+                f._hand.AddRange(f._deck.GetRange(0, n));
+                f._deck.RemoveRange(0, n);
+            }
+        }
+
+        /// <summary>The Card data, or null for a game without Cards. Fixed for a game; enters the hash as a digest.</summary>
+        internal CardTable? Cards => _cards;
+        private CardTable? _cards;
 
         private static int StartingValue(ParameterTable parameters, string id)
         {
@@ -263,9 +295,9 @@ namespace WeirdWar.Core.Simulation
         /// Rebuilds a state from a seed and a log. Throws <see cref="ReplayDivergenceException"/> if an entry
         /// is out of order (step is not its position) or a command is rejected.
         /// </summary>
-        public static GameState Replay(ulong seed, CommandLog log, HexMap? map = null, SectionTypeTable? sectionTypes = null, ParameterTable? parameters = null)
+        public static GameState Replay(ulong seed, CommandLog log, HexMap? map = null, SectionTypeTable? sectionTypes = null, ParameterTable? parameters = null, CardTable? cards = null)
         {
-            var state = map == null ? new GameState(seed) : new GameState(seed, map, sectionTypes ?? throw new ArgumentNullException(nameof(sectionTypes)), parameters ?? throw new ArgumentNullException(nameof(parameters)));
+            var state = map == null ? new GameState(seed) : new GameState(seed, map, sectionTypes ?? throw new ArgumentNullException(nameof(sectionTypes)), parameters ?? throw new ArgumentNullException(nameof(parameters)), cards);
             for (int i = 0; i < log.Entries.Count; i++)
             {
                 var entry = log.Entries[i];
@@ -300,6 +332,14 @@ namespace WeirdWar.Core.Simulation
                 // Written only once the Faction has upgraded an FOB, so a game with none hashes as before (MAP-012).
                 if (f.FobUpgrades > 0) sb.Append(" fobupgrades=").Append(f.FobUpgrades.ToString(CultureInfo.InvariantCulture));
                 sb.Append('\n');
+            }
+            // Written only for a game with Card data, so a game without Cards hashes as before (CRD-003, TEC-019: ids only).
+            if (_cards != null)
+            {
+                sb.Append("cards=").Append(Hex(Sha256(Encoding.UTF8.GetBytes(_cards.CanonicalText())))).Append('\n');
+                foreach (var f in Factions)
+                    sb.Append("cardstate=").Append(f.Id).Append(" deck=").Append(string.Join(",", f.Deck))
+                      .Append(" hand=").Append(string.Join(",", f.Hand)).Append(" discard=").Append(string.Join(",", f.Discard)).Append('\n');
             }
             foreach (var l in Locations)
             {

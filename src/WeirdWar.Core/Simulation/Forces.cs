@@ -18,6 +18,18 @@ namespace WeirdWar.Core.Simulation
 
         /// <summary>How many Supply STs this Faction has upgraded to FOBs; the next upgrade costs more CP (MAP-012, MAP-025). In the hash.</summary>
         public int FobUpgrades { get; internal set; }
+
+        /// <summary>Card ids still in the deck, top first (CRD-003). Empty without Card data. In the hash.</summary>
+        public IReadOnlyList<string> Deck => _deck;
+        internal readonly List<string> _deck = new List<string>();
+
+        /// <summary>Card ids in hand (CRD-003, CRD-004). In the hash.</summary>
+        public IReadOnlyList<string> Hand => _hand;
+        internal readonly List<string> _hand = new List<string>();
+
+        /// <summary>Card ids in the discard pile (CRD-003). Starts empty. In the hash.</summary>
+        public IReadOnlyList<string> Discard => _discard;
+        internal readonly List<string> _discard = new List<string>();
     }
 
     /// <summary>A location in a running game with its current owner (MAP-021: only HQs start owned).</summary>
